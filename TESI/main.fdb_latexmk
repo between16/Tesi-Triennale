@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1789198417.45765 "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1789198417.68828 0
+["pdflatex"] 1789198852.08041 "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1789198852.32954 0
   "/etc/texmf/web2c/texmf.cnf" 1786722357.03613 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1789198413.14474 202 29a21f108546b1ca79b370cd18912887 ""
+  "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1789198851.6874 225 f6ad6c1148df0c3e67c7a0ffd37e9ec1 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm" 1136768653 1524 4414a8315f39513458b80dfc63bff03a ""
@@ -34,8 +34,9 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1769369718 41603 27f93b3067076450172040dcd57ca8b3 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1786724208 5541477 3118940318599480888143717dd32d64 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1786724291 3638998 d79ff1330275c1defb93869176ba5eb3 ""
-  "main.aux" 1789198417.65949 132 becad25d16353fbd81e5644d2e8bca32 "pdflatex"
-  "main.tex" 1789198413.14474 202 29a21f108546b1ca79b370cd18912887 ""
+  "Chapters/test.tex" 1789198725.46078 24 27cf3adac5f78504defe7e818cd1d56d ""
+  "main.aux" 1789198852.30449 224 cb6a38da44d9c7f5a4158eb1dfd1f815 "pdflatex"
+  "main.tex" 1789198851.6874 225 f6ad6c1148df0c3e67c7a0ffd37e9ec1 ""
   (generated)
   "main.aux"
   "main.log"
