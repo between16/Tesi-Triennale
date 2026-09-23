@@ -1759,6 +1759,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sgfmill"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/2b/42bf7cf772fa54458b6e84e6938192f1466b9a95ae203b1d5efa2cedfc53/sgfmill-1.1.1.tar.gz", hash = "sha256:1f44fa6b613acfae23cf7f69985a4a911fc06f772f6c63c0bbfc89044d88f41d", size = 63179, upload-time = "2018-05-20T15:19:02.98Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/ef/cd39e8db4385260b6f2e021dd8908e8f5167bfddce238bdea0e82b2f59c6/sgfmill-1.1.1-py3-none-any.whl", hash = "sha256:759cd843eba647875931d3a10eb329362087b9832f6b49ee85cf8948b0608b3d", size = 27143, upload-time = "2018-05-20T15:19:01.418Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1854,6 +1863,7 @@ dependencies = [
     { name = "pydantic-core" },
     { name = "setuptools" },
     { name = "setuptools-scm" },
+    { name = "sgfmill" },
     { name = "streamlit" },
     { name = "torch" },
     { name = "tqdm" },
@@ -1878,6 +1888,7 @@ requires-dist = [
     { name = "pydantic-core", specifier = ">=2.46.4" },
     { name = "setuptools", specifier = ">=84.0.0" },
     { name = "setuptools-scm", specifier = ">=10.2.1" },
+    { name = "sgfmill", specifier = ">=1.1.1" },
     { name = "streamlit", specifier = ">=1.61.1" },
     { name = "torch", specifier = ">=2.13.0" },
     { name = "tqdm", specifier = ">=4.70.0" },
