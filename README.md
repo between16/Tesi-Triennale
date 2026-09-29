@@ -15,3 +15,7 @@ uv sync
 
 # Implementation
 First the model will be trained to play the simplified version of Go which is 9x9 instead of the classical 19x19. 
+
+# Dataset
+https://homepages.cwi.nl/~aeb/go/games/
+
