@@ -1,21 +1,29 @@
 import torch
 import torch.nn as nn
 
+
 class GoPolicyHead(nn.Module):
     """
-    Projects the TRM latent states [Batch, 81, hidden_size] 
-    into 82 move logits [Batch, 82].
+    Policy Head for 9x9 Go. Transforms latent sequence features [Batch, 81, hidden_size]
+    into 82 output move logits (81 board intersections + 1 PASS move).
     """
     def __init__(self, hidden_size=256):
+        """
+        Args:
+            hidden_size (int): Dimension of the latent representations from the TRM.
+        """
         super(GoPolicyHead, self).__init__()
-        
-        # Linear projection for the 81 board intersections
-        # Projects [Batch, 81, hidden_size] to [Batch, 81, 1]
-        self.board_head = nn.Linear(hidden_size, 1)
-        
-        # Projection for the PASS move (index 81)
-        # Applied after pooling the entire board state
-        self.pass_head = nn.Sequential(
+        self.hidden_size = hidden_size
+
+        # 1. Per-token MLP for spatial board positions (0..80)
+        self.board_mlp = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_size // 2, 1)
+        )
+
+        # 2. Global MLP for the PASS decision (81)
+        self.pass_mlp = nn.Sequential(
             nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
             nn.Linear(hidden_size // 2, 1)
@@ -24,39 +32,42 @@ class GoPolicyHead(nn.Module):
     def forward(self, x):
         """
         Args:
-            x (torch.Tensor): TRM output state [Batch, 81, hidden_size]
+            x (torch.Tensor): Latent tokens from TRM core of shape [Batch, 81, hidden_size]
+            
         Returns:
-            torch.Tensor: Raw logits before softmax [Batch, 82]
+            torch.Tensor: Unnormalized move logits of shape [Batch, 82]
         """
-        # 1. Board logits: score each intersection independently
-        # Shape: [Batch, 81, 1]
-        board_logits = self.board_head(x)
-        
-        # Squeeze the last dimension to get [Batch, 81]
+        # --- Board Moves (81 logits) ---
+        # Project each spatial token from hidden_size -> 1
+        # Output shape: [Batch, 81, 1]
+        board_logits = self.board_mlp(x)
+        # Squeeze to shape: [Batch, 81]
         board_logits = board_logits.squeeze(-1)
-        
-        # 2. Pass logit: Global Average Pooling over the spatial tokens (dim=1)
-        # Shape: [Batch, hidden_size]
-        pooled_state = x.mean(dim=1)
-        
-        # Project pooled state to a single scalar per batch item
-        # Shape: [Batch, 1]
-        pass_logit = self.pass_head(pooled_state)
-        
-        # 3. Concatenate board logits and pass logit
+
+        # --- PASS Move (1 logit) ---
+        # Aggregate global board state across all 81 spatial locations
+        # Output shape: [Batch, hidden_size]
+        global_features = x.mean(dim=1)
+        # Output shape: [Batch, 1]
+        pass_logit = self.pass_mlp(global_features)
+
+        # --- Concatenation (82 logits total) ---
         # Final shape: [Batch, 82]
-        final_logits = torch.cat([board_logits, pass_logit], dim=-1)
-        
-        return final_logits
+        logits = torch.cat([board_logits, pass_logit], dim=-1)
+
+        return logits
+
 
 if __name__ == "__main__":
-    # Sanity check
-    dummy_trm_output = torch.randn(32, 81, 256)
+    # Sanity check to verify output dimensions
+    dummy_hidden = torch.randn(32, 81, 256)
     head = GoPolicyHead(hidden_size=256)
-    logits = head(dummy_trm_output)
-    print(f"Output shape: {logits.shape}")
+    logits = head(dummy_hidden)
+    print(f"Input shape:  {dummy_hidden.shape}")  
+    print(f"Output shape: {logits.shape}")        
     pass
 
 '''output:
+Input shape:  torch.Size([32, 81, 256])
 Output shape: torch.Size([32, 82])
 '''
