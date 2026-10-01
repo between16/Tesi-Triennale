@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from models.common import trunc_normal_init_
 from models.layers import rms_norm, SwiGLU, Attention, RotaryEmbedding, CosSin, CastedLinear
-from go_encoder import GoEncoder
+from models.go_encoder import GoEncoder
 
 IGNORE_LABEL_ID = -100
 
@@ -132,10 +132,10 @@ class TinyRecursiveReasoningModel_ACTV1_Inner(nn.Module):
         self.H_init = nn.Buffer(trunc_normal_init_(torch.empty(self.config.hidden_size, dtype=self.forward_dtype), std=1), persistent=True)
         self.L_init = nn.Buffer(trunc_normal_init_(torch.empty(self.config.hidden_size, dtype=self.forward_dtype), std=1), persistent=True)
 
-    def empty_carry(self, batch_size: int):
+    def empty_carry(self, batch_size: int, device: torch.device):
         return TinyRecursiveReasoningModel_ACTV1InnerCarry(
-            z_H=torch.empty(batch_size, self.config.seq_len, self.config.hidden_size, dtype=self.forward_dtype),
-            z_L=torch.empty(batch_size, self.config.seq_len, self.config.hidden_size, dtype=self.forward_dtype),
+            z_H=torch.empty(batch_size, self.config.seq_len, self.config.hidden_size, dtype=self.forward_dtype, device=device),
+            z_L=torch.empty(batch_size, self.config.seq_len, self.config.hidden_size, dtype=self.forward_dtype, device=device),
         )
         
     def reset_carry(self, reset_flag: torch.Tensor, carry: TinyRecursiveReasoningModel_ACTV1InnerCarry):
@@ -183,10 +183,11 @@ class TinyRecursiveReasoningModel_ACTV1(nn.Module):
 
     def initial_carry(self, batch: Dict[str, torch.Tensor]):
         batch_size = batch["inputs"].shape[0]
+        device = batch["inputs"].device
         return TinyRecursiveReasoningModel_ACTV1Carry(
-            inner_carry=self.inner.empty_carry(batch_size),
-            steps=torch.zeros((batch_size, ), dtype=torch.int32),
-            halted=torch.ones((batch_size, ), dtype=torch.bool),
+            inner_carry=self.inner.empty_carry(batch_size, device),
+            steps=torch.zeros((batch_size, ), dtype=torch.int32, device=device),
+            halted=torch.ones((batch_size, ), dtype=torch.bool, device=device),
             current_data={k: torch.empty_like(v) for k, v in batch.items()}
         )
         

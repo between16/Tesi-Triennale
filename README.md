@@ -51,6 +51,16 @@ TRM/models/go_policy_head.py
 ```
 This file TODO
 
+``` bash
+TRM/micro_train.py
+```
+This file TODO
+
+``` bash
+TRM/train.py
+```
+This file TODO
+
 ## Modified files 
 ``` bash
 TRM/models/go_trm.py
