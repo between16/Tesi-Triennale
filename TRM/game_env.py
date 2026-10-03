@@ -9,9 +9,9 @@ class GoGameEnv:
         self.reset()
 
     def reset(self):
-        """Reinizializza la scacchiera e lo storico per una nuova partita."""
+        """Reset the board and history for a new game."""
         self.board = boards.Board(self.board_size)
-        # Teniamo traccia di T-2, T-1 e T per l'input a 7 canali
+        # Track T-2, T-1, and T for the 7-channel input.
         self.history = [None, None, self.board.copy()]
         self.current_player = 'b'
         self.consecutive_passes = 0
@@ -19,35 +19,35 @@ class GoGameEnv:
 
     def get_legal_moves_mask(self):
         """
-        Genera la Legal Move Mask [82]. 
-        Indice 0-80: Caselle. Indice 81: Pass.
-        Ritorna un tensore PyTorch booleano (True = mossa legale).
+        Generate the legal move mask [82].
+        Indices 0-80: board points. Index 81: pass.
+        Return a boolean PyTorch tensor (True = legal move).
         """
         mask = torch.zeros(self.board_size * self.board_size + 1, dtype=torch.bool)
         
         for r in range(self.board_size):
             for c in range(self.board_size):
                 if self.board.get(r, c) is None:
-                    # sgfmill controlla per noi Suicidio e Regola del Ko
+                    # sgfmill checks suicide and the ko rule for us.
                     test_board = self.board.copy()
                     try:
                         test_board.play(r, c, self.current_player)
                         mask[r * self.board_size + c] = True
                     except ValueError:
-                        pass # Mossa illegale
+                        pass  # Illegal move.
         
-        mask[81] = True # Il PASS è sempre un'azione legale
+        mask[81] = True  # PASS is always a legal action.
         return mask
 
     def step(self, move_idx):
         """
-        Esegue la mossa (0-80 per caselle, 81 per PASS).
-        Ritorna lo stato di game_over.
+        Play the move (0-80 for board points, 81 for PASS).
+        Return the game_over state.
         """
         if self.game_over:
             return True
 
-        if move_idx == 81: # PASS
+        if move_idx == 81:  # PASS
             self.consecutive_passes += 1
         else:
             r = move_idx // self.board_size
@@ -56,32 +56,32 @@ class GoGameEnv:
                 self.board.play(r, c, self.current_player)
                 self.consecutive_passes = 0
             except ValueError as e:
-                raise ValueError(f"Tentativo di mossa illegale {r},{c}: {e}")
+                raise ValueError(f"Illegal move attempt {r},{c}: {e}")
 
-        # Aggiorniamo lo storico scorrendo i frame all'indietro
+        # Update the history by shifting the frames backward.
         self.history[0] = self.history[1]
         self.history[1] = self.history[2]
         self.history[2] = self.board.copy()
 
-        # Win Condition: due pass consecutivi
+        # Win condition: two consecutive passes.
         if self.consecutive_passes >= 2:
             self.game_over = True
         else:
-            # Cambio turno
+            # Switch turns.
             self.current_player = 'w' if self.current_player == 'b' else 'b'
 
         return self.game_over
 
     def calculate_score(self):
         """
-        Algoritmo di Area Scoring (Tromp-Taylor).
-        Valuta i territori a fine partita per determinare il vincitore.
+        Area scoring algorithm (Tromp-Taylor).
+        Evaluate territories at the end of the game to determine the winner.
         """
         black_score = 0.0
         white_score = self.komi
         visited = set()
 
-        # Aiuto per navigare adiacenze (su, giù, sx, dx)
+        # Helpers for traversing adjacent points (up, down, left, right).
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for r in range(self.board_size):
@@ -91,7 +91,7 @@ class GoGameEnv:
 
                 stone = self.board.get(r, c)
                 
-                # Se c'è una pietra, dà direttamente 1 punto al proprietario
+                # If there is a stone, award 1 point directly to its owner.
                 if stone == 'b':
                     black_score += 1
                     visited.add((r, c))
@@ -99,7 +99,7 @@ class GoGameEnv:
                     white_score += 1
                     visited.add((r, c))
                 else:
-                    # Trovata una casella vuota: eseguiamo BFS per trovare l'intero territorio vuoto
+                    # For an empty point, use BFS to find the entire empty territory.
                     empty_cluster = []
                     queue = [(r, c)]
                     visited.add((r, c))
@@ -119,7 +119,7 @@ class GoGameEnv:
                                 elif adj_stone is not None:
                                     surrounding_colors.add(adj_stone)
 
-                    # Assegna il territorio al colore che lo circonda interamente
+                    # Assign the territory to the color that completely surrounds it.
                     if len(surrounding_colors) == 1:
                         color = list(surrounding_colors)[0]
                         if color == 'b':
@@ -127,7 +127,7 @@ class GoGameEnv:
                         else:
                             white_score += len(empty_cluster)
 
-        winner = 'Nero' if black_score > white_score else 'Bianco'
+        winner = 'Black' if black_score > white_score else 'White'
         margin = abs(black_score - white_score)
         
         return {
