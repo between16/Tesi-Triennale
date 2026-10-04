@@ -6,6 +6,7 @@ class GoGameEnv:
     def __init__(self, board_size=9, komi=7.5):
         self.board_size = board_size
         self.komi = komi
+        self.pass_index = self.board_size * self.board_size # 81
         self.reset()
 
     def reset(self):
@@ -16,6 +17,7 @@ class GoGameEnv:
         self.current_player = 'b'
         self.consecutive_passes = 0
         self.game_over = False
+        self.pass_index = self.board_size * self.board_size
 
     def get_legal_moves_mask(self):
         """
@@ -36,7 +38,7 @@ class GoGameEnv:
                     except ValueError:
                         pass  # Illegal move.
         
-        mask[81] = True  # PASS is always a legal action.
+        mask[self.pass_index] = True  # PASS is always a legal action.
         return mask
 
     def step(self, move_idx):
@@ -47,7 +49,7 @@ class GoGameEnv:
         if self.game_over:
             return True
 
-        if move_idx == 81:  # PASS
+        if move_idx == self.pass_index:  # PASS
             self.consecutive_passes += 1
         else:
             r = move_idx // self.board_size
@@ -127,7 +129,12 @@ class GoGameEnv:
                         else:
                             white_score += len(empty_cluster)
 
-        winner = 'Black' if black_score > white_score else 'White'
+        if black_score > white_score:
+            winner = "Black"
+        elif white_score > black_score:
+            winner = "White"
+        else:
+            winner = "Draw"
         margin = abs(black_score - white_score)
         
         return {

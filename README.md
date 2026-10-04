@@ -6,7 +6,7 @@ The traing is supervised learning and is made with the simplified version 9x9.
 # Setup
 If you use pip :
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 if you use uv:
 ```bash

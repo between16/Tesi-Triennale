@@ -90,7 +90,7 @@ class TRMAgent(GoAgent):
         x = self._extract_features(env)
         legal_mask = env.get_legal_moves_mask().to(self.device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             logits = self.model(x).squeeze(0)  # Shape: [82].
 
         masked_logits = apply_legal_move_mask(logits, legal_mask)
