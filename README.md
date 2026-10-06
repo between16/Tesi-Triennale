@@ -105,7 +105,8 @@ Actually this is a new file, but it took the trm.py architecture for the trm mod
 
 
 # Pipeline
-1. Extract data from original .sgf (offline)
-2. preprocess them running the go_preprocessing.py file (offline)
-3. Train the model with train.py 
-4. inference on the saved model
+PIPELINE FOR TRAINING PHASE:
+![Pipeline per training](/TRM/assets/pipeline_for_trainig.png) 
+
+PIPELINE FOR INFERENCE PHASE:
+![Pipeline for ](/TRM/assets/pipeline_inference.png)
