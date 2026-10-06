@@ -77,7 +77,8 @@ This file implements two classes: one for the player (HumanAgent) and one for th
 TRM/app.py
 ```
 This file is responsible for the GUI using the pygame library. I implemented few game modes: Player (eather white or black) vs Model or Model vs Model.
-You can choose at which speed make the model play and even stop it (only Model vs Model match). 
+You can choose at which speed make the model play and even stop it (only Model vs Model match).
+![GUI](./TRM/assets/GUI.png) 
 
 
 ### TRM/models
