@@ -29,8 +29,6 @@ MIN_WINDOW_WIDTH = 1100
 MIN_WINDOW_HEIGHT = 720
 
 # Current Go environment uses 0..80 for board points and 81 for PASS on 9x9.
-PASS_INDEX = BOARD_SIZE * BOARD_SIZE
-
 AI_DELAYS = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
 
 # Colors
@@ -425,6 +423,19 @@ class TinyRecursiveGo:
         if self.env.game_over:
             return False
 
+        legal, reason = self.env.is_legal_move(move_index)
+        if not legal:
+            if move_index == self.env.pass_index:
+                self.set_error("Illegal pass: the game is already over.")
+            else:
+                row = move_index // self.env.board_size
+                col = move_index % self.env.board_size
+                if reason:
+                    self.set_error(f"Illegal move at ({row}, {col}): {reason}.")
+                else:
+                    self.set_error(f"Illegal move at ({row}, {col}).")
+            return False
+
         try:
             game_over = self.env.step(move_index)
         except ValueError as exc:
@@ -446,7 +457,7 @@ class TinyRecursiveGo:
     def pass_move(self):
         if self.env.game_over or not self.human_turn:
             return
-        self.try_play_move(PASS_INDEX)
+        self.try_play_move(self.env.pass_index)
 
     def toggle_pause(self):
         if self.mode is not MODE_AI_VS_AI or self.env.game_over:
@@ -654,7 +665,7 @@ class TinyRecursiveGo:
                 pygame.draw.circle(self.screen, STAR, (x, y), 5)
 
         # Last move marker
-        if self.last_move_index is not None and self.last_move_index < PASS_INDEX:
+        if self.last_move_index is not None and self.last_move_index < self.env.pass_index:
             r = self.last_move_index // self.env.board_size
             c = self.last_move_index % self.env.board_size
             x = int(round(inner.left + c * spacing))
@@ -777,9 +788,9 @@ class TinyRecursiveGo:
         score_rect = self.score_rect
         pygame.draw.rect(self.screen, (47, 52, 60), score_rect, border_radius=10)
         self.draw_text("Rules", (score_rect.x + 14, score_rect.y + 10), self.font_tiny, TEXT_MUTED)
-        rules_text = "Tromp–Taylor area scoring"
+        rules_text = "Area scoring • suicide forbidden"
         self.draw_text(rules_text, (score_rect.x + 14, score_rect.y + 30), self.font_small)
-        komi_text = f"Komi {self.env.komi:g}"
+        komi_text = f"Komi {self.env.komi:g} • positional superko"
         komi_surface = self.font_small.render(komi_text, True, TEXT_MUTED)
         komi_rect = komi_surface.get_rect(midright=(score_rect.right - 14, score_rect.centery + 8))
         self.screen.blit(komi_surface, komi_rect)
