@@ -29,7 +29,12 @@ MIN_WINDOW_WIDTH = 1100
 MIN_WINDOW_HEIGHT = 720
 
 # Current Go environment uses 0..80 for board points and 81 for PASS on 9x9.
-AI_DELAYS = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
+# Slider order is left-to-right: slower (longer delay) to faster (shorter delay).
+AI_DELAYS = [3.0, 2.5, 2.0, 1.5, 1.0, 0.75, 0.5, 0.25, 0.0]
+
+# GUI safety limit: total individual moves by both sides, including PASS.
+# This is not a Go rule; it prevents experimental agents from looping forever.
+MAX_GAME_MOVES = 200
 
 # Colors
 BG = (31, 34, 39)
@@ -370,6 +375,8 @@ class TinyRecursiveGo:
         self.info_until = time.monotonic() + 2.0
         self.ai_waiting_until = time.monotonic()
         self.ai_thinking = False
+        self.move_count = 0
+        self.move_limit_triggered = False
 
     # ------------------------------------------------------------------
     # State helpers
@@ -419,7 +426,7 @@ class TinyRecursiveGo:
     # ------------------------------------------------------------------
 
     def try_play_move(self, move_index):
-        """Apply a move through GoGameEnv and keep turn on illegal move."""
+        """Apply a legal move and enforce GUI-only termination safeguards."""
         if self.env.game_over:
             return False
 
@@ -442,14 +449,55 @@ class TinyRecursiveGo:
             self.set_error(f"Illegal move: {exc}")
             return False
 
+        self.move_count += 1
         self.last_move_index = move_index
+        auto_pass_accepted = False
+
+        # In AI-vs-AI mode, interpret one agent's PASS as a proposal to end
+        # the game. Automatically play the opponent's PASS, making the normal
+        # two-consecutive-PASS termination happen in GoGameEnv. This is a GUI
+        # convention for experimental self-play, not a change to GoGameEnv.
+        if (
+            self.mode is MODE_AI_VS_AI
+            and move_index == self.env.pass_index
+            and not game_over
+            and self.env.consecutive_passes == 1
+        ):
+            try:
+                game_over = self.env.step(self.env.pass_index)
+            except ValueError as exc:
+                self.set_error(f"Could not complete AI-vs-AI PASS: {exc}")
+                return False
+            self.move_count += 1
+            self.last_move_index = self.env.pass_index
+            auto_pass_accepted = True
+
+        # A global GUI safety limit also applies in Human-vs-AI mode. When hit,
+        # stop the demo without pretending that the game ended by two PASSes.
+        # The score is therefore marked provisional in the end-game overlay.
+        if not game_over and self.move_count >= MAX_GAME_MOVES:
+            self.move_limit_triggered = True
+            self.env.game_over = True
+            game_over = True
+
         self.error_message = None
         self.ai_thinking = False
         self.ai_waiting_until = time.monotonic() + self.ai_delay
 
         if game_over:
             self.paused = False
-            self.set_info("Game over. Press New Game to start another match.", duration=60.0)
+            if self.move_limit_triggered:
+                self.set_info(
+                    f"Move limit reached ({MAX_GAME_MOVES}). Result is provisional.",
+                    duration=60.0,
+                )
+            elif auto_pass_accepted:
+                self.set_info(
+                    "An AI passed; the opponent's PASS was accepted. Game over.",
+                    duration=60.0,
+                )
+            else:
+                self.set_info("Game over. Press New Game to start another match.", duration=60.0)
         else:
             self.set_info(f"{self.current_color_name} to move.", duration=1.2)
         return True
@@ -884,7 +932,18 @@ class TinyRecursiveGo:
         rect = overlay.get_rect(center=board.center)
         self.screen.blit(overlay, rect)
 
-        title = self.font_title.render("Game Over", True, SUCCESS)
+        if self.move_limit_triggered:
+            title_text = "Move Limit Reached"
+            title_color = WARNING
+            result_text = f"Provisional: {score['winner']} • margin {score['margin']:.1f}"
+            footer_text = f"Interrupted after {self.move_count} moves; result is provisional"
+        else:
+            title_text = "Game Over"
+            title_color = SUCCESS
+            result_text = f"Winner: {score['winner']}  •  margin {score['margin']:.1f}"
+            footer_text = "Press New Game / R to start another match"
+
+        title = self.font_title.render(title_text, True, title_color)
         self.screen.blit(title, title.get_rect(center=(rect.centerx, rect.y + 42)))
 
         self.draw_centered_text(
@@ -898,14 +957,14 @@ class TinyRecursiveGo:
             self.font_body,
         )
         self.draw_centered_text(
-            f"Winner: {score['winner']}  •  margin {score['margin']:.1f}",
-            pygame.Rect(rect.x + 25, rect.y + 125, rect.width - 50, 30),
+            result_text,
+            pygame.Rect(rect.x + 20, rect.y + 125, rect.width - 40, 30),
             self.font_subtitle,
             WHITE,
         )
         self.draw_centered_text(
-            "Press New Game / R to start another match",
-            pygame.Rect(rect.x + 20, rect.y + 170, rect.width - 40, 35),
+            footer_text,
+            pygame.Rect(rect.x + 15, rect.y + 170, rect.width - 30, 35),
             self.font_small,
             TEXT_MUTED,
         )
