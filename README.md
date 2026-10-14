@@ -38,6 +38,8 @@ In this case we are creating two tensor of shape X = [SIZE, CHANNELS, 9, 9] and 
 
 Therefore in output we are going to have 3 dataset (.npz) files: one for training, one for validation and test stored in TRM/9x9_go/go_dataset.
 
+**Important note**: the original dataset was lacking for pass moves to terminate properly the games, therefore the solution that i came up with is to add a condition with the preprocessing. The condition check if the game is properly terminated, if so check if the geme was win by resign or if it concluded naturally. In the second case it adds the two missing pass moves. In this way the original datase is preserved, but now we have the pass move require to terminate properly the game and the model can learn it. 
+
 ``` bash
 TRM/go_dataset.py
 ```
@@ -108,6 +110,9 @@ So the output is a tensor of shape [BATCH, 82] (81 moves + PASS move)
 TRM/models/go_trm.py
 ```
 Actually this is a new file, but it took the trm.py architecture for the trm model and just changed only what was needed in order to make it work with the new data format
+
+# Testing
+There are two main scripts used for testing: the first one (test_game_env.py) is dedicated to check if board and rules functioning properly and the second one (go_pass_eval + pass_eval_results/) check if the games are flowing smoothly and are correcly terminated with two pass moves.
 
 
 # Pipeline
