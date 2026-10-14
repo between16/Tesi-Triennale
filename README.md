@@ -74,6 +74,11 @@ This file implements two classes: one for the player (HumanAgent) and one for th
 - HumanAgent (agents.py): Receives user clicks from the interface.
 
 ``` bash
+TRM/go_eval.py
+```
+This file is the one who is responsible to check the quality of the model using the test.npz dataset and create charts and show results that are all seved into the /TRM/evalutaion_results folder.
+
+``` bash
 TRM/app.py
 ```
 This file is responsible for the GUI using the pygame library. I implemented few game modes: Player (eather white or black) vs Model or Model vs Model.
