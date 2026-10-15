@@ -149,14 +149,24 @@ class GoGameEnv:
         if move_idx < 0 or move_idx > self.pass_index:
             raise ValueError(f"Move index {move_idx} is outside 0..{self.pass_index}.")
 
-        # PASS ----------------------------------------------------------------
+        # ----------------------------------------------------------------
+        # PASS
+        # ----------------------------------------------------------------
         if move_idx == self.pass_index:
+            # Advance the board history even though the board itself
+            # does not change. This must match the training preprocessing.
+            self.history[0] = self.history[1]
+            self.history[1] = self.history[2]
+            self.history[2] = self.board.copy()
+
             self.consecutive_passes += 1
 
             if self.consecutive_passes >= 2:
                 self.game_over = True
             else:
-                self.current_player = "w" if self.current_player == "b" else "b"
+                self.current_player = (
+                    "w" if self.current_player == "b" else "b"
+                )
 
             return self.game_over
 
