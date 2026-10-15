@@ -15,6 +15,25 @@ pip install -r requirements.txt
 uv sync 
 ```
 
+# How to use:
+If you want to **play the game** the repo already cointains the fully trained model so that you can just clone it, download all necessary libraries and play by running the app.py module 
+```bash
+cd TRM/
+python3 app.py
+```
+
+If you want to **change the dataset**, you can launch the preprocessing file to create the train, validation and test set, just be mindful of changing the path if necessary and probably the function that is now present and that is adding pass moves to conclude the game might not be useful if the dataset is already complete of those.
+```bash
+cd TRM/
+python3 go_preprocessing.py
+```
+
+If you want to **train the model from scratch** on your machine (linux suggested) you simply need to run the train script (with command: python3 train.py) and your trained model will be saved in the checkpoint/ folder
+```bash
+cd TRM/
+python3 train.py
+```
+
 # Dataset
 The dataset source is: https://homepages.cwi.nl/~aeb/go/games/
 

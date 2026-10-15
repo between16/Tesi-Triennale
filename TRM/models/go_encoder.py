@@ -60,8 +60,8 @@ if __name__ == "__main__":
     dummy_input = torch.randn(32, 7, 9, 9)
     encoder = GoEncoder(in_channels=7, hidden_size=256)
     output = encoder(dummy_input)
-    print(f"Input shape: {dummy_input.shape}")   # Expected: [32, 7, 9, 9]
-    print(f"Output shape: {output.shape}")       # Expected: [32, 81, 256]
+    print(f"Input shape: {dummy_input.shape}")  
+    print(f"Output shape: {output.shape}")       
     pass
 
 '''output:
