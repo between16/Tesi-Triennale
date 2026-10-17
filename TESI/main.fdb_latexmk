@@ -1,8 +1,9 @@
 # Fdb version 4
-["pdflatex"] 1789198852.08041 "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1789198852.32954 0
+["pdflatex"] 1792219253.11529 "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1792219253.3414 0
   "/etc/texmf/web2c/texmf.cnf" 1786722357.03613 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1789198851.6874 225 f6ad6c1148df0c3e67c7a0ffd37e9ec1 ""
+  "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1792219252.67639 481 095e25be47ba5fab7ce94cc37824fcd1 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
+  "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm" 1136768653 1524 4414a8315f39513458b80dfc63bff03a ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm" 1136768653 1512 f21f83efb36853c0b70002322c1ab3ad ""
@@ -14,6 +15,7 @@
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm" 1136768653 1124 6c73e740cf17375f03eec0ee63599741 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm" 1136768653 1116 933a60c408fc0a863a92debe84b2d294 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1136768653 1120 8b7d695260f3cff42e636090a8002094 ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1248133631 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
@@ -34,11 +36,20 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1769369718 41603 27f93b3067076450172040dcd57ca8b3 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1786724208 5541477 3118940318599480888143717dd32d64 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1786724291 3638998 d79ff1330275c1defb93869176ba5eb3 ""
-  "Chapters/test.tex" 1789198725.46078 24 27cf3adac5f78504defe7e818cd1d56d ""
-  "main.aux" 1789198852.30449 224 cb6a38da44d9c7f5a4158eb1dfd1f815 "pdflatex"
-  "main.tex" 1789198851.6874 225 f6ad6c1148df0c3e67c7a0ffd37e9ec1 ""
+  "Chapters/0_intro.tex" 1792218927.40138 107 6b1a047a67b6a6a8e17bd7dd1be7419c ""
+  "Chapters/1_backgrorund.tex" 1792218805.03949 175 f14e3bdc56411f986d7d5c826a9f4c48 ""
+  "Chapters/2_architettura.tex" 1792218787.78039 135 a2edabb68312e35ca655f51794475cb4 ""
+  "Chapters/3_implementazione.tex" 1792218777.91677 181 f6f0b120380bd6f7b6b74fdf5efdc55d ""
+  "Chapters/4_risultati" 1792219053.81166 64 a49092b9ac012f4c650337ebc2fea5af ""
+  "Chapters/5_conclusioni.tex" 1792219096.52677 109 45800bd350f318610a0577f15cbf6a55 ""
+  "Chapters/bibliografia.tex" 1791269118.30083 0 d41d8cd98f00b204e9800998ecf8427e ""
+  "Chapters/ringraziamenti.tex" 1791269023.44171 24 1031e18ec664c854022454f9782a7a30 ""
+  "main.aux" 1792219253.32038 731 a6f1ff0a84692446989e3cb356e85177 "pdflatex"
+  "main.tex" 1792219252.67639 481 095e25be47ba5fab7ce94cc37824fcd1 ""
+  "main.toc" 1792219253.32038 412 ec7acb632cd26bb36af126a224b054b1 "pdflatex"
   (generated)
   "main.aux"
   "main.log"
   "main.pdf"
+  "main.toc"
   (rewritten before read)

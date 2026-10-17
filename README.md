@@ -28,7 +28,7 @@ cd TRM/
 python3 go_preprocessing.py
 ```
 
-If you want to **train the model from scratch** on your machine (linux suggested) you simply need to run the train script (with command: python3 train.py) and your trained model will be saved in the checkpoint/ folder
+If you want to **train the model from scratch** on your machine (linux suggested) you simply need to run the train script and your trained model will be saved in the checkpoint/ folder
 ```bash
 cd TRM/
 python3 train.py

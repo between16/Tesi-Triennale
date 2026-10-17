@@ -1,0 +1,7 @@
+\contentsline {section}{\numberline {1}Introduzione}{1}{}%
+\contentsline {section}{\numberline {2}Background}{1}{}%
+\contentsline {section}{\numberline {3}Architettura}{1}{}%
+\contentsline {section}{\numberline {4}Implementazione}{1}{}%
+\contentsline {section}{\numberline {5}Risultati}{1}{}%
+\contentsline {section}{\numberline {6}Conclusioni}{1}{}%
+\contentsline {section}{\numberline {7}Ringraziamenti}{1}{}%
