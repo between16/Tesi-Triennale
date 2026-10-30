@@ -163,6 +163,37 @@ arch.H_cycles=3 arch.L_cycles=4 \
 *Runtime:* ~3 days
 
 
+## Go model board size
+
+The Go pipeline supports square boards using one board-size setting. The default
+remains 9×9:
+
+```bash
+python go_preprocessing.py --board-size 9
+python train.py --board-size 9
+```
+
+For 19×19, place source SGF files under `19x19_go/go_raw_dataset/19x19_games/`
+and run:
+
+```bash
+python go_preprocessing.py --board-size 19
+python train.py --board-size 19
+```
+
+The policy has `N*N + 1` logits: one per intersection and one PASS action.
+Checkpoints store the board size; inference, the GUI, and evaluation recover
+the matching size from the checkpoint. Existing checkpoints without a
+`board_size` field are treated as 9×9.
+
+For example, to launch the GUI or evaluation for a trained 19×19 model, pass
+its size-specific checkpoint:
+
+```bash
+python app.py --checkpoint checkpoints/19x19_go/best_model.pt
+python go_eval.py --checkpoint checkpoints/19x19_go/best_model.pt
+```
+
 ## Reference
 
 If you find our work useful, please consider citing:

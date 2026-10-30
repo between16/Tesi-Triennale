@@ -28,9 +28,8 @@ class TinyRecursiveReasoningModel_ACTV1Carry:
 
 class TinyRecursiveReasoningModel_ACTV1Config(BaseModel):
     batch_size: int
-    seq_len: int = 81          # Always 81 for 9x9 Go board (9x9)
-    in_channels: int = 7       # Input board feature channels
-    vocab_size: int = 82       # Kept for compatibility (81 board moves + 1 PASS)
+    board_size: int = 9
+    in_channels: int = 7
 
     H_cycles: int
     L_cycles: int
@@ -56,6 +55,14 @@ class TinyRecursiveReasoningModel_ACTV1Config(BaseModel):
     mlp_t: bool = False
     puzzle_emb_len: int = 0    # Disabled for Go
     no_ACT_continue: bool = True
+
+    @property
+    def seq_len(self) -> int:
+        return self.board_size * self.board_size
+
+    @property
+    def vocab_size(self) -> int:
+        return self.seq_len + 1
 
 
 class TinyRecursiveReasoningModel_ACTV1Block(nn.Module):
@@ -112,8 +119,11 @@ class TinyRecursiveReasoningModel_ACTV1_Inner(nn.Module):
         self.config = config
         self.forward_dtype = getattr(torch, self.config.forward_dtype)
 
-        # 1. Replace token/puzzle embeddings with GoEncoder [B, C, 9, 9] -> [B, 81, hidden_size]
-        self.go_encoder = GoEncoder(in_channels=self.config.in_channels, hidden_size=self.config.hidden_size)
+        self.go_encoder = GoEncoder(
+            in_channels=self.config.in_channels,
+            hidden_size=self.config.hidden_size,
+            board_size=self.config.board_size,
+        )
 
         # Optional Rotary Embeddings
         if self.config.pos_encodings == "rope":
@@ -149,7 +159,7 @@ class TinyRecursiveReasoningModel_ACTV1_Inner(nn.Module):
             cos_sin=self.rotary_emb() if hasattr(self, "rotary_emb") else None,
         )
 
-        # Encode input tensor [Batch, 7, 9, 9] into [Batch, 81, hidden_size]
+        # Encode each board intersection as one token.
         input_embeddings = self.go_encoder(batch["inputs"])
 
         # TRM Forward iterations
@@ -169,7 +179,7 @@ class TinyRecursiveReasoningModel_ACTV1_Inner(nn.Module):
 
         new_carry = TinyRecursiveReasoningModel_ACTV1InnerCarry(z_H=z_H.detach(), z_L=z_L.detach())
         
-        # Return state tokens z_H [Batch, 81, hidden_size] to be processed by PolicyHead
+        # Return one hidden-state token per board intersection.
         return new_carry, z_H
 
 

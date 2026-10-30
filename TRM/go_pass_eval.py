@@ -32,19 +32,17 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from agents import TRMAgent
+from agents import TRMAgent, select_near_best_action
 from game_env import GoGameEnv
 
 print("[PASS-EVAL] Local Go modules imported.", flush=True)
 
-BOARD_SIZE = 9
 KOMI = 7.5
-PASS_MOVE = BOARD_SIZE * BOARD_SIZE
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Test whether the TRM naturally ends 9x9 Go self-play games with PASS."
+        description="Test whether the TRM naturally ends Go self-play games with PASS."
     )
     parser.add_argument(
         "--checkpoint",
@@ -56,8 +54,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-moves",
         type=int,
-        default=200,
-        help="Safety cutoff per game. Reaching this is not a natural termination.",
+        default=None,
+        help="Safety cutoff per game (defaults to max(200, 3*board_size^2)).",
     )
     parser.add_argument(
         "--selection",
@@ -75,8 +73,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=SCRIPT_DIR / "pass_eval_results",
-        help="Directory in which CSV and JSON results will be saved.",
+        default=None,
+        help="Output directory (defaults to a board-size-specific directory).",
     )
     parser.add_argument(
         "--device",
@@ -95,10 +93,10 @@ def occupied_points(env: GoGameEnv) -> int:
     )
 
 
-def action_label(action: int) -> str:
-    if action == PASS_MOVE:
+def action_label(action: int, board_size: int) -> str:
+    if action == board_size * board_size:
         return "PASS"
-    row, col = divmod(int(action), BOARD_SIZE)
+    row, col = divmod(int(action), board_size)
     return f"row_{row + 1}_col_{col + 1}"
 
 
@@ -113,7 +111,7 @@ def choose_action(agent: TRMAgent, env: GoGameEnv, selection: str,
     pass_probability = float(legal_probs[env.pass_index])
 
     if selection == "greedy":
-        action = int(np.argmax(legal_probs))
+        action = select_near_best_action(probabilities, rng=rng)
     else:
         # Temperature scaling of the policy distribution. Clamp only to avoid
         # log(0); zero-probability illegal actions remain effectively zero.
@@ -133,7 +131,7 @@ def choose_action(agent: TRMAgent, env: GoGameEnv, selection: str,
 
 def run_game(game_number: int, agent: TRMAgent, args: argparse.Namespace,
              rng: np.random.Generator) -> tuple[dict, list[dict]]:
-    env = GoGameEnv(board_size=BOARD_SIZE, komi=KOMI)
+    env = GoGameEnv(board_size=agent.board_size, komi=KOMI)
     move_rows: list[dict] = []
     pass_moves = 0
     first_pass_move = None
@@ -160,7 +158,7 @@ def run_game(game_number: int, agent: TRMAgent, args: argparse.Namespace,
         if move_number <= 10 or move_number % 10 == 0 or is_pass:
             print(
                 f"[PASS-EVAL] Game {game_number}/{args.games}, move {move_number}: "
-                f"{player} -> {action_label(action)}; "
+                f"{player} -> {action_label(action, env.board_size)}; "
                 f"P(PASS)={pass_probability:.4f}; occupied={occupied_before}",
                 flush=True,
             )
@@ -173,7 +171,7 @@ def run_game(game_number: int, agent: TRMAgent, args: argparse.Namespace,
             "game": game_number,
             "move_number": move_number,
             "player": player,
-            "action": action_label(action),
+            "action": action_label(action, env.board_size),
             "action_index": action,
             "is_pass": is_pass,
             "occupied_before_move": occupied_before,
@@ -213,7 +211,7 @@ def main() -> int:
     args = parse_args()
     if args.games < 1:
         raise ValueError("--games must be at least 1.")
-    if args.max_moves < 1:
+    if args.max_moves is not None and args.max_moves < 1:
         raise ValueError("--max-moves must be at least 1.")
     if args.temperature <= 0:
         raise ValueError("--temperature must be greater than 0.")
@@ -238,6 +236,13 @@ def main() -> int:
     # encoder adapts to the current player, including the color channel.
     print("[PASS-EVAL] Loading checkpoint and constructing TRM agent...", flush=True)
     agent = TRMAgent(checkpoint_path=str(args.checkpoint), device=device)
+    if args.max_moves is None:
+        args.max_moves = max(200, 3 * agent.board_size * agent.board_size)
+    output_dir = args.output_dir or (
+        SCRIPT_DIR / "pass_eval_results"
+        if agent.board_size == 9
+        else SCRIPT_DIR / "pass_eval_results" / f"{agent.board_size}x{agent.board_size}_go"
+    )
     print("[PASS-EVAL] Checkpoint loaded. Starting self-play...", flush=True)
     rng = np.random.default_rng(args.seed)
 
@@ -259,6 +264,7 @@ def main() -> int:
     move_limit_games = args.games - natural_ends
     summary = {
         "checkpoint": str(args.checkpoint.resolve()),
+        "board_size": agent.board_size,
         "device": device,
         "selection": args.selection,
         "temperature": args.temperature if args.selection == "sample" else None,
@@ -275,10 +281,10 @@ def main() -> int:
         ),
     }
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    summary_path = args.output_dir / "summary.json"
-    games_path = args.output_dir / "games.csv"
-    moves_path = args.output_dir / "moves.csv"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = output_dir / "summary.json"
+    games_path = output_dir / "games.csv"
+    moves_path = output_dir / "moves.csv"
 
     with summary_path.open("w", encoding="utf-8") as file:
         json.dump(summary, file, indent=2, ensure_ascii=False)
@@ -304,7 +310,7 @@ def main() -> int:
     print(f"Natural endings (two model-chosen PASSes): {natural_ends}/{args.games} ({natural_ends / args.games:.1%})", flush=True)
     print(f"Stopped by safety move limit: {move_limit_games}/{args.games}", flush=True)
     print(f"Total PASS moves predicted: {summary['total_pass_moves']}", flush=True)
-    print(f"Results saved to: {args.output_dir.resolve()}", flush=True)
+    print(f"Results saved to: {output_dir.resolve()}", flush=True)
     print("Files: summary.json, games.csv, moves.csv", flush=True)
 
     return 0

@@ -2,21 +2,21 @@
 import os
 import glob
 import re
+import argparse
 from collections import Counter
 
 import numpy as np
 from sgfmill import sgf, sgf_moves
 
 
-BOARD_SIZE = 9
 NUM_CHANNELS = 7
-PASS_MOVE = 81
+DEFAULT_BOARD_SIZE = 9
 TERMINAL_PASSES_REQUIRED = 2
 
 
-def extract_features(board_history, current_color):
+def extract_features(board_history, current_color, board_size=DEFAULT_BOARD_SIZE):
     """
-    Constructs a [7, 9, 9] feature tensor from board state history.
+    Constructs a [7, N, N] feature tensor from board state history.
 
     Channels:
       0: Player stones at T
@@ -28,7 +28,7 @@ def extract_features(board_history, current_color):
       6: Color channel (1.0 for Black, 0.0 for White)
     """
     tensor = np.zeros(
-        (NUM_CHANNELS, BOARD_SIZE, BOARD_SIZE),
+        (NUM_CHANNELS, board_size, board_size),
         dtype=np.float32,
     )
 
@@ -39,8 +39,8 @@ def extract_features(board_history, current_color):
         player_channel = history_idx * 2
         opponent_channel = history_idx * 2 + 1
 
-        for row in range(BOARD_SIZE):
-            for col in range(BOARD_SIZE):
+        for row in range(board_size):
+            for col in range(board_size):
                 stone = board.get(row, col)
 
                 if stone == current_color:
@@ -104,6 +104,7 @@ def record_move_state(
     target,
     x_list,
     y_list,
+    board_size=DEFAULT_BOARD_SIZE,
 ):
     """
     Stores the board state immediately before the given move.
@@ -113,7 +114,7 @@ def record_move_state(
     board_history[1] = board_history[0]
     board_history[0] = board.copy()
 
-    x_list.append(extract_features(board_history, color))
+    x_list.append(extract_features(board_history, color, board_size))
     y_list.append(target)
 
 
@@ -130,11 +131,11 @@ def count_trailing_passes(processed_moves):
     return count
 
 
-def process_sgf_file(file_path):
+def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
     """
     Returns:
         x_list: feature tensors for recorded and reconstructed moves
-        y_list: target moves in [0, 81]
+        y_list: target moves in [0, board_size^2]
         metadata: statistics and processing status
     """
     metadata = {
@@ -151,7 +152,7 @@ def process_sgf_file(file_path):
         with open(file_path, "rb") as file:
             game = sgf.Sgf_game.from_bytes(file.read())
 
-        if game.get_size() != BOARD_SIZE:
+        if game.get_size() != board_size:
             metadata["status"] = "wrong_board_size"
             return [], [], metadata
 
@@ -176,10 +177,10 @@ def process_sgf_file(file_path):
 
     for color, move in moves:
         if move is None:
-            target = PASS_MOVE
+            target = board_size * board_size
         else:
             row, col = move
-            target = row * BOARD_SIZE + col
+            target = row * board_size + col
 
         # Record the state before the move.
         record_move_state(
@@ -189,6 +190,7 @@ def process_sgf_file(file_path):
             target,
             x_list,
             y_list,
+            board_size,
         )
 
         # A pass does not alter the board.
@@ -235,9 +237,10 @@ def process_sgf_file(file_path):
                 board_history=board_history,
                 board=board,
                 color=next_color,
-                target=PASS_MOVE,
+                target=board_size * board_size,
                 x_list=x_list,
                 y_list=y_list,
+                board_size=board_size,
             )
 
             metadata["added_terminal_passes"] += 1
@@ -248,7 +251,7 @@ def process_sgf_file(file_path):
     return x_list, y_list, metadata
 
 
-def build_dataset(sgf_files, output_npz_path):
+def build_dataset(sgf_files, output_npz_path, board_size=DEFAULT_BOARD_SIZE):
     """Processes SGF games and saves their examples to an NPZ file."""
     all_x = []
     all_y = []
@@ -264,7 +267,7 @@ def build_dataset(sgf_files, output_npz_path):
     )
 
     for file_path in sgf_files:
-        x_game, y_game, metadata = process_sgf_file(file_path)
+        x_game, y_game, metadata = process_sgf_file(file_path, board_size)
 
         all_x.extend(x_game)
         all_y.extend(y_game)
@@ -278,7 +281,7 @@ def build_dataset(sgf_files, output_npz_path):
     x_array = np.asarray(
         all_x,
         dtype=np.float32,
-    ).reshape(-1, NUM_CHANNELS, BOARD_SIZE, BOARD_SIZE)
+    ).reshape(-1, NUM_CHANNELS, board_size, board_size)
 
     y_array = np.asarray(all_y, dtype=np.int64)
 
@@ -288,7 +291,7 @@ def build_dataset(sgf_files, output_npz_path):
 
     np.savez_compressed(output_npz_path, X=x_array, y=y_array)
 
-    total_passes = int(np.count_nonzero(y_array == PASS_MOVE))
+    total_passes = int(np.count_nonzero(y_array == board_size * board_size))
 
     print(f"Saved dataset to {output_npz_path}")
     print(f"X shape: {x_array.shape}")
@@ -307,12 +310,18 @@ def build_dataset(sgf_files, output_npz_path):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Build Go datasets from SGF games.")
+    parser.add_argument("--board-size", type=int, default=DEFAULT_BOARD_SIZE)
+    args = parser.parse_args()
+    if args.board_size < 2:
+        parser.error("--board-size must be at least 2.")
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    go_dir = os.path.join(base_dir, "9x9_go")
+    go_dir = os.path.join(base_dir, f"{args.board_size}x{args.board_size}_go")
     sgf_dir = os.path.join(
         go_dir,
         "go_raw_dataset",
-        "9x9_games",
+        f"{args.board_size}x{args.board_size}_games",
     )
 
     sgf_files = sorted(
@@ -362,6 +371,7 @@ if __name__ == "__main__":
         split_summary[split_name] = build_dataset(
             split_files,
             output_path,
+            board_size=args.board_size,
         )
 
     print("\n=== DATASET SUMMARY ===")
@@ -378,7 +388,7 @@ if __name__ == "__main__":
 python3 go_preprocessing.py 
 
 Processing 452 SGF files - train.npz
-X shape: (21102, 7, 9, 9)
+X shape: (examples, 7, N, N)
 y shape: (21102,)
 Games by processing status: {'ok': 452}
 Games by result category: {'time': 90, 'scored': 178, 'resignation': 184}
@@ -387,7 +397,7 @@ Terminal PASS moves added: 352
 Total PASS examples in split: 359
 
 Processing 56 SGF files - val.npz
-X shape: (2505, 7, 9, 9)
+X shape: (examples, 7, N, N)
 y shape: (2505,)
 Games by processing status: {'ok': 56}
 Games by result category: {'resignation': 29, 'scored': 23, 'time': 4}
@@ -396,7 +406,7 @@ Terminal PASS moves added: 46
 Total PASS examples in split: 46
 
 Processing 57 SGF files - test.npz
-X shape: (2798, 7, 9, 9)
+X shape: (examples, 7, N, N)
 y shape: (2798,)
 Games by processing status: {'ok': 57}
 Games by result category: {'scored': 24, 'time': 8, 'resignation': 25}

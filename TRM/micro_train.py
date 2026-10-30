@@ -1,3 +1,6 @@
+import argparse
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,15 +18,18 @@ class GoTRMModel(nn.Module):
     def __init__(self, config_dict):
         super(GoTRMModel, self).__init__()
         self.trm = TinyRecursiveReasoningModel_ACTV1(config_dict)
-        self.policy_head = GoPolicyHead(hidden_size=config_dict["hidden_size"])
+        self.policy_head = GoPolicyHead(
+            hidden_size=config_dict["hidden_size"],
+            board_size=config_dict.get("board_size", 9),
+        )
 
     def forward(self, x):
         """
         Args:
-            x (torch.Tensor): Input board states of shape [Batch, 7, 9, 9]
+            x (torch.Tensor): Input board states of shape [Batch, 7, N, N]
             
         Returns:
-            torch.Tensor: Move logits of shape [Batch, 82]
+            torch.Tensor: Move logits of shape [Batch, N*N+1]
         """
         batch_dict = {"inputs": x}
         carry = self.trm.initial_carry(batch_dict)
@@ -32,13 +38,15 @@ class GoTRMModel(nn.Module):
         return logits
 
 
-def run_micro_train():
+def run_micro_train(board_size=9):
     # 1. Model configuration
+    board_area = board_size * board_size
     config_dict = {
         "batch_size": 32,
-        "seq_len": 81,
+        "board_size": board_size,
+        "seq_len": board_area,
         "in_channels": 7,
-        "vocab_size": 82,
+        "vocab_size": board_area + 1,
         "H_cycles": 2,
         "L_cycles": 2,
         "H_layers": 1,
@@ -66,14 +74,29 @@ def run_micro_train():
     criterion = nn.CrossEntropyLoss()
 
     # 3. Create dummy data batch or load 1 real batch
-    try:
-        train_loader, _, _ = create_go_dataloaders("./9x9_go/go_dataset/train.npz", "./9x9_go/go_dataset/val.npz", batch_size=32)
+    dataset_dir = (
+        Path(__file__).resolve().parent
+        / f"{board_size}x{board_size}_go"
+        / "go_dataset"
+    )
+    train_path = dataset_dir / "train.npz"
+    val_path = dataset_dir / "val.npz"
+    if train_path.is_file() and val_path.is_file():
+        train_loader, _, _ = create_go_dataloaders(
+            train_path,
+            val_path,
+            batch_size=32,
+            board_size=board_size,
+        )
         x_batch, y_batch = next(iter(train_loader))
         print("Loaded 1 real batch from dataset/train.npz")
-    except Exception:
+    elif not train_path.exists() and not val_path.exists():
         print("Dataset file not found. Generating synthetic dummy batch for sanity check...")
-        x_batch = torch.randn(32, 7, 9, 9)
-        y_batch = torch.randint(0, 82, (32,))
+        x_batch = torch.randn(32, 7, board_size, board_size)
+        y_batch = torch.randint(0, board_area + 1, (32,))
+    else:
+        missing_path = train_path if not train_path.is_file() else val_path
+        raise FileNotFoundError(f"Dataset split not found: {missing_path}")
 
     x_batch = x_batch.to(device)
     y_batch = y_batch.to(device)
@@ -102,7 +125,12 @@ def run_micro_train():
 
 
 if __name__ == "__main__":
-    run_micro_train()
+    parser = argparse.ArgumentParser(description="Run a GoTRM single-batch overfit check.")
+    parser.add_argument("--board-size", type=int, default=9)
+    args = parser.parse_args()
+    if args.board_size < 2:
+        parser.error("--board-size must be at least 2.")
+    run_micro_train(board_size=args.board_size)
 
 '''output:
 

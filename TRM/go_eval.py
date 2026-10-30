@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -31,14 +32,12 @@ if str(SCRIPT_DIR) not in sys.path:
 from agents import GoTRMModel
 from go_dataset import GoDataset
 
-BOARD_SIZE = 9
-PASS_MOVE = BOARD_SIZE * BOARD_SIZE
-NUM_ACTIONS = PASS_MOVE + 1
+DEFAULT_BOARD_SIZE = 9
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate a trained GoTRM checkpoint on the held-out 9x9 test set."
+        description="Evaluate a trained GoTRM checkpoint on its matching test set."
     )
     parser.add_argument(
         "--checkpoint",
@@ -49,14 +48,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--test-data",
         type=Path,
-        default=SCRIPT_DIR / "9x9_go" / "go_dataset" / "test.npz",
-        help="Test .npz containing X and y.",
+        default=None,
+        help="Test .npz containing X and y (defaults to the checkpoint's board size).",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=SCRIPT_DIR / "evaluation_results",
-        help="Directory for metrics, predictions, and plots.",
+        default=None,
+        help="Output directory (defaults to a board-size-specific directory).",
     )
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--num-workers", type=int, default=0)
@@ -76,11 +75,11 @@ def safe_ratio(numerator: int, denominator: int) -> float | None:
     return float(numerator / denominator)
 
 
-def action_name(action: int) -> str:
+def action_name(action: int, board_size=DEFAULT_BOARD_SIZE) -> str:
     """Convert a flat action index into a readable board coordinate or PASS."""
-    if action == PASS_MOVE:
+    if action == board_size * board_size:
         return "PASS"
-    row, col = divmod(int(action), BOARD_SIZE)
+    row, col = divmod(int(action), board_size)
     return f"row_{row + 1}_col_{col + 1}"
 
 
@@ -88,8 +87,11 @@ def evaluate_model(
     model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
+    board_size: int = DEFAULT_BOARD_SIZE,
 ) -> tuple[dict, dict[str, np.ndarray]]:
     model.eval()
+    pass_move = board_size * board_size
+    num_actions = pass_move + 1
 
     sample_count = 0
     loss_sum = 0.0
@@ -108,13 +110,16 @@ def evaluate_model(
             y_batch = y_batch.to(device, non_blocking=(device.type == "cuda"))
 
             logits = model(x_batch).float()
-            if logits.ndim != 2 or logits.shape[1] != NUM_ACTIONS:
+            if logits.ndim != 2 or logits.shape[1] != num_actions:
                 raise ValueError(
-                    f"Expected model output [batch, {NUM_ACTIONS}], "
+                    f"Expected model output [batch, {num_actions}], "
                     f"received {tuple(logits.shape)}."
                 )
-            if torch.any(y_batch < 0) or torch.any(y_batch >= NUM_ACTIONS):
-                raise ValueError("Test labels must be in the range 0..81 (81 means PASS).")
+            if torch.any(y_batch < 0) or torch.any(y_batch >= num_actions):
+                raise ValueError(
+                    f"Test labels must be in the range 0..{pass_move} "
+                    f"({pass_move} means PASS)."
+                )
 
             batch_size = int(y_batch.shape[0])
             probabilities = torch.softmax(logits, dim=-1)
@@ -132,7 +137,7 @@ def evaluate_model(
             all_true_probabilities.append(
                 probabilities.gather(1, y_batch[:, None]).squeeze(1).cpu().numpy()
             )
-            all_pass_probabilities.append(probabilities[:, PASS_MOVE].cpu().numpy())
+            all_pass_probabilities.append(probabilities[:, pass_move].cpu().numpy())
 
     if sample_count == 0:
         raise ValueError("The test dataset is empty; evaluation cannot continue.")
@@ -144,8 +149,8 @@ def evaluate_model(
     true_action_probability = np.concatenate(all_true_probabilities)
     pass_probability = np.concatenate(all_pass_probabilities)
 
-    true_is_pass = targets == PASS_MOVE
-    predicted_is_pass = predictions == PASS_MOVE
+    true_is_pass = targets == pass_move
+    predicted_is_pass = predictions == pass_move
 
     tp = int(np.sum(true_is_pass & predicted_is_pass))
     fp = int(np.sum(~true_is_pass & predicted_is_pass))
@@ -168,6 +173,8 @@ def evaluate_model(
     metrics = {
         "checkpoint": None,
         "test_data": None,
+        "board_size": board_size,
+        "num_actions": num_actions,
         "num_examples": int(sample_count),
         "cross_entropy_loss": float(loss_sum / sample_count),
         "top1_accuracy": float(topk_correct[1] / sample_count),
@@ -208,6 +215,7 @@ def evaluate_model(
         "confidence": confidence,
         "true_action_probability": true_action_probability,
         "pass_probability": pass_probability,
+        "board_size": np.asarray(board_size),
     }
     return metrics, arrays
 
@@ -244,15 +252,19 @@ def save_predictions_csv(path: Path, arrays: dict[str, np.ndarray]) -> None:
                 {
                     "sample_index": index,
                     "true_action_index": int(target),
-                    "true_action": action_name(int(target)),
+                    "true_action": action_name(int(target), int(arrays["board_size"])),
                     "predicted_action_index": int(predictions[index]),
-                    "predicted_action": action_name(int(predictions[index])),
+                    "predicted_action": action_name(
+                        int(predictions[index]), int(arrays["board_size"])
+                    ),
                     "top1_correct": bool(predictions[index] == target),
                     "true_action_probability": float(true_probability[index]),
                     "top1_confidence": float(confidence[index]),
                     "pass_probability": float(pass_probability[index]),
                     "top5_action_indices": " ".join(map(str, top5)),
-                    "top5_actions": " | ".join(action_name(value) for value in top5),
+                    "top5_actions": " | ".join(
+                        action_name(value, int(arrays["board_size"])) for value in top5
+                    ),
                 }
             )
 
@@ -305,8 +317,10 @@ def plot_pass_confusion(metrics: dict, output_dir: Path) -> None:
 def plot_pass_probability(arrays: dict[str, np.ndarray], output_dir: Path) -> None:
     targets = arrays["targets"]
     pass_probability = arrays["pass_probability"]
-    board_values = pass_probability[targets != PASS_MOVE]
-    pass_values = pass_probability[targets == PASS_MOVE]
+    board_size = int(arrays["board_size"])
+    pass_move = board_size * board_size
+    board_values = pass_probability[targets != pass_move]
+    pass_values = pass_probability[targets == pass_move]
 
     fig, ax = plt.subplots(figsize=(7, 5))
     datasets = []
@@ -376,9 +390,6 @@ def main() -> None:
         raise ValueError("--num-workers cannot be negative.")
     if not args.checkpoint.is_file():
         raise FileNotFoundError(f"Checkpoint not found: {args.checkpoint}")
-    if not args.test_data.is_file():
-        raise FileNotFoundError(f"Test dataset not found: {args.test_data}")
-
     if args.device == "auto":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
@@ -391,13 +402,35 @@ def main() -> None:
     if "config_dict" not in checkpoint or "model_state_dict" not in checkpoint:
         raise KeyError("Checkpoint must contain 'config_dict' and 'model_state_dict'.")
 
-    dataset = GoDataset(str(args.test_data), augment=False)
+    config_dict = checkpoint["config_dict"]
+    if "board_size" in config_dict:
+        board_size = config_dict["board_size"]
+    else:
+        seq_len = config_dict.get("seq_len", DEFAULT_BOARD_SIZE ** 2)
+        board_size = math.isqrt(seq_len)
+        if board_size * board_size != seq_len:
+            raise ValueError(
+                f"Checkpoint sequence length {seq_len} is not a square board."
+            )
+    test_data = args.test_data or (
+        SCRIPT_DIR / f"{board_size}x{board_size}_go" / "go_dataset" / "test.npz"
+    )
+    output_dir = args.output_dir or (
+        SCRIPT_DIR / "evaluation_results"
+        if board_size == DEFAULT_BOARD_SIZE
+        else SCRIPT_DIR / "evaluation_results" / f"{board_size}x{board_size}_go"
+    )
+    if not test_data.is_file():
+        raise FileNotFoundError(f"Test dataset not found: {test_data}")
+
+    dataset = GoDataset(str(test_data), augment=False, board_size=board_size)
     if len(dataset) == 0:
-        raise ValueError(f"Test dataset is empty: {args.test_data}")
+        raise ValueError(f"Test dataset is empty: {test_data}")
     sample_x, _ = dataset[0]
-    if tuple(sample_x.shape) != (7, BOARD_SIZE, BOARD_SIZE):
+    if tuple(sample_x.shape) != (7, board_size, board_size):
         raise ValueError(
-            f"Expected each input to have shape (7, 9, 9), received {tuple(sample_x.shape)}."
+            f"Expected each input to have shape (7, {board_size}, {board_size}), "
+            f"received {tuple(sample_x.shape)}."
         )
 
     loader = DataLoader(
@@ -409,30 +442,30 @@ def main() -> None:
         drop_last=False,
     )
 
-    model = GoTRMModel(checkpoint["config_dict"]).to(device)
+    model = GoTRMModel(config_dict).to(device)
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
 
     print(f"Device: {device}")
     print(f"Checkpoint: {args.checkpoint}")
-    print(f"Test dataset: {args.test_data}")
+    print(f"Test dataset: {test_data}")
     print(f"Test examples: {len(dataset)}")
     print("Evaluating on test set...")
 
-    metrics, arrays = evaluate_model(model, loader, device)
+    metrics, arrays = evaluate_model(model, loader, device, board_size)
     metrics["checkpoint"] = str(args.checkpoint.resolve())
-    metrics["test_data"] = str(args.test_data.resolve())
+    metrics["test_data"] = str(test_data.resolve())
     metrics["checkpoint_epoch"] = checkpoint.get("epoch")
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    with (args.output_dir / "metrics.json").open("w", encoding="utf-8") as file:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with (output_dir / "metrics.json").open("w", encoding="utf-8") as file:
         json.dump(metrics, file, indent=2, ensure_ascii=False, allow_nan=False)
         file.write("\n")
 
-    save_predictions_csv(args.output_dir / "predictions.csv", arrays)
-    plot_topk_accuracy(metrics, args.output_dir)
-    plot_pass_confusion(metrics, args.output_dir)
-    plot_pass_probability(arrays, args.output_dir)
-    plot_confidence(arrays, args.output_dir)
+    save_predictions_csv(output_dir / "predictions.csv", arrays)
+    plot_topk_accuracy(metrics, output_dir)
+    plot_pass_confusion(metrics, output_dir)
+    plot_pass_probability(arrays, output_dir)
+    plot_confidence(arrays, output_dir)
 
     print("\n=== TEST METRICS ===")
     print(f"Cross-entropy loss: {metrics['cross_entropy_loss']:.4f}")
@@ -446,7 +479,7 @@ def main() -> None:
     print(f"PASS F1:            {metrics['pass_f1']}")
     if metrics["warning"]:
         print(f"WARNING: {metrics['warning']}")
-    print(f"\nResults saved to: {args.output_dir.resolve()}")
+    print(f"\nResults saved to: {output_dir.resolve()}")
     print("Generated: metrics.json, predictions.csv, and four PNG plots.")
 
 

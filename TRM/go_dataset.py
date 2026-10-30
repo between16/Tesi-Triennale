@@ -3,17 +3,27 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import os
 
-BOARD_SIZE = 9
-PASS_MOVE = 81
+DEFAULT_BOARD_SIZE = 9
 
 
-def apply_board_symmetry(x_tensor, y_target, symmetry_idx):
+def apply_board_symmetry(x_tensor, y_target, symmetry_idx, board_size=None):
     """
     Applies one of the 8 dihedral symmetries (D4 group) to both the input 
-    state tensor X [C, 9, 9] and the target move y (0..81).
+    state tensor X [C, N, N] and target move y (0..N*N).
     
     symmetry_idx: Integer from 0 to 7.
+    board_size: Board width; inferred from x_tensor when omitted.
     """
+    board_size = x_tensor.shape[-1] if board_size is None else board_size
+    if not 0 <= symmetry_idx < 8:
+        raise ValueError(f"Symmetry index must be in the range 0..7, got {symmetry_idx}.")
+    if x_tensor.shape[-2:] != (board_size, board_size):
+        raise ValueError(
+            f"Expected a {board_size}x{board_size} board, received {x_tensor.shape[-2:]}."
+        )
+    pass_move = board_size * board_size
+    if not 0 <= int(y_target) <= pass_move:
+        raise ValueError(f"Target move must be in the range 0..{pass_move}.")
     if symmetry_idx == 0:
         return x_tensor, y_target
 
@@ -21,7 +31,7 @@ def apply_board_symmetry(x_tensor, y_target, symmetry_idx):
     rot_k = symmetry_idx % 4
     flip_flag = symmetry_idx // 4
 
-    # 1. Transform input state tensor X [C, 9, 9]
+    # 1. Transform input state tensor X [C, N, N]
     # np.rot90 rotates along spatial axes (1, 2)
     x_transformed = np.rot90(x_tensor, k=rot_k, axes=(1, 2))
     if flip_flag:
@@ -31,15 +41,15 @@ def apply_board_symmetry(x_tensor, y_target, symmetry_idx):
     x_transformed = np.ascontiguousarray(x_transformed)
 
     # 2. Transform target move index y
-    if y_target == PASS_MOVE:
+    if y_target == pass_move:
         return x_transformed, y_target
 
     # Map flat target index y back to 2D coordinates (row, col)
-    row = y_target // BOARD_SIZE
-    col = y_target % BOARD_SIZE
+    row = y_target // board_size
+    col = y_target % board_size
 
     # Represent coordinate as a 2D binary mask to reuse spatial numpy operations
-    target_mask = np.zeros((BOARD_SIZE, BOARD_SIZE), dtype=np.uint8)
+    target_mask = np.zeros((board_size, board_size), dtype=np.uint8)
     target_mask[row, col] = 1
 
     target_mask = np.rot90(target_mask, k=rot_k, axes=(0, 1))
@@ -48,24 +58,35 @@ def apply_board_symmetry(x_tensor, y_target, symmetry_idx):
 
     # Find the new transformed coordinate
     new_row, new_col = np.argwhere(target_mask == 1)[0]
-    y_transformed = int(new_row * BOARD_SIZE + new_col)
+    y_transformed = int(new_row * board_size + new_col)
 
     return x_transformed, y_transformed
 
 
 class GoDataset(Dataset):
     """
-    PyTorch Dataset for loading Go 9x9 state-move pairs from .npz files.
+    PyTorch Dataset for loading Go state-move pairs from .npz files.
     """
-    def __init__(self, npz_path, augment=False):
+    def __init__(self, npz_path, augment=False, board_size=None):
         """
         Args:
             npz_path (str): Path to the .npz file containing 'X' and 'y'.
             augment (bool): If True, applies random D4 symmetry transformations.
         """
         data = np.load(npz_path)
-        self.X = data['X']  # Shape: [N, C, 9, 9]
+        self.X = data['X']
         self.y = data['y']  # Shape: [N]
+        if self.X.ndim != 4 or self.X.shape[-1] != self.X.shape[-2]:
+            raise ValueError(f"Expected square board tensors [N, C, N, N], received {self.X.shape}.")
+        self.board_size = int(self.X.shape[-1] if board_size is None else board_size)
+        if self.X.shape[-2:] != (self.board_size, self.board_size):
+            raise ValueError(
+                f"Dataset board shape {self.X.shape[-2:]} does not match "
+                f"board size {self.board_size}."
+            )
+        pass_move = self.board_size * self.board_size
+        if np.any(self.y < 0) or np.any(self.y > pass_move):
+            raise ValueError(f"Dataset labels must be in the range 0..{pass_move}.")
         self.augment = augment
 
     def __len__(self):
@@ -77,7 +98,9 @@ class GoDataset(Dataset):
 
         if self.augment:
             symmetry_idx = np.random.randint(0, 8)
-            x_sample, y_sample = apply_board_symmetry(x_sample, y_sample, symmetry_idx)
+            x_sample, y_sample = apply_board_symmetry(
+                x_sample, y_sample, symmetry_idx, self.board_size
+            )
 
         # Convert numpy arrays to PyTorch tensors
         x_tensor = torch.from_numpy(x_sample).float()
@@ -86,12 +109,14 @@ class GoDataset(Dataset):
         return x_tensor, y_tensor
 
 
-def create_go_dataloaders(train_npz, val_npz, test_npz=None, batch_size=256, num_workers=4):
+def create_go_dataloaders(
+    train_npz, val_npz, test_npz=None, batch_size=256, num_workers=4, board_size=None
+):
     """
     Factory function to construct PyTorch DataLoaders for train, val, and test splits.
     """
-    train_dataset = GoDataset(train_npz, augment=True)
-    val_dataset = GoDataset(val_npz, augment=False)
+    train_dataset = GoDataset(train_npz, augment=True, board_size=board_size)
+    val_dataset = GoDataset(val_npz, augment=False, board_size=board_size)
 
     train_loader = DataLoader(
         train_dataset,
@@ -113,7 +138,7 @@ def create_go_dataloaders(train_npz, val_npz, test_npz=None, batch_size=256, num
 
     test_loader = None
     if test_npz is not None:
-        test_dataset = GoDataset(test_npz, augment=False)
+        test_dataset = GoDataset(test_npz, augment=False, board_size=board_size)
         test_loader = DataLoader(
             test_dataset,
             batch_size=batch_size,
@@ -128,7 +153,11 @@ def create_go_dataloaders(train_npz, val_npz, test_npz=None, batch_size=256, num
 
 if __name__ == "__main__":
     # Example validation of dataset and dataloader output shapes
-    dataset_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "9x9_go", "go_dataset")
+    dataset_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        f"{DEFAULT_BOARD_SIZE}x{DEFAULT_BOARD_SIZE}_go",
+        "go_dataset",
+    )
     train_loader, val_loader, _ = create_go_dataloaders(
         os.path.join(dataset_dir, "train.npz"),
         os.path.join(dataset_dir, "val.npz"),

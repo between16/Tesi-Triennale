@@ -1,4 +1,6 @@
 import os
+import argparse
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,7 +18,10 @@ class GoTRMModel(nn.Module):
     def __init__(self, config_dict):
         super(GoTRMModel, self).__init__()
         self.trm = TinyRecursiveReasoningModel_ACTV1(config_dict)
-        self.policy_head = GoPolicyHead(hidden_size=config_dict["hidden_size"])
+        self.policy_head = GoPolicyHead(
+            hidden_size=config_dict["hidden_size"],
+            board_size=config_dict.get("board_size", 9),
+        )
 
     def forward(self, x):
         batch_dict = {"inputs": x}
@@ -30,9 +35,14 @@ def calculate_topk_accuracy(logits, targets, k=1):
     """
     Computes top-k accuracy percentage.
     """
+    return calculate_topk_correct_count(logits, targets, k) / targets.numel() * 100.0
+
+
+def calculate_topk_correct_count(logits, targets, k=1):
+    """Return the number of examples whose target is in the top-k predictions."""
     _, topk_preds = logits.topk(k, dim=-1, largest=True, sorted=True)
     correct = topk_preds.eq(targets.view(-1, 1).expand_as(topk_preds))
-    return correct.any(dim=-1).float().mean().item() * 100.0
+    return int(correct.any(dim=-1).sum().item())
 
 
 def evaluate(model, val_loader, criterion, device):
@@ -41,9 +51,9 @@ def evaluate(model, val_loader, criterion, device):
     """
     model.eval()
     total_loss = 0.0
-    total_top1 = 0.0
-    total_top3 = 0.0
-    num_batches = len(val_loader)
+    total_top1_correct = 0
+    total_top3_correct = 0
+    total_examples = 0
 
     with torch.no_grad():
         for x_batch, y_batch in val_loader:
@@ -52,31 +62,37 @@ def evaluate(model, val_loader, criterion, device):
 
             logits = model(x_batch)
             loss = criterion(logits, y_batch)
+            batch_size = y_batch.size(0)
 
-            total_loss += loss.item()
-            total_top1 += calculate_topk_accuracy(logits, y_batch, k=1)
-            total_top3 += calculate_topk_accuracy(logits, y_batch, k=3)
+            total_loss += loss.item() * batch_size
+            total_top1_correct += calculate_topk_correct_count(logits, y_batch, k=1)
+            total_top3_correct += calculate_topk_correct_count(logits, y_batch, k=3)
+            total_examples += batch_size
 
     return (
-        total_loss / num_batches,
-        total_top1 / num_batches,
-        total_top3 / num_batches
+        total_loss / total_examples,
+        total_top1_correct / total_examples * 100.0,
+        total_top3_correct / total_examples * 100.0
     )
 
 
-def train():
+def train(board_size=9):
     # 1. Training Hyperparameters and Configuration
     num_epochs = 20
     batch_size = 128
     learning_rate = 1e-3
-    checkpoint_dir = "checkpoints"
+    board_area = board_size * board_size
+    checkpoint_dir = Path(__file__).resolve().parent / "checkpoints"
+    if board_size != 9:
+        checkpoint_dir /= f"{board_size}x{board_size}_go"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     config_dict = {
         "batch_size": batch_size,
-        "seq_len": 81,
+        "board_size": board_size,
+        "seq_len": board_area,
         "in_channels": 7,
-        "vocab_size": 82,
+        "vocab_size": board_area + 1,
         "H_cycles": 2,
         "L_cycles": 2,
         "H_layers": 1,
@@ -99,11 +115,13 @@ def train():
     print(f"Starting full training pipeline on device: {device}")
 
     # 2. Setup DataLoaders
+    dataset_dir = Path(__file__).resolve().parent / f"{board_size}x{board_size}_go" / "go_dataset"
     train_loader, val_loader, _ = create_go_dataloaders(
-        train_npz="./9x9_go/go_dataset/train.npz",
-        val_npz="./9x9_go/go_dataset/val.npz",
+        train_npz=dataset_dir / "train.npz",
+        val_npz=dataset_dir / "val.npz",
         batch_size=batch_size,
-        num_workers=4
+        num_workers=4,
+        board_size=board_size,
     )
 
     # 3. Instantiate Model, Optimizer, Scheduler, Loss
@@ -117,8 +135,8 @@ def train():
     # 4. Main Training Loop
     for epoch in range(1, num_epochs + 1):
         model.train()
-        running_loss = 0.0
-        running_top1 = 0.0
+        running_top1_correct = 0
+        running_examples = 0
 
         for step, (x_batch, y_batch) in enumerate(train_loader, start=1):
             x_batch = x_batch.to(device)
@@ -130,15 +148,16 @@ def train():
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            running_top1 += calculate_topk_accuracy(logits, y_batch, k=1)
+            running_top1_correct += calculate_topk_correct_count(logits, y_batch, k=1)
+            running_examples += y_batch.size(0)
 
             if step % 50 == 0 or step == len(train_loader):
                 print(
                     f"Epoch [{epoch:2d}/{num_epochs:2d}] | "
                     f"Step [{step:4d}/{len(train_loader):4d}] | "
                     f"Train Loss: {loss.item():.4f} | "
-                    f"Train Top-1 Acc: {running_top1 / step:.2f}%"
+                    f"Train Top-1 Acc: "
+                    f"{running_top1_correct / running_examples * 100.0:.2f}%"
                 )
 
         scheduler.step()
@@ -173,4 +192,9 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    parser = argparse.ArgumentParser(description="Train GoTRM for a chosen square board size.")
+    parser.add_argument("--board-size", type=int, default=9)
+    args = parser.parse_args()
+    if args.board_size < 2:
+        parser.error("--board-size must be at least 2.")
+    train(board_size=args.board_size)

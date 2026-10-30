@@ -1,42 +1,60 @@
+import argparse
 import os
 import shutil
+from pathlib import Path
+
 from sgfmill import sgf
 
-# Path for games folder
-Source = "./games" 
 
-# 2. Destination folder for 9x9 games
-destination = "./9x9_games"
+def main():
+    parser = argparse.ArgumentParser(description="Extract SGF games for a board size.")
+    parser.add_argument("--board-size", type=int, default=9)
+    parser.add_argument("--source", type=Path, default=Path("./games"))
+    parser.add_argument(
+        "--destination",
+        type=Path,
+        help="Destination directory (defaults to the matching TRM board-size folder).",
+    )
+    args = parser.parse_args()
+    if args.board_size < 2:
+        parser.error("--board-size must be at least 2.")
 
-os.makedirs(destination, exist_ok=True)
+    trm_dir = Path(__file__).resolve().parents[2]
+    destination = args.destination or (
+        trm_dir
+        / f"{args.board_size}x{args.board_size}_go"
+        / "go_raw_dataset"
+        / f"{args.board_size}x{args.board_size}_games"
+    )
+    destination.mkdir(parents=True, exist_ok=True)
 
-count_found = 0
-count_copied = 0
+    count_found = 0
+    count_copied = 0
+    print(f"Source: {args.source} ...")
 
-print(f"Source: {Source} ...")
+    for root, _, files in os.walk(args.source):
+        for file in files:
+            if file.endswith((".sgf", ".SGF")):
+                filepath = Path(root) / file
+                count_found += 1
 
-# os.walk() to traverse the directory tree
-for root, dirs, files in os.walk(Source):
-    for file in files:
-        if file.endswith(".sgf") or file.endswith(".SGF"):
-            filepath = os.path.join(root, file)
-            count_found += 1
-            
-            try:
-                with open(filepath, "rb") as f:
-                    game = sgf.Sgf_game.from_bytes(f.read())
-                    
-                # check if the game is 9x9
-                if game.get_size() == 9:
-                    count_copied += 1
-                    # Create a new name for the copied file
-                    new_name = f"game_9x9_{count_copied:05d}.sgf"
-                    dest_path = os.path.join(destination, new_name)
-                    
-                    shutil.copy2(filepath, dest_path)
-            except Exception:
-                # any error in reading or processing the SGF file will be ignored
-                continue
+                try:
+                    with filepath.open("rb") as source_file:
+                        game = sgf.Sgf_game.from_bytes(source_file.read())
 
-print(f"File SGF analized: {count_found}")
-print(f"9x9 Games in '{destination}': {count_copied}")
+                    if game.get_size() == args.board_size:
+                        count_copied += 1
+                        new_name = (
+                            f"game_{args.board_size}x{args.board_size}_"
+                            f"{count_copied:05d}.sgf"
+                        )
+                        shutil.copy2(filepath, destination / new_name)
+                except Exception:
+                    continue
+
+    print(f"SGF files analyzed: {count_found}")
+    print(f"{args.board_size}x{args.board_size} games in '{destination}': {count_copied}")
+
+
+if __name__ == "__main__":
+    main()

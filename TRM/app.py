@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pygame
+import torch
 
 from agents import HumanAgent, TRMAgent
 from game_env import GoGameEnv
@@ -17,8 +18,8 @@ from game_env import GoGameEnv
 WINDOW_WIDTH = 1180
 WINDOW_HEIGHT = 760
 FPS = 60
-BOARD_SIZE = 9
 KOMI = 7.5
+DEFAULT_BOARD_SIZE = 9
 
 BOARD_MARGIN = 54
 DEFAULT_BOARD_TOP = 72
@@ -28,7 +29,6 @@ PANEL_GAP = 34
 MIN_WINDOW_WIDTH = 1100
 MIN_WINDOW_HEIGHT = 720
 
-# Current Go environment uses 0..80 for board points and 81 for PASS on 9x9.
 # Slider order is left-to-right: slower (longer delay) to faster (shorter delay).
 AI_DELAYS = [3.0, 2.5, 2.0, 1.5, 1.0, 0.75, 0.5, 0.25, 0.0]
 
@@ -177,7 +177,7 @@ class TinyRecursiveGo:
     This class owns UI state, timing, rendering, and human input only.
     """
 
-    def __init__(self, checkpoint_path):
+    def __init__(self, checkpoint_path, expected_board_size=None):
         pygame.init()
         pygame.display.set_caption("Tiny Recursive Go")
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
@@ -195,6 +195,16 @@ class TinyRecursiveGo:
         self.update_fonts()
 
         self.checkpoint_path = Path(checkpoint_path)
+        checkpoint = torch.load(
+            self.checkpoint_path, map_location="cpu", weights_only=False
+        )
+        config_dict = checkpoint["config_dict"]
+        self.board_size = config_dict.get("board_size", DEFAULT_BOARD_SIZE)
+        if expected_board_size is not None and self.board_size != expected_board_size:
+            raise ValueError(
+                f"The selected checkpoint is for a {self.board_size}x{self.board_size} "
+                f"board, not {expected_board_size}x{expected_board_size}."
+            )
         self.mode = MODE_HUMAN_BLACK
 
         self.env = None
@@ -362,7 +372,7 @@ class TinyRecursiveGo:
         return black, white
 
     def reset_game(self):
-        self.env = GoGameEnv(board_size=BOARD_SIZE, komi=KOMI)
+        self.env = GoGameEnv(board_size=self.board_size, komi=KOMI)
         self.black_agent, self.white_agent = self.build_agents_for_mode()
         self.paused = False
         self.game_started_at = time.monotonic()
@@ -669,8 +679,11 @@ class TinyRecursiveGo:
             pygame.draw.line(self.screen, BOARD_LINE, (x, inner.top), (x, inner.bottom), 2)
             pygame.draw.line(self.screen, BOARD_LINE, (inner.left, y), (inner.right, y), 2)
 
-        # Star points for 9x9
-        star_indices = [2, 6]
+        star_offset = 3 if self.env.board_size >= 13 else 2
+        center = self.env.board_size // 2
+        star_indices = sorted(
+            {star_offset, center, self.env.board_size - 1 - star_offset}
+        )
         for r in star_indices:
             for c in star_indices:
                 x = int(round(inner.left + c * spacing))
@@ -739,7 +752,7 @@ class TinyRecursiveGo:
             self.font_title,
         )
         self.draw_text(
-            "TRM  •  9×9",
+            f"TRM  •  {self.board_size}×{self.board_size}",
             self.panel_subtitle_rect.topleft,
             self.font_small,
             TEXT_MUTED,
@@ -957,17 +970,37 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Play Tiny Recursive Go with Pygame.")
     parser.add_argument(
         "--checkpoint",
-        default="checkpoints/best_model.pt",
-        help="Path to the TRM checkpoint.",
+        type=Path,
+        default=None,
+        help="Path to a TRM checkpoint (overrides the standard path selected by --board-size).",
+    )
+    parser.add_argument(
+        "--board-size",
+        type=int,
+        choices=(9, 19),
+        default=None,
+        help="Board/model size. Defaults to 9; selects the matching standard checkpoint.",
     )
     return parser.parse_args()
 
 
+def checkpoint_for_board_size(board_size):
+    checkpoint_dir = Path(__file__).resolve().parent / "checkpoints"
+    if board_size == DEFAULT_BOARD_SIZE:
+        return checkpoint_dir / "best_model.pt"
+    return checkpoint_dir / f"{board_size}x{board_size}_go" / "best_model.pt"
+
+
 def main():
     args = parse_args()
+    board_size = args.board_size or DEFAULT_BOARD_SIZE
+    checkpoint_path = args.checkpoint or checkpoint_for_board_size(board_size)
 
     try:
-        app = TinyRecursiveGo(args.checkpoint)
+        app = TinyRecursiveGo(
+            checkpoint_path,
+            expected_board_size=args.board_size,
+        )
         app.run()
     except FileNotFoundError as exc:
         pygame.quit()

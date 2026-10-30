@@ -11,13 +11,38 @@ def apply_legal_move_mask(logits, legal_mask):
     return torch.where(legal_mask, logits, negative_inf)
 
 
+def select_near_best_action(
+    probabilities: torch.Tensor,
+    tolerance: float = 0.02,
+    rng: np.random.Generator | None = None,
+) -> int:
+    """Choose uniformly among actions within `tolerance` of the best probability."""
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative.")
+
+    action_probabilities = probabilities.detach().cpu().numpy()
+    if action_probabilities.ndim != 1 or action_probabilities.size == 0:
+        raise ValueError("probabilities must be a non-empty one-dimensional tensor.")
+    if not np.isfinite(action_probabilities).all():
+        raise ValueError("probabilities must contain only finite values.")
+
+    best_probability = float(action_probabilities.max())
+    candidates = np.flatnonzero(action_probabilities >= best_probability - tolerance)
+    if rng is None:
+        return int(np.random.choice(candidates))
+    return int(rng.choice(candidates))
+
+
 class GoTRMModel(torch.nn.Module):
     """Unified container for the TRM core and GoPolicyHead."""
 
     def __init__(self, config_dict):
         super().__init__()
         self.trm = TinyRecursiveReasoningModel_ACTV1(config_dict)
-        self.policy_head = GoPolicyHead(hidden_size=config_dict["hidden_size"])
+        self.policy_head = GoPolicyHead(
+            hidden_size=config_dict["hidden_size"],
+            board_size=config_dict.get("board_size", 9),
+        )
 
     def forward(self, x):
         batch_dict = {"inputs": x}
@@ -57,6 +82,7 @@ class TRMAgent(GoAgent):
         self.model = GoTRMModel(config_dict).to(self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.eval()
+        self.board_size = config_dict.get("board_size", 9)
 
     def _extract_features(self, env):
         """Convert the current Go state into [1, 7, board_size, board_size]."""
@@ -98,6 +124,11 @@ class TRMAgent(GoAgent):
         This helper is useful both for deterministic move selection and for a
         future GUI analysis panel showing the model's top candidate moves.
         """
+        if env.board_size != self.board_size:
+            raise ValueError(
+                f"Agent checkpoint expects a {self.board_size}x{self.board_size} "
+                f"board, but environment uses {env.board_size}x{env.board_size}."
+            )
         x = self._extract_features(env)
         legal_mask = env.get_legal_moves_mask().to(self.device)
 
@@ -109,9 +140,9 @@ class TRMAgent(GoAgent):
         return logits, legal_mask, probabilities
 
     def get_move(self, env):
-        """Return the highest-probability legal action."""
+        """Return a best legal action, randomizing only among near-ties."""
         _, _, probabilities = self.get_policy(env)
-        return torch.argmax(probabilities).item()
+        return select_near_best_action(probabilities)
 
 
 class HumanAgent(GoAgent):
