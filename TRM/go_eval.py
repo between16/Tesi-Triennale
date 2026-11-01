@@ -49,7 +49,10 @@ def parse_args() -> argparse.Namespace:
         "--test-data",
         type=Path,
         default=None,
-        help="Test .npz containing X and y (defaults to the checkpoint's board size).",
+        help=(
+            "Test .npz file or NPY split directory containing X and y "
+            "(defaults to the checkpoint's board size)."
+        ),
     )
     parser.add_argument(
         "--output-dir",
@@ -66,6 +69,15 @@ def parse_args() -> argparse.Namespace:
         help="Device to use; auto selects CUDA when available.",
     )
     return parser.parse_args()
+
+
+def default_test_data_path(board_size: int) -> Path:
+    """Choose the default test split, preferring memory-mapped NPY."""
+    dataset_dir = SCRIPT_DIR / f"{board_size}x{board_size}_go" / "go_dataset"
+    test_dir = dataset_dir / "test"
+    if test_dir.is_dir():
+        return test_dir
+    return dataset_dir / "test.npz"
 
 
 def safe_ratio(numerator: int, denominator: int) -> float | None:
@@ -412,15 +424,13 @@ def main() -> None:
             raise ValueError(
                 f"Checkpoint sequence length {seq_len} is not a square board."
             )
-    test_data = args.test_data or (
-        SCRIPT_DIR / f"{board_size}x{board_size}_go" / "go_dataset" / "test.npz"
-    )
+    test_data = args.test_data or default_test_data_path(board_size)
     output_dir = args.output_dir or (
         SCRIPT_DIR / "evaluation_results"
         if board_size == DEFAULT_BOARD_SIZE
         else SCRIPT_DIR / "evaluation_results" / f"{board_size}x{board_size}_go"
     )
-    if not test_data.is_file():
+    if not test_data.is_file() and not test_data.is_dir():
         raise FileNotFoundError(f"Test dataset not found: {test_data}")
 
     dataset = GoDataset(str(test_data), augment=False, board_size=board_size)

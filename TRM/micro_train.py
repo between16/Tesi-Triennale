@@ -79,9 +79,13 @@ def run_micro_train(board_size=9):
         / f"{board_size}x{board_size}_go"
         / "go_dataset"
     )
-    train_path = dataset_dir / "train.npz"
-    val_path = dataset_dir / "val.npz"
-    if train_path.is_file() and val_path.is_file():
+    train_path = dataset_dir / "train"
+    val_path = dataset_dir / "val"
+    if not train_path.is_dir() or not val_path.is_dir():
+        train_path = dataset_dir / "train.npz"
+        val_path = dataset_dir / "val.npz"
+
+    if train_path.exists() and val_path.exists():
         train_loader, _, _ = create_go_dataloaders(
             train_path,
             val_path,
@@ -89,7 +93,7 @@ def run_micro_train(board_size=9):
             board_size=board_size,
         )
         x_batch, y_batch = next(iter(train_loader))
-        print("Loaded 1 real batch from dataset/train.npz")
+        print(f"Loaded 1 real batch from {train_path}")
     elif not train_path.exists() and not val_path.exists():
         print("Dataset file not found. Generating synthetic dummy batch for sanity check...")
         x_batch = torch.randn(32, 7, board_size, board_size)

@@ -1,9 +1,12 @@
 
-import os
-import glob
-import re
 import argparse
+import os
+import re
+import shutil
+import tempfile
+import zipfile
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from sgfmill import sgf, sgf_moves
@@ -38,15 +41,13 @@ def extract_features(board_history, current_color, board_size=DEFAULT_BOARD_SIZE
 
         player_channel = history_idx * 2
         opponent_channel = history_idx * 2 + 1
-
-        for row in range(board_size):
-            for col in range(board_size):
-                stone = board.get(row, col)
-
-                if stone == current_color:
-                    tensor[player_channel, row, col] = 1.0
-                elif stone is not None:
-                    tensor[opponent_channel, row, col] = 1.0
+        board_array = (
+            board
+            if isinstance(board, np.ndarray)
+            else np.asarray(board.board, dtype="<U4")
+        )
+        tensor[player_channel] = board_array == current_color
+        tensor[opponent_channel] = board_array == opposite_color(current_color)
 
     if current_color == "b":
         tensor[6, :, :] = 1.0
@@ -112,7 +113,7 @@ def record_move_state(
     """
     board_history[2] = board_history[1]
     board_history[1] = board_history[0]
-    board_history[0] = board.copy()
+    board_history[0] = np.asarray(board.board, dtype="<U4")
 
     x_list.append(extract_features(board_history, color, board_size))
     y_list.append(target)
@@ -131,7 +132,7 @@ def count_trailing_passes(processed_moves):
     return count
 
 
-def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
+def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE, emit_warnings=True):
     """
     Returns:
         x_list: feature tensors for recorded and reconstructed moves
@@ -144,6 +145,7 @@ def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
         "result_category": "unknown",
         "existing_passes": 0,
         "added_terminal_passes": 0,
+        "error": None,
     }
 
     # Read the SGF and obtain the actual initial board, including
@@ -164,7 +166,9 @@ def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
 
     except Exception as exc:
         metadata["status"] = "unreadable"
-        print(f"[WARNING] Could not process {file_path}: {exc}")
+        metadata["error"] = str(exc)
+        if emit_warnings:
+            print(f"[WARNING] Could not process {file_path}: {exc}")
         return [], [], metadata
 
     x_list = []
@@ -206,10 +210,11 @@ def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
 
                 invalid_move = True
                 metadata["status"] = "invalid_move"
-                print(
-                    f"[WARNING] Illegal move in {file_path}: "
-                    f"{color} at {(row, col)} ({exc})"
+                metadata["error"] = (
+                    f"Illegal move by {color} at {(row, col)}: {exc}"
                 )
+                if emit_warnings:
+                    print(f"[WARNING] {file_path}: {metadata['error']}")
                 break
 
         processed_moves.append((color, move))
@@ -251,59 +256,344 @@ def process_sgf_file(file_path, board_size=DEFAULT_BOARD_SIZE):
     return x_list, y_list, metadata
 
 
-def build_dataset(sgf_files, output_npz_path, board_size=DEFAULT_BOARD_SIZE):
-    """Processes SGF games and saves their examples to an NPZ file."""
-    all_x = []
-    all_y = []
+def count_sgf_examples(file_path, board_size=DEFAULT_BOARD_SIZE):
+    """Count examples without allocating feature tensors."""
+    try:
+        with open(file_path, "rb") as file:
+            game = sgf.Sgf_game.from_bytes(file.read())
+
+        if game.get_size() != board_size:
+            return 0
+
+        board, moves = sgf_moves.get_setup_and_moves(game)
+        _, result_category = classify_game_result(game)
+    except Exception:
+        return 0
+
+    example_count = 0
+    processed_moves = []
+    invalid_move = False
+    for color, move in moves:
+        if move is not None:
+            row, col = move
+            try:
+                board.play(row, col, color)
+            except ValueError:
+                invalid_move = True
+                break
+
+        example_count += 1
+        processed_moves.append((color, move))
+
+    if (
+        not invalid_move
+        and processed_moves
+        and result_category == "scored"
+    ):
+        example_count += max(
+            0,
+            TERMINAL_PASSES_REQUIRED - count_trailing_passes(processed_moves),
+        )
+
+    return example_count
+
+
+def _write_npy_header(file_obj, dtype, shape):
+    np.lib.format.write_array_header_1_0(
+        file_obj,
+        {
+            "descr": np.lib.format.dtype_to_descr(np.dtype(dtype)),
+            "fortran_order": False,
+            "shape": shape,
+        },
+    )
+
+
+def _flush_examples(x_file, y_file, x_buffer, y_buffer):
+    if not x_buffer:
+        return
+    x_chunk = np.stack(x_buffer).astype(np.float32, copy=False)
+    x_file.write(memoryview(x_chunk).cast("B"))
+    y_file.write(np.asarray(y_buffer, dtype=np.int64).tobytes())
+    x_buffer.clear()
+    y_buffer.clear()
+
+
+def build_dataset(
+    sgf_files,
+    output_npz_path,
+    board_size=DEFAULT_BOARD_SIZE,
+    expected_examples=None,
+):
+    """Process games into a compressed NPZ without holding a split in memory."""
+    if expected_examples is None:
+        expected_examples = sum(
+            count_sgf_examples(file_path, board_size) for file_path in sgf_files
+        )
 
     game_statuses = Counter()
     result_categories = Counter()
     total_existing_passes = 0
     total_added_passes = 0
+    error_examples = []
+    examples_written = 0
+    x_buffer = []
+    y_buffer = []
+    output_path = Path(output_npz_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(
         f"\nProcessing {len(sgf_files)} SGF files "
-        f"for {output_npz_path}"
+        f"for {output_path} ({expected_examples} examples)"
     )
 
-    for file_path in sgf_files:
-        x_game, y_game, metadata = process_sgf_file(file_path, board_size)
+    with tempfile.TemporaryDirectory(
+        dir=output_path.parent,
+        prefix=f".{output_path.stem}-",
+    ) as temporary_dir:
+        temporary_output = Path(temporary_dir) / output_path.name
+        with tempfile.TemporaryFile() as y_file:
+            with zipfile.ZipFile(
+                temporary_output,
+                mode="w",
+                compression=zipfile.ZIP_DEFLATED,
+                compresslevel=6,
+            ) as archive:
+                with archive.open(
+                    "X.npy",
+                    mode="w",
+                    force_zip64=True,
+                ) as x_file:
+                    _write_npy_header(
+                        x_file,
+                        np.float32,
+                        (
+                            expected_examples,
+                            NUM_CHANNELS,
+                            board_size,
+                            board_size,
+                        ),
+                    )
 
-        all_x.extend(x_game)
-        all_y.extend(y_game)
+                    for index, file_path in enumerate(sgf_files, start=1):
+                        x_game, y_game, metadata = process_sgf_file(
+                            file_path,
+                            board_size,
+                            emit_warnings=False,
+                        )
 
-        game_statuses[metadata["status"]] += 1
-        result_categories[metadata["result_category"]] += 1
+                        game_statuses[metadata["status"]] += 1
+                        result_categories[metadata["result_category"]] += 1
+                        total_existing_passes += metadata["existing_passes"]
+                        total_added_passes += metadata["added_terminal_passes"]
+                        if metadata["error"] and len(error_examples) < 10:
+                            error_examples.append(
+                                f"{file_path}: {metadata['error']}"
+                            )
 
-        total_existing_passes += metadata["existing_passes"]
-        total_added_passes += metadata["added_terminal_passes"]
+                        x_buffer.extend(x_game)
+                        y_buffer.extend(y_game)
+                        examples_written += len(y_game)
+                        if len(x_buffer) >= 256:
+                            _flush_examples(x_file, y_file, x_buffer, y_buffer)
+                        if index % 10000 == 0:
+                            print(f"Processed {index}/{len(sgf_files)} SGF files")
 
-    x_array = np.asarray(
-        all_x,
-        dtype=np.float32,
-    ).reshape(-1, NUM_CHANNELS, board_size, board_size)
+                    _flush_examples(x_file, y_file, x_buffer, y_buffer)
 
-    y_array = np.asarray(all_y, dtype=np.int64)
+                if examples_written != expected_examples:
+                    raise RuntimeError(
+                        "SGF example count changed between counting and "
+                        f"preprocessing: expected {expected_examples}, "
+                        f"wrote {examples_written}."
+                    )
 
-    output_dir = os.path.dirname(output_npz_path)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
+                y_file.flush()
+                y_file.seek(0)
+                with archive.open(
+                    "y.npy",
+                    mode="w",
+                    force_zip64=True,
+                ) as y_output:
+                    _write_npy_header(y_output, np.int64, (examples_written,))
+                    while chunk := y_file.read(1024 * 1024):
+                        y_output.write(chunk)
 
-    np.savez_compressed(output_npz_path, X=x_array, y=y_array)
+        os.replace(temporary_output, output_path)
 
-    total_passes = int(np.count_nonzero(y_array == board_size * board_size))
-
-    print(f"Saved dataset to {output_npz_path}")
-    print(f"X shape: {x_array.shape}")
-    print(f"y shape: {y_array.shape}")
+    total_passes = (
+        total_existing_passes
+        + total_added_passes
+    )
+    print(f"Saved dataset to {output_path}")
+    print(
+        f"X shape: "
+        f"({examples_written}, {NUM_CHANNELS}, {board_size}, {board_size})"
+    )
+    print(f"y shape: ({examples_written},)")
     print(f"Games by processing status: {dict(game_statuses)}")
     print(f"Games by result category: {dict(result_categories)}")
     print(f"Existing PASS moves processed: {total_existing_passes}")
     print(f"Terminal PASS moves added: {total_added_passes}")
     print(f"Total PASS examples in split: {total_passes}")
+    if error_examples:
+        print(
+            f"[WARNING] Errors encountered in "
+            f"{sum(game_statuses[key] for key in ('unreadable', 'invalid_move'))} "
+            "games; first affected files:"
+        )
+        for error in error_examples:
+            print(f"  {error}")
 
     return {
-        "examples": len(y_array),
+        "examples": examples_written,
+        "pass_examples": total_passes,
+        "added_passes": total_added_passes,
+    }
+
+
+def build_memmap_dataset(
+    sgf_files,
+    output_dir,
+    board_size=DEFAULT_BOARD_SIZE,
+    expected_examples=None,
+):
+    """Write a split as memory-mappable NPY arrays without retaining it in RAM."""
+    if expected_examples is None:
+        expected_examples = sum(
+            count_sgf_examples(file_path, board_size) for file_path in sgf_files
+        )
+
+    output_path = Path(output_dir)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    game_statuses = Counter()
+    result_categories = Counter()
+    total_existing_passes = 0
+    total_added_passes = 0
+    error_examples = []
+    examples_written = 0
+
+    print(
+        f"\nProcessing {len(sgf_files)} SGF files "
+        f"for {output_path} ({expected_examples} examples)"
+    )
+
+    backup_root = Path(
+        tempfile.mkdtemp(
+            dir=output_path.parent,
+            prefix=f".{output_path.name}-backup-",
+        )
+    )
+    temporary_dir = Path(
+        tempfile.mkdtemp(dir=output_path.parent, prefix=f".{output_path.name}-")
+    )
+    try:
+        x_array = np.lib.format.open_memmap(
+            temporary_dir / "X.npy",
+            mode="w+",
+            dtype=np.float32,
+            shape=(
+                expected_examples,
+                NUM_CHANNELS,
+                board_size,
+                board_size,
+            ),
+        )
+        y_array = np.lib.format.open_memmap(
+            temporary_dir / "y.npy",
+            mode="w+",
+            dtype=np.int64,
+            shape=(expected_examples,),
+        )
+
+        for index, file_path in enumerate(sgf_files, start=1):
+            x_game, y_game, metadata = process_sgf_file(
+                file_path,
+                board_size,
+                emit_warnings=False,
+            )
+            game_statuses[metadata["status"]] += 1
+            result_categories[metadata["result_category"]] += 1
+            total_existing_passes += metadata["existing_passes"]
+            total_added_passes += metadata["added_terminal_passes"]
+            if metadata["error"] and len(error_examples) < 10:
+                error_examples.append(f"{file_path}: {metadata['error']}")
+
+            next_index = examples_written + len(y_game)
+            if next_index > expected_examples:
+                raise RuntimeError(
+                    "SGF example count changed between counting and "
+                    f"preprocessing: expected {expected_examples}, "
+                    f"at least {next_index}."
+                )
+            if y_game:
+                x_array[examples_written:next_index] = np.asarray(
+                    x_game,
+                    dtype=np.float32,
+                )
+                y_array[examples_written:next_index] = y_game
+            examples_written = next_index
+
+            if index % 10000 == 0:
+                print(f"Processed {index}/{len(sgf_files)} SGF files")
+
+        if examples_written != expected_examples:
+            raise RuntimeError(
+                "SGF example count changed between counting and "
+                f"preprocessing: expected {expected_examples}, "
+                f"wrote {examples_written}."
+            )
+
+        x_array.flush()
+        y_array.flush()
+        del x_array, y_array
+
+        if output_path.exists():
+            backup_path = backup_root / output_path.name
+            os.replace(output_path, backup_path)
+        else:
+            backup_path = None
+
+        try:
+            os.replace(temporary_dir, output_path)
+        except Exception:
+            if backup_path is not None:
+                os.replace(backup_path, output_path)
+            raise
+
+        if backup_path is not None:
+            shutil.rmtree(backup_path)
+
+    finally:
+        if temporary_dir.exists():
+            shutil.rmtree(temporary_dir)
+        if backup_root.exists():
+            shutil.rmtree(backup_root)
+
+    total_passes = total_existing_passes + total_added_passes
+    print(f"Saved dataset to {output_path}")
+    print(
+        f"X shape: "
+        f"({examples_written}, {NUM_CHANNELS}, {board_size}, {board_size})"
+    )
+    print(f"y shape: ({examples_written},)")
+    print(f"Games by processing status: {dict(game_statuses)}")
+    print(f"Games by result category: {dict(result_categories)}")
+    print(f"Existing PASS moves processed: {total_existing_passes}")
+    print(f"Terminal PASS moves added: {total_added_passes}")
+    if error_examples:
+        error_count = sum(
+            game_statuses[key] for key in ("unreadable", "invalid_move")
+        )
+        print(
+            f"[WARNING] Errors encountered in {error_count} games; "
+            "first affected:"
+        )
+        for error in error_examples:
+            print(f"  {error}")
+
+    return {
+        "examples": examples_written,
         "pass_examples": total_passes,
         "added_passes": total_added_passes,
     }
@@ -312,23 +602,42 @@ def build_dataset(sgf_files, output_npz_path, board_size=DEFAULT_BOARD_SIZE):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build Go datasets from SGF games.")
     parser.add_argument("--board-size", type=int, default=DEFAULT_BOARD_SIZE)
+    parser.add_argument(
+        "--input-dir",
+        type=Path,
+        help="SGF source directory (defaults to the matching filtered-games folder).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Dataset output directory (defaults to the matching go_dataset folder).",
+    )
+    parser.add_argument(
+        "--max-games",
+        type=int,
+        help="Deterministically sample at most this many games before splitting.",
+    )
+    parser.add_argument(
+        "--storage-format",
+        choices=("npz", "npy"),
+        default="npz",
+        help="Use compressed NPZ or memory-mappable NPY split directories.",
+    )
     args = parser.parse_args()
     if args.board_size < 2:
         parser.error("--board-size must be at least 2.")
+    if args.max_games is not None and args.max_games < 3:
+        parser.error("--max-games must be at least 3.")
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    go_dir = os.path.join(base_dir, f"{args.board_size}x{args.board_size}_go")
-    sgf_dir = os.path.join(
-        go_dir,
-        "go_raw_dataset",
-        f"{args.board_size}x{args.board_size}_games",
+    base_dir = Path(__file__).resolve().parent
+    go_dir = base_dir / f"{args.board_size}x{args.board_size}_go"
+    sgf_dir = args.input_dir or (
+        go_dir / "go_raw_dataset" / f"{args.board_size}x{args.board_size}_games"
     )
-
     sgf_files = sorted(
-        glob.glob(
-            os.path.join(sgf_dir, "**", "*.sgf"),
-            recursive=True,
-        )
+        path
+        for path in sgf_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() == ".sgf"
     )
 
     if len(sgf_files) < 3:
@@ -344,6 +653,20 @@ if __name__ == "__main__":
         sgf_files[index]
         for index in rng.permutation(len(sgf_files))
     ]
+    if args.max_games is not None:
+        shuffled_files = shuffled_files[: args.max_games]
+        print(
+            f"Selected {len(shuffled_files)} of {len(sgf_files)} SGF files "
+            f"using seed 42"
+        )
+    example_counts = {}
+    for index, file_path in enumerate(shuffled_files, start=1):
+        example_counts[file_path] = count_sgf_examples(
+            file_path,
+            args.board_size,
+        )
+        if index % 1000 == 0:
+            print(f"Counted positions for {index}/{len(shuffled_files)} SGF files")
 
     train_end = min(
         max(int(len(shuffled_files) * 0.8), 1),
@@ -360,18 +683,24 @@ if __name__ == "__main__":
         "test": shuffled_files[val_end:],
     }
 
-    dataset_dir = os.path.join(go_dir, "go_dataset")
+    dataset_dir = args.output_dir or (go_dir / "go_dataset")
     split_summary = {}
 
     for split_name, split_files in splits.items():
-        output_path = os.path.join(
-            dataset_dir,
-            f"{split_name}.npz",
+        expected_examples = sum(
+            example_counts[file_path] for file_path in split_files
         )
-        split_summary[split_name] = build_dataset(
+        if args.storage_format == "npy":
+            split_output = dataset_dir / split_name
+            build_function = build_memmap_dataset
+        else:
+            split_output = dataset_dir / f"{split_name}.npz"
+            build_function = build_dataset
+        split_summary[split_name] = build_function(
             split_files,
-            output_path,
+            split_output,
             board_size=args.board_size,
+            expected_examples=expected_examples,
         )
 
     print("\n=== DATASET SUMMARY ===")

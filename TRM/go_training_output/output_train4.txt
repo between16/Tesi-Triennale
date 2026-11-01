@@ -1,0 +1,171 @@
+python3 train.py --board-size 9
+Starting full training pipeline on device: cuda
+Epoch [ 1/20] | Step [  50/ 164] | Train Loss: 3.2216 | Train Top-1 Acc: 7.03%
+Epoch [ 1/20] | Step [ 100/ 164] | Train Loss: 2.9132 | Train Top-1 Acc: 11.95%
+Epoch [ 1/20] | Step [ 150/ 164] | Train Loss: 2.7859 | Train Top-1 Acc: 14.54%
+Epoch [ 1/20] | Step [ 164/ 164] | Train Loss: 2.8684 | Train Top-1 Acc: 15.18%
+---------------------------------------------------------------------------
+Epoch  1 Validation Summary -> Val Loss: 2.8784 | Val Top-1 Acc: 20.44% | Val Top-3 Acc: 42.79%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.8784)
+Epoch 1 elapsed: 0.1 min; training throughput: 2672.2 examples/s
+Epoch [ 2/20] | Step [  50/ 164] | Train Loss: 2.6816 | Train Top-1 Acc: 21.61%
+Epoch [ 2/20] | Step [ 100/ 164] | Train Loss: 3.0406 | Train Top-1 Acc: 22.02%
+Epoch [ 2/20] | Step [ 150/ 164] | Train Loss: 2.6348 | Train Top-1 Acc: 22.45%
+Epoch [ 2/20] | Step [ 164/ 164] | Train Loss: 2.7844 | Train Top-1 Acc: 22.64%
+---------------------------------------------------------------------------
+Epoch  2 Validation Summary -> Val Loss: 2.6278 | Val Top-1 Acc: 25.11% | Val Top-3 Acc: 48.58%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.6278)
+Epoch 2 elapsed: 0.1 min; training throughput: 2748.5 examples/s
+Epoch [ 3/20] | Step [  50/ 164] | Train Loss: 2.5901 | Train Top-1 Acc: 25.02%
+Epoch [ 3/20] | Step [ 100/ 164] | Train Loss: 2.8571 | Train Top-1 Acc: 25.02%
+Epoch [ 3/20] | Step [ 150/ 164] | Train Loss: 2.7182 | Train Top-1 Acc: 24.95%
+Epoch [ 3/20] | Step [ 164/ 164] | Train Loss: 2.7469 | Train Top-1 Acc: 25.09%
+---------------------------------------------------------------------------
+Epoch  3 Validation Summary -> Val Loss: 2.6629 | Val Top-1 Acc: 24.99% | Val Top-3 Acc: 48.30%
+---------------------------------------------------------------------------
+Epoch 3 elapsed: 0.1 min; training throughput: 2729.7 examples/s
+Epoch [ 4/20] | Step [  50/ 164] | Train Loss: 2.4133 | Train Top-1 Acc: 25.81%
+Epoch [ 4/20] | Step [ 100/ 164] | Train Loss: 2.5278 | Train Top-1 Acc: 25.72%
+Epoch [ 4/20] | Step [ 150/ 164] | Train Loss: 2.5043 | Train Top-1 Acc: 25.76%
+Epoch [ 4/20] | Step [ 164/ 164] | Train Loss: 2.5657 | Train Top-1 Acc: 25.85%
+---------------------------------------------------------------------------
+Epoch  4 Validation Summary -> Val Loss: 2.6510 | Val Top-1 Acc: 25.19% | Val Top-3 Acc: 50.06%
+---------------------------------------------------------------------------
+Epoch 4 elapsed: 0.1 min; training throughput: 2645.1 examples/s
+Epoch [ 5/20] | Step [  50/ 164] | Train Loss: 2.6925 | Train Top-1 Acc: 25.81%
+Epoch [ 5/20] | Step [ 100/ 164] | Train Loss: 2.3929 | Train Top-1 Acc: 25.89%
+Epoch [ 5/20] | Step [ 150/ 164] | Train Loss: 2.6878 | Train Top-1 Acc: 25.68%
+Epoch [ 5/20] | Step [ 164/ 164] | Train Loss: 2.8802 | Train Top-1 Acc: 25.51%
+---------------------------------------------------------------------------
+Epoch  5 Validation Summary -> Val Loss: 2.7703 | Val Top-1 Acc: 23.23% | Val Top-3 Acc: 45.67%
+---------------------------------------------------------------------------
+Epoch 5 elapsed: 0.1 min; training throughput: 2648.6 examples/s
+Epoch [ 6/20] | Step [  50/ 164] | Train Loss: 2.7471 | Train Top-1 Acc: 23.31%
+Epoch [ 6/20] | Step [ 100/ 164] | Train Loss: 2.7603 | Train Top-1 Acc: 23.38%
+Epoch [ 6/20] | Step [ 150/ 164] | Train Loss: 3.1279 | Train Top-1 Acc: 22.30%
+Epoch [ 6/20] | Step [ 164/ 164] | Train Loss: 3.7515 | Train Top-1 Acc: 21.82%
+---------------------------------------------------------------------------
+Epoch  6 Validation Summary -> Val Loss: 3.3216 | Val Top-1 Acc: 18.00% | Val Top-3 Acc: 38.28%
+---------------------------------------------------------------------------
+Epoch 6 elapsed: 0.1 min; training throughput: 2625.2 examples/s
+Epoch [ 7/20] | Step [  50/ 164] | Train Loss: 4.3623 | Train Top-1 Acc: 3.97%
+Epoch [ 7/20] | Step [ 100/ 164] | Train Loss: 4.3232 | Train Top-1 Acc: 2.69%
+Epoch [ 7/20] | Step [ 150/ 164] | Train Loss: 4.4034 | Train Top-1 Acc: 2.45%
+Epoch [ 7/20] | Step [ 164/ 164] | Train Loss: 4.3980 | Train Top-1 Acc: 2.60%
+---------------------------------------------------------------------------
+Epoch  7 Validation Summary -> Val Loss: 4.4053 | Val Top-1 Acc: 2.79% | Val Top-3 Acc: 11.78%
+---------------------------------------------------------------------------
+Epoch 7 elapsed: 0.1 min; training throughput: 2649.6 examples/s
+Epoch [ 8/20] | Step [  50/ 164] | Train Loss: 4.4034 | Train Top-1 Acc: 2.95%
+Epoch [ 8/20] | Step [ 100/ 164] | Train Loss: 4.4005 | Train Top-1 Acc: 2.84%
+Epoch [ 8/20] | Step [ 150/ 164] | Train Loss: 4.3930 | Train Top-1 Acc: 2.75%
+Epoch [ 8/20] | Step [ 164/ 164] | Train Loss: 4.3629 | Train Top-1 Acc: 2.76%
+---------------------------------------------------------------------------
+Epoch  8 Validation Summary -> Val Loss: 4.3705 | Val Top-1 Acc: 2.55% | Val Top-3 Acc: 14.97%
+---------------------------------------------------------------------------
+Epoch 8 elapsed: 0.1 min; training throughput: 2635.2 examples/s
+Epoch [ 9/20] | Step [  50/ 164] | Train Loss: 3.8652 | Train Top-1 Acc: 6.73%
+Epoch [ 9/20] | Step [ 100/ 164] | Train Loss: 2.8297 | Train Top-1 Acc: 12.48%
+Epoch [ 9/20] | Step [ 150/ 164] | Train Loss: 2.7635 | Train Top-1 Acc: 15.72%
+Epoch [ 9/20] | Step [ 164/ 164] | Train Loss: 2.7545 | Train Top-1 Acc: 16.40%
+---------------------------------------------------------------------------
+Epoch  9 Validation Summary -> Val Loss: 2.7510 | Val Top-1 Acc: 22.44% | Val Top-3 Acc: 47.19%
+---------------------------------------------------------------------------
+Epoch 9 elapsed: 0.1 min; training throughput: 2649.6 examples/s
+Epoch [10/20] | Step [  50/ 164] | Train Loss: 2.8955 | Train Top-1 Acc: 23.09%
+Epoch [10/20] | Step [ 100/ 164] | Train Loss: 2.7237 | Train Top-1 Acc: 23.46%
+Epoch [10/20] | Step [ 150/ 164] | Train Loss: 2.7789 | Train Top-1 Acc: 23.97%
+Epoch [10/20] | Step [ 164/ 164] | Train Loss: 2.7111 | Train Top-1 Acc: 24.12%
+---------------------------------------------------------------------------
+Epoch 10 Validation Summary -> Val Loss: 2.6749 | Val Top-1 Acc: 24.63% | Val Top-3 Acc: 48.54%
+---------------------------------------------------------------------------
+Epoch 10 elapsed: 0.1 min; training throughput: 2632.4 examples/s
+Epoch [11/20] | Step [  50/ 164] | Train Loss: 2.7961 | Train Top-1 Acc: 24.09%
+Epoch [11/20] | Step [ 100/ 164] | Train Loss: 2.6146 | Train Top-1 Acc: 25.13%
+Epoch [11/20] | Step [ 150/ 164] | Train Loss: 2.6488 | Train Top-1 Acc: 25.13%
+Epoch [11/20] | Step [ 164/ 164] | Train Loss: 2.6275 | Train Top-1 Acc: 25.10%
+---------------------------------------------------------------------------
+Epoch 11 Validation Summary -> Val Loss: 2.6679 | Val Top-1 Acc: 24.35% | Val Top-3 Acc: 48.62%
+---------------------------------------------------------------------------
+Epoch 11 elapsed: 0.1 min; training throughput: 2617.8 examples/s
+Epoch [12/20] | Step [  50/ 164] | Train Loss: 2.6246 | Train Top-1 Acc: 26.11%
+Epoch [12/20] | Step [ 100/ 164] | Train Loss: 2.5058 | Train Top-1 Acc: 26.25%
+Epoch [12/20] | Step [ 150/ 164] | Train Loss: 2.4376 | Train Top-1 Acc: 26.69%
+Epoch [12/20] | Step [ 164/ 164] | Train Loss: 2.5511 | Train Top-1 Acc: 26.69%
+---------------------------------------------------------------------------
+Epoch 12 Validation Summary -> Val Loss: 2.5825 | Val Top-1 Acc: 27.07% | Val Top-3 Acc: 51.74%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.5825)
+Epoch 12 elapsed: 0.1 min; training throughput: 2620.4 examples/s
+Epoch [13/20] | Step [  50/ 164] | Train Loss: 2.3871 | Train Top-1 Acc: 27.34%
+Epoch [13/20] | Step [ 100/ 164] | Train Loss: 2.4870 | Train Top-1 Acc: 27.06%
+Epoch [13/20] | Step [ 150/ 164] | Train Loss: 2.4907 | Train Top-1 Acc: 27.23%
+Epoch [13/20] | Step [ 164/ 164] | Train Loss: 2.5814 | Train Top-1 Acc: 27.28%
+---------------------------------------------------------------------------
+Epoch 13 Validation Summary -> Val Loss: 2.5388 | Val Top-1 Acc: 27.35% | Val Top-3 Acc: 51.10%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.5388)
+Epoch 13 elapsed: 0.1 min; training throughput: 2630.1 examples/s
+Epoch [14/20] | Step [  50/ 164] | Train Loss: 2.5617 | Train Top-1 Acc: 27.36%
+Epoch [14/20] | Step [ 100/ 164] | Train Loss: 2.3924 | Train Top-1 Acc: 27.31%
+Epoch [14/20] | Step [ 150/ 164] | Train Loss: 2.6142 | Train Top-1 Acc: 27.60%
+Epoch [14/20] | Step [ 164/ 164] | Train Loss: 2.4283 | Train Top-1 Acc: 27.39%
+---------------------------------------------------------------------------
+Epoch 14 Validation Summary -> Val Loss: 2.5405 | Val Top-1 Acc: 26.31% | Val Top-3 Acc: 51.94%
+---------------------------------------------------------------------------
+Epoch 14 elapsed: 0.1 min; training throughput: 2617.8 examples/s
+Epoch [15/20] | Step [  50/ 164] | Train Loss: 2.6840 | Train Top-1 Acc: 27.31%
+Epoch [15/20] | Step [ 100/ 164] | Train Loss: 2.4427 | Train Top-1 Acc: 27.70%
+Epoch [15/20] | Step [ 150/ 164] | Train Loss: 2.4737 | Train Top-1 Acc: 27.72%
+Epoch [15/20] | Step [ 164/ 164] | Train Loss: 2.4913 | Train Top-1 Acc: 27.73%
+---------------------------------------------------------------------------
+Epoch 15 Validation Summary -> Val Loss: 2.5387 | Val Top-1 Acc: 27.23% | Val Top-3 Acc: 52.14%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.5387)
+Epoch 15 elapsed: 0.1 min; training throughput: 2637.1 examples/s
+Epoch [16/20] | Step [  50/ 164] | Train Loss: 2.5221 | Train Top-1 Acc: 28.09%
+Epoch [16/20] | Step [ 100/ 164] | Train Loss: 2.3661 | Train Top-1 Acc: 27.76%
+Epoch [16/20] | Step [ 150/ 164] | Train Loss: 2.5538 | Train Top-1 Acc: 28.09%
+Epoch [16/20] | Step [ 164/ 164] | Train Loss: 2.6149 | Train Top-1 Acc: 28.12%
+---------------------------------------------------------------------------
+Epoch 16 Validation Summary -> Val Loss: 2.5041 | Val Top-1 Acc: 27.78% | Val Top-3 Acc: 53.29%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.5041)
+Epoch 16 elapsed: 0.1 min; training throughput: 2677.1 examples/s
+Epoch [17/20] | Step [  50/ 164] | Train Loss: 2.5159 | Train Top-1 Acc: 28.36%
+Epoch [17/20] | Step [ 100/ 164] | Train Loss: 2.5022 | Train Top-1 Acc: 28.41%
+Epoch [17/20] | Step [ 150/ 164] | Train Loss: 2.4523 | Train Top-1 Acc: 28.49%
+Epoch [17/20] | Step [ 164/ 164] | Train Loss: 2.4395 | Train Top-1 Acc: 28.49%
+---------------------------------------------------------------------------
+Epoch 17 Validation Summary -> Val Loss: 2.4845 | Val Top-1 Acc: 28.14% | Val Top-3 Acc: 53.29%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.4845)
+Epoch 17 elapsed: 0.1 min; training throughput: 2678.9 examples/s
+Epoch [18/20] | Step [  50/ 164] | Train Loss: 2.2109 | Train Top-1 Acc: 29.53%
+Epoch [18/20] | Step [ 100/ 164] | Train Loss: 2.2887 | Train Top-1 Acc: 28.74%
+Epoch [18/20] | Step [ 150/ 164] | Train Loss: 2.3709 | Train Top-1 Acc: 28.54%
+Epoch [18/20] | Step [ 164/ 164] | Train Loss: 2.2728 | Train Top-1 Acc: 28.69%
+---------------------------------------------------------------------------
+Epoch 18 Validation Summary -> Val Loss: 2.4848 | Val Top-1 Acc: 28.78% | Val Top-3 Acc: 53.93%
+---------------------------------------------------------------------------
+Epoch 18 elapsed: 0.1 min; training throughput: 2639.0 examples/s
+Epoch [19/20] | Step [  50/ 164] | Train Loss: 2.3614 | Train Top-1 Acc: 28.73%
+Epoch [19/20] | Step [ 100/ 164] | Train Loss: 2.5182 | Train Top-1 Acc: 28.64%
+Epoch [19/20] | Step [ 150/ 164] | Train Loss: 2.5198 | Train Top-1 Acc: 28.66%
+Epoch [19/20] | Step [ 164/ 164] | Train Loss: 2.5249 | Train Top-1 Acc: 28.84%
+---------------------------------------------------------------------------
+Epoch 19 Validation Summary -> Val Loss: 2.4785 | Val Top-1 Acc: 28.66% | Val Top-3 Acc: 53.65%
+---------------------------------------------------------------------------
+Checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Best Val Loss: 2.4785)
+Epoch 19 elapsed: 0.1 min; training throughput: 2667.0 examples/s
+Epoch [20/20] | Step [  50/ 164] | Train Loss: 2.4246 | Train Top-1 Acc: 28.80%
+Epoch [20/20] | Step [ 100/ 164] | Train Loss: 2.5637 | Train Top-1 Acc: 29.01%
+Epoch [20/20] | Step [ 150/ 164] | Train Loss: 2.3585 | Train Top-1 Acc: 28.85%
+Epoch [20/20] | Step [ 164/ 164] | Train Loss: 2.3778 | Train Top-1 Acc: 28.91%
+---------------------------------------------------------------------------
+Epoch 20 Validation Summary -> Val Loss: 2.4744 | Val Top-1 Acc: 28.50% | Val Top-3 Acc: 53.81%
+---------------------------------------------------------------------------
+Checkpoint saved: (Best Val Loss: 2.4744)
+Epoch 20 elapsed: 0.1 min; training throughput: 2614.6 examples/s

@@ -176,7 +176,7 @@ PASS precision:     0.32142857142857145
 PASS recall:        0.5510204081632653
 PASS F1:            0.40601503759398494
 
-Results saved to: /home/f/Documents/GitHub/Tesi-Triennale/TRM/evaluation_results
+Results saved to: TRM/evaluation_results
 Generated: metrics.json, predictions.csv, and four PNG plots.
 
 questo è il risultato del training, sopra, e del go_eval.py secondo blocco sotto

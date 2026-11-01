@@ -1,3 +1,11 @@
 # To ignore the dataset files delete the '#' in front of the following lines:
 # TRM/9x9_go/go_raw_dataset/
 # TRM/9x9_go/dataset/
+
+TRM/19x19_go/go_raw_dataset/
+TRM/19x19_go/go_dataset/*.npz
+TRM/19x19_go/go_dataset/train/
+TRM/19x19_go/go_dataset/val/
+TRM/19x19_go/go_dataset/test/
+TRM/checkpoints/19x19_go/*
+!TRM/checkpoints/19x19_go/best_model.pt

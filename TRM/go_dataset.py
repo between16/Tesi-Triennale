@@ -65,19 +65,26 @@ def apply_board_symmetry(x_tensor, y_target, symmetry_idx, board_size=None):
 
 class GoDataset(Dataset):
     """
-    PyTorch Dataset for loading Go state-move pairs from .npz files.
+    PyTorch Dataset for loading Go state-move pairs from NPZ or NPY files.
     """
-    def __init__(self, npz_path, augment=False, board_size=None):
+    def __init__(self, dataset_path, augment=False, board_size=None):
         """
         Args:
-            npz_path (str): Path to the .npz file containing 'X' and 'y'.
+            dataset_path (str): NPZ file or directory containing X.npy and y.npy.
             augment (bool): If True, applies random D4 symmetry transformations.
         """
-        data = np.load(npz_path)
-        self.X = data['X']
-        self.y = data['y']  # Shape: [N]
+        dataset_path = os.fspath(dataset_path)
+        if os.path.isdir(dataset_path):
+            self.X = np.load(os.path.join(dataset_path, "X.npy"), mmap_mode="r")
+            self.y = np.load(os.path.join(dataset_path, "y.npy"), mmap_mode="r")
+        else:
+            data = np.load(dataset_path)
+            self.X = data["X"]
+            self.y = data["y"]
         if self.X.ndim != 4 or self.X.shape[-1] != self.X.shape[-2]:
             raise ValueError(f"Expected square board tensors [N, C, N, N], received {self.X.shape}.")
+        if self.X.shape[0] != self.y.shape[0]:
+            raise ValueError("Feature and target arrays must contain the same number of examples.")
         self.board_size = int(self.X.shape[-1] if board_size is None else board_size)
         if self.X.shape[-2:] != (self.board_size, self.board_size):
             raise ValueError(
@@ -85,8 +92,10 @@ class GoDataset(Dataset):
                 f"board size {self.board_size}."
             )
         pass_move = self.board_size * self.board_size
-        if np.any(self.y < 0) or np.any(self.y > pass_move):
-            raise ValueError(f"Dataset labels must be in the range 0..{pass_move}.")
+        for start in range(0, len(self.y), 1_000_000):
+            y_chunk = self.y[start : start + 1_000_000]
+            if np.any(y_chunk < 0) or np.any(y_chunk > pass_move):
+                raise ValueError(f"Dataset labels must be in the range 0..{pass_move}.")
         self.augment = augment
 
     def __len__(self):
@@ -103,7 +112,7 @@ class GoDataset(Dataset):
             )
 
         # Convert numpy arrays to PyTorch tensors
-        x_tensor = torch.from_numpy(x_sample).float()
+        x_tensor = torch.from_numpy(np.array(x_sample, copy=True)).float()
         y_tensor = torch.tensor(y_sample, dtype=torch.long)
 
         return x_tensor, y_tensor
