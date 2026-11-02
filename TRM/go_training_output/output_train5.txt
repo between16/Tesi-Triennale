@@ -1,0 +1,216 @@
+python3 train.py --board-size 9 --epochs 20
+Starting training on device: cuda
+Board size: 9x9
+Training examples: 21,102
+Validation examples: 2,505
+Batch size: 128
+Steps per epoch: 164
+Planned optimizer steps: 3,280
+Optimizer: AdamW (betas=0.9, 0.95)
+Learning rate: 1.00e-04 -> 1.00e-05
+Warm-up steps: 2,000
+Weight decay: 1.00e-04
+Validation: full validation split
+Epoch [ 1/20] | Step [   50/  164] | Global step [     50] | Train Loss: 4.4087 | Train Top-1: 0.91% | LR: 2.50e-06
+Epoch [ 1/20] | Step [  100/  164] | Global step [    100] | Train Loss: 4.4038 | Train Top-1: 1.47% | LR: 5.00e-06
+Epoch [ 1/20] | Step [  150/  164] | Global step [    150] | Train Loss: 4.3975 | Train Top-1: 1.85% | LR: 7.50e-06
+Epoch [ 1/20] | Step [  164/  164] | Global step [    164] | Train Loss: 4.3953 | Train Top-1: 1.95% | LR: 8.20e-06
+------------------------------------------------------------------------------
+Epoch  1 Validation -> Val Loss: 4.3632 | Val Top-1: 3.39% | Val Top-3: 9.02%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 4.3632)
+Epoch 1 elapsed: 0.1 min; training throughput including validation: 2554.9 examples/s
+Epoch [ 2/20] | Step [   50/  164] | Global step [    214] | Train Loss: 4.3469 | Train Top-1: 3.58% | LR: 1.07e-05
+Epoch [ 2/20] | Step [  100/  164] | Global step [    264] | Train Loss: 4.3136 | Train Top-1: 4.18% | LR: 1.32e-05
+Epoch [ 2/20] | Step [  150/  164] | Global step [    314] | Train Loss: 4.2600 | Train Top-1: 4.43% | LR: 1.57e-05
+Epoch [ 2/20] | Step [  164/  164] | Global step [    328] | Train Loss: 4.2432 | Train Top-1: 4.55% | LR: 1.64e-05
+------------------------------------------------------------------------------
+Epoch  2 Validation -> Val Loss: 4.0518 | Val Top-1: 5.03% | Val Top-3: 12.97%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 4.0518)
+Epoch 2 elapsed: 0.1 min; training throughput including validation: 2675.0 examples/s
+Epoch [ 3/20] | Step [   50/  164] | Global step [    378] | Train Loss: 3.9774 | Train Top-1: 6.02% | LR: 1.89e-05
+Epoch [ 3/20] | Step [  100/  164] | Global step [    428] | Train Loss: 3.9167 | Train Top-1: 6.23% | LR: 2.14e-05
+Epoch [ 3/20] | Step [  150/  164] | Global step [    478] | Train Loss: 3.8517 | Train Top-1: 6.47% | LR: 2.39e-05
+Epoch [ 3/20] | Step [  164/  164] | Global step [    492] | Train Loss: 3.8377 | Train Top-1: 6.52% | LR: 2.46e-05
+------------------------------------------------------------------------------
+Epoch  3 Validation -> Val Loss: 3.6745 | Val Top-1: 6.91% | Val Top-3: 18.20%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 3.6745)
+Epoch 3 elapsed: 0.1 min; training throughput including validation: 2753.3 examples/s
+Epoch [ 4/20] | Step [   50/  164] | Global step [    542] | Train Loss: 3.6089 | Train Top-1: 8.12% | LR: 2.71e-05
+Epoch [ 4/20] | Step [  100/  164] | Global step [    592] | Train Loss: 3.5795 | Train Top-1: 8.37% | LR: 2.96e-05
+Epoch [ 4/20] | Step [  150/  164] | Global step [    642] | Train Loss: 3.5478 | Train Top-1: 8.76% | LR: 3.21e-05
+Epoch [ 4/20] | Step [  164/  164] | Global step [    656] | Train Loss: 3.5387 | Train Top-1: 8.80% | LR: 3.28e-05
+------------------------------------------------------------------------------
+Epoch  4 Validation -> Val Loss: 3.4346 | Val Top-1: 10.30% | Val Top-3: 23.95%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 3.4346)
+Epoch 4 elapsed: 0.1 min; training throughput including validation: 2750.0 examples/s
+Epoch [ 5/20] | Step [   50/  164] | Global step [    706] | Train Loss: 3.4030 | Train Top-1: 10.25% | LR: 3.53e-05
+Epoch [ 5/20] | Step [  100/  164] | Global step [    756] | Train Loss: 3.3729 | Train Top-1: 10.64% | LR: 3.78e-05
+Epoch [ 5/20] | Step [  150/  164] | Global step [    806] | Train Loss: 3.3420 | Train Top-1: 11.21% | LR: 4.03e-05
+Epoch [ 5/20] | Step [  164/  164] | Global step [    820] | Train Loss: 3.3312 | Train Top-1: 11.43% | LR: 4.10e-05
+------------------------------------------------------------------------------
+Epoch  5 Validation -> Val Loss: 3.2704 | Val Top-1: 12.46% | Val Top-3: 29.42%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 3.2704)
+Epoch 5 elapsed: 0.1 min; training throughput including validation: 2733.6 examples/s
+Epoch [ 6/20] | Step [   50/  164] | Global step [    870] | Train Loss: 3.2175 | Train Top-1: 13.31% | LR: 4.35e-05
+Epoch [ 6/20] | Step [  100/  164] | Global step [    920] | Train Loss: 3.1942 | Train Top-1: 13.62% | LR: 4.60e-05
+Epoch [ 6/20] | Step [  150/  164] | Global step [    970] | Train Loss: 3.1701 | Train Top-1: 13.91% | LR: 4.85e-05
+Epoch [ 6/20] | Step [  164/  164] | Global step [    984] | Train Loss: 3.1612 | Train Top-1: 14.04% | LR: 4.92e-05
+------------------------------------------------------------------------------
+Epoch  6 Validation -> Val Loss: 3.0922 | Val Top-1: 15.09% | Val Top-3: 34.81%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 3.0922)
+Epoch 6 elapsed: 0.1 min; training throughput including validation: 2742.0 examples/s
+Epoch [ 7/20] | Step [   50/  164] | Global step [   1034] | Train Loss: 3.0323 | Train Top-1: 16.84% | LR: 5.17e-05
+Epoch [ 7/20] | Step [  100/  164] | Global step [   1084] | Train Loss: 3.0335 | Train Top-1: 16.66% | LR: 5.42e-05
+Epoch [ 7/20] | Step [  150/  164] | Global step [   1134] | Train Loss: 3.0192 | Train Top-1: 16.64% | LR: 5.67e-05
+Epoch [ 7/20] | Step [  164/  164] | Global step [   1148] | Train Loss: 3.0172 | Train Top-1: 16.70% | LR: 5.74e-05
+------------------------------------------------------------------------------
+Epoch  7 Validation -> Val Loss: 2.9765 | Val Top-1: 17.25% | Val Top-3: 38.36%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.9765)
+Epoch 7 elapsed: 0.1 min; training throughput including validation: 2710.1 examples/s
+Epoch [ 8/20] | Step [   50/  164] | Global step [   1198] | Train Loss: 2.9389 | Train Top-1: 17.66% | LR: 5.99e-05
+Epoch [ 8/20] | Step [  100/  164] | Global step [   1248] | Train Loss: 2.9323 | Train Top-1: 17.73% | LR: 6.24e-05
+Epoch [ 8/20] | Step [  150/  164] | Global step [   1298] | Train Loss: 2.9219 | Train Top-1: 18.05% | LR: 6.49e-05
+Epoch [ 8/20] | Step [  164/  164] | Global step [   1312] | Train Loss: 2.9163 | Train Top-1: 18.18% | LR: 6.56e-05
+------------------------------------------------------------------------------
+Epoch  8 Validation -> Val Loss: 2.8815 | Val Top-1: 17.88% | Val Top-3: 41.68%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.8815)
+Epoch 8 elapsed: 0.1 min; training throughput including validation: 2739.5 examples/s
+Epoch [ 9/20] | Step [   50/  164] | Global step [   1362] | Train Loss: 2.8304 | Train Top-1: 20.27% | LR: 6.81e-05
+Epoch [ 9/20] | Step [  100/  164] | Global step [   1412] | Train Loss: 2.8235 | Train Top-1: 20.10% | LR: 7.06e-05
+Epoch [ 9/20] | Step [  150/  164] | Global step [   1462] | Train Loss: 2.8199 | Train Top-1: 20.02% | LR: 7.31e-05
+Epoch [ 9/20] | Step [  164/  164] | Global step [   1476] | Train Loss: 2.8184 | Train Top-1: 20.18% | LR: 7.38e-05
+------------------------------------------------------------------------------
+Epoch  9 Validation -> Val Loss: 2.8293 | Val Top-1: 18.80% | Val Top-3: 42.79%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.8293)
+Epoch 9 elapsed: 0.1 min; training throughput including validation: 2748.1 examples/s
+Epoch [10/20] | Step [   50/  164] | Global step [   1526] | Train Loss: 2.7806 | Train Top-1: 20.70% | LR: 7.63e-05
+Epoch [10/20] | Step [  100/  164] | Global step [   1576] | Train Loss: 2.7728 | Train Top-1: 21.05% | LR: 7.88e-05
+Epoch [10/20] | Step [  150/  164] | Global step [   1626] | Train Loss: 2.7654 | Train Top-1: 21.05% | LR: 8.13e-05
+Epoch [10/20] | Step [  164/  164] | Global step [   1640] | Train Loss: 2.7620 | Train Top-1: 21.15% | LR: 8.20e-05
+------------------------------------------------------------------------------
+Epoch 10 Validation -> Val Loss: 2.7634 | Val Top-1: 21.48% | Val Top-3: 45.63%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.7634)
+Epoch 10 elapsed: 0.1 min; training throughput including validation: 2737.7 examples/s
+Epoch [11/20] | Step [   50/  164] | Global step [   1690] | Train Loss: 2.7042 | Train Top-1: 23.20% | LR: 8.45e-05
+Epoch [11/20] | Step [  100/  164] | Global step [   1740] | Train Loss: 2.7046 | Train Top-1: 23.45% | LR: 8.70e-05
+Epoch [11/20] | Step [  150/  164] | Global step [   1790] | Train Loss: 2.7067 | Train Top-1: 23.07% | LR: 8.95e-05
+Epoch [11/20] | Step [  164/  164] | Global step [   1804] | Train Loss: 2.7059 | Train Top-1: 23.00% | LR: 9.02e-05
+------------------------------------------------------------------------------
+Epoch 11 Validation -> Val Loss: 2.7179 | Val Top-1: 21.60% | Val Top-3: 47.11%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.7179)
+Epoch 11 elapsed: 0.1 min; training throughput including validation: 2737.0 examples/s
+Epoch [12/20] | Step [   50/  164] | Global step [   1854] | Train Loss: 2.6607 | Train Top-1: 23.09% | LR: 9.27e-05
+Epoch [12/20] | Step [  100/  164] | Global step [   1904] | Train Loss: 2.6697 | Train Top-1: 23.03% | LR: 9.52e-05
+Epoch [12/20] | Step [  150/  164] | Global step [   1954] | Train Loss: 2.6728 | Train Top-1: 23.37% | LR: 9.77e-05
+Epoch [12/20] | Step [  164/  164] | Global step [   1968] | Train Loss: 2.6692 | Train Top-1: 23.50% | LR: 9.84e-05
+------------------------------------------------------------------------------
+Epoch 12 Validation -> Val Loss: 2.6989 | Val Top-1: 22.95% | Val Top-3: 47.39%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.6989)
+Epoch 12 elapsed: 0.1 min; training throughput including validation: 2747.4 examples/s
+Epoch [13/20] | Step [   50/  164] | Global step [   2018] | Train Loss: 2.6342 | Train Top-1: 24.17% | LR: 1.00e-04
+Epoch [13/20] | Step [  100/  164] | Global step [   2068] | Train Loss: 2.6319 | Train Top-1: 24.28% | LR: 9.94e-05
+Epoch [13/20] | Step [  150/  164] | Global step [   2118] | Train Loss: 2.6362 | Train Top-1: 24.29% | LR: 9.82e-05
+Epoch [13/20] | Step [  164/  164] | Global step [   2132] | Train Loss: 2.6275 | Train Top-1: 24.43% | LR: 9.77e-05
+------------------------------------------------------------------------------
+Epoch 13 Validation -> Val Loss: 2.6533 | Val Top-1: 23.23% | Val Top-3: 48.98%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.6533)
+Epoch 13 elapsed: 0.1 min; training throughput including validation: 2734.0 examples/s
+Epoch [14/20] | Step [   50/  164] | Global step [   2182] | Train Loss: 2.6202 | Train Top-1: 24.72% | LR: 9.56e-05
+Epoch [14/20] | Step [  100/  164] | Global step [   2232] | Train Loss: 2.6020 | Train Top-1: 25.27% | LR: 9.30e-05
+Epoch [14/20] | Step [  150/  164] | Global step [   2282] | Train Loss: 2.5991 | Train Top-1: 25.37% | LR: 8.97e-05
+Epoch [14/20] | Step [  164/  164] | Global step [   2296] | Train Loss: 2.5983 | Train Top-1: 25.38% | LR: 8.87e-05
+------------------------------------------------------------------------------
+Epoch 14 Validation -> Val Loss: 2.6049 | Val Top-1: 24.63% | Val Top-3: 49.90%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.6049)
+Epoch 14 elapsed: 0.1 min; training throughput including validation: 2736.6 examples/s
+Epoch [15/20] | Step [   50/  164] | Global step [   2346] | Train Loss: 2.5662 | Train Top-1: 25.44% | LR: 8.48e-05
+Epoch [15/20] | Step [  100/  164] | Global step [   2396] | Train Loss: 2.5627 | Train Top-1: 26.20% | LR: 8.05e-05
+Epoch [15/20] | Step [  150/  164] | Global step [   2446] | Train Loss: 2.5564 | Train Top-1: 26.41% | LR: 7.57e-05
+Epoch [15/20] | Step [  164/  164] | Global step [   2460] | Train Loss: 2.5595 | Train Top-1: 26.34% | LR: 7.43e-05
+------------------------------------------------------------------------------
+Epoch 15 Validation -> Val Loss: 2.5883 | Val Top-1: 25.27% | Val Top-3: 50.90%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.5883)
+Epoch 15 elapsed: 0.1 min; training throughput including validation: 2743.8 examples/s
+Epoch [16/20] | Step [   50/  164] | Global step [   2510] | Train Loss: 2.5360 | Train Top-1: 26.62% | LR: 6.92e-05
+Epoch [16/20] | Step [  100/  164] | Global step [   2560] | Train Loss: 2.5293 | Train Top-1: 26.82% | LR: 6.39e-05
+Epoch [16/20] | Step [  150/  164] | Global step [   2610] | Train Loss: 2.5249 | Train Top-1: 26.62% | LR: 5.84e-05
+Epoch [16/20] | Step [  164/  164] | Global step [   2624] | Train Loss: 2.5236 | Train Top-1: 26.69% | LR: 5.69e-05
+------------------------------------------------------------------------------
+Epoch 16 Validation -> Val Loss: 2.5746 | Val Top-1: 26.11% | Val Top-3: 51.18%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.5746)
+Epoch 16 elapsed: 0.1 min; training throughput including validation: 2739.0 examples/s
+Epoch [17/20] | Step [   50/  164] | Global step [   2674] | Train Loss: 2.4950 | Train Top-1: 27.25% | LR: 5.14e-05
+Epoch [17/20] | Step [  100/  164] | Global step [   2724] | Train Loss: 2.4922 | Train Top-1: 27.61% | LR: 4.59e-05
+Epoch [17/20] | Step [  150/  164] | Global step [   2774] | Train Loss: 2.4919 | Train Top-1: 27.86% | LR: 4.06e-05
+Epoch [17/20] | Step [  164/  164] | Global step [   2788] | Train Loss: 2.4882 | Train Top-1: 27.92% | LR: 3.91e-05
+------------------------------------------------------------------------------
+Epoch 17 Validation -> Val Loss: 2.5429 | Val Top-1: 26.83% | Val Top-3: 52.38%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.5429)
+Epoch 17 elapsed: 0.1 min; training throughput including validation: 2742.7 examples/s
+Epoch [18/20] | Step [   50/  164] | Global step [   2838] | Train Loss: 2.4823 | Train Top-1: 28.38% | LR: 3.41e-05
+Epoch [18/20] | Step [  100/  164] | Global step [   2888] | Train Loss: 2.4815 | Train Top-1: 28.45% | LR: 2.94e-05
+Epoch [18/20] | Step [  150/  164] | Global step [   2938] | Train Loss: 2.4716 | Train Top-1: 28.69% | LR: 2.50e-05
+Epoch [18/20] | Step [  164/  164] | Global step [   2952] | Train Loss: 2.4730 | Train Top-1: 28.63% | LR: 2.39e-05
+------------------------------------------------------------------------------
+Epoch 18 Validation -> Val Loss: 2.5290 | Val Top-1: 26.39% | Val Top-3: 52.34%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.5290)
+Epoch 18 elapsed: 0.1 min; training throughput including validation: 2742.7 examples/s
+Epoch [19/20] | Step [   50/  164] | Global step [   3002] | Train Loss: 2.4681 | Train Top-1: 28.86% | LR: 2.01e-05
+Epoch [19/20] | Step [  100/  164] | Global step [   3052] | Train Loss: 2.4647 | Train Top-1: 28.85% | LR: 1.69e-05
+Epoch [19/20] | Step [  150/  164] | Global step [   3102] | Train Loss: 2.4572 | Train Top-1: 28.88% | LR: 1.43e-05
+Epoch [19/20] | Step [  164/  164] | Global step [   3116] | Train Loss: 2.4543 | Train Top-1: 28.92% | LR: 1.36e-05
+------------------------------------------------------------------------------
+Epoch 19 Validation -> Val Loss: 2.5112 | Val Top-1: 27.86% | Val Top-3: 52.85%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt (Val Loss: 2.5112)
+Epoch 19 elapsed: 0.1 min; training throughput including validation: 2735.9 examples/s
+Epoch [20/20] | Step [   50/  164] | Global step [   3166] | Train Loss: 2.4307 | Train Top-1: 29.36% | LR: 1.18e-05
+Epoch [20/20] | Step [  100/  164] | Global step [   3216] | Train Loss: 2.4358 | Train Top-1: 29.09% | LR: 1.06e-05
+Epoch [20/20] | Step [  150/  164] | Global step [   3266] | Train Loss: 2.4405 | Train Top-1: 29.26% | LR: 1.00e-05
+Epoch [20/20] | Step [  164/  164] | Global step [   3280] | Train Loss: 2.4417 | Train Top-1: 29.17% | LR: 1.00e-05
+------------------------------------------------------------------------------
+Epoch 20 Validation -> Val Loss: 2.5080 | Val Top-1: 27.82% | Val Top-3: 53.21%
+------------------------------------------------------------------------------
+Best inference checkpoint saved: TRM/checkpoints/best_model.pt (Val Loss: 2.5080)
+Epoch 20 elapsed: 0.1 min; training throughput including validation: 2736.6 examples/s
+
+
+
+python3 go_eval.py --checkpoint checkpoints/best_model.pt
+Device: cuda
+Checkpoint: checkpoints/best_model.pt
+TRM/9x9_go/go_dataset/test.npz
+Test examples: 2798
+Evaluating on test set...
+
+=== TEST METRICS ===
+Cross-entropy loss: 2.4755
+Top-1 accuracy:     27.84%
+Top-3 accuracy:     53.15%
+Top-5 accuracy:     67.26%
+Board-only Top-1:   0.27610040014550746
+PASS examples:      49
+PASS precision:     0.26666666666666666
+PASS recall:        0.40816326530612246
+PASS F1:            0.3225806451612903
+
+Results saved to: /home/f/Documents/GitHub/Tesi-Triennale/TRM/evaluation_results
+Generated: metrics.json, predictions.csv, and four PNG plots.

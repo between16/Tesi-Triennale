@@ -5,7 +5,7 @@ import torch
 from go_dataset import apply_board_symmetry
 from app import checkpoint_for_board_size
 from train import GoTRMModel, evaluate
-from agents import select_near_best_action
+from agents import apply_legal_move_mask, select_near_best_action
 
 
 @pytest.mark.parametrize(
@@ -63,7 +63,7 @@ def test_board_symmetry_preserves_pass_and_board_shape(board_size):
     assert transformed_pass == board_size * board_size
 
 
-def test_near_best_selection_randomizes_only_within_tolerance():
+def test_near_best_selection_randomizes_only_within_relative_tolerance():
     probabilities = torch.tensor([0.51, 0.50, 0.48, 0.0])
     rng = np.random.default_rng(42)
 
@@ -72,6 +72,7 @@ def test_near_best_selection_randomizes_only_within_tolerance():
         for _ in range(100)
     }
 
+    # 0.50 is within 2% of 0.51; 0.48 is not.
     assert selected == {0, 1}
 
 
@@ -83,9 +84,68 @@ def test_near_best_selection_keeps_clear_best_action():
     ) == 0
 
 
-def test_near_best_selection_rejects_negative_tolerance():
-    with pytest.raises(ValueError, match="non-negative"):
-        select_near_best_action(torch.tensor([0.6, 0.4]), tolerance=-0.01)
+def test_near_best_selection_excludes_zero_probability_actions_on_19x19():
+    probabilities = torch.zeros(362)
+    probabilities[10] = 0.009
+    probabilities[11] = 0.00895
+
+    legal_mask = torch.zeros(362, dtype=torch.bool)
+    legal_mask[[10, 11, 361]] = True
+
+    rng = np.random.default_rng(42)
+    selected = {
+        select_near_best_action(
+            probabilities,
+            tolerance=0.02,
+            rng=rng,
+            legal_mask=legal_mask,
+        )
+        for _ in range(100)
+    }
+
+    assert selected == {10, 11}
+    assert all(bool(legal_mask[action]) for action in selected)
+
+
+def test_near_best_selection_respects_explicit_legal_mask():
+    probabilities = torch.tensor([0.50, 0.499, 0.498, 0.0])
+    legal_mask = torch.tensor([True, False, True, True])
+
+    selected = select_near_best_action(
+        probabilities,
+        tolerance=0.02,
+        rng=np.random.default_rng(42),
+        legal_mask=legal_mask,
+    )
+
+    assert selected in {0, 2}
+    assert bool(legal_mask[selected])
+
+
+def test_near_best_selection_rejects_invalid_tolerance():
+    probabilities = torch.tensor([0.6, 0.4])
+
+    with pytest.raises(ValueError, match="smaller than 1"):
+        select_near_best_action(probabilities, tolerance=-0.01)
+
+    with pytest.raises(ValueError, match="smaller than 1"):
+        select_near_best_action(probabilities, tolerance=1.0)
+
+
+def test_near_best_selection_rejects_mismatched_legal_mask():
+    probabilities = torch.tensor([0.6, 0.4])
+    legal_mask = torch.tensor([True, False, True])
+
+    with pytest.raises(ValueError, match="same shape"):
+        select_near_best_action(probabilities, legal_mask=legal_mask)
+
+
+def test_apply_legal_move_mask_rejects_empty_legal_mask():
+    logits = torch.tensor([1.0, 2.0, 3.0])
+    legal_mask = torch.tensor([False, False, False])
+
+    with pytest.raises(ValueError, match="No legal actions"):
+        apply_legal_move_mask(logits, legal_mask)
 
 
 def test_validation_accuracy_weights_each_example_equally():

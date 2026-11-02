@@ -5,31 +5,106 @@ from models.go_trm import TinyRecursiveReasoningModel_ACTV1
 from models.go_policy_head import GoPolicyHead
 
 
-def apply_legal_move_mask(logits, legal_mask):
+def apply_legal_move_mask(
+    logits: torch.Tensor,
+    legal_mask: torch.Tensor,
+) -> torch.Tensor:
     """Mask illegal actions so their softmax probability is exactly zero."""
-    negative_inf = torch.full_like(logits, float("-inf"))
-    return torch.where(legal_mask, logits, negative_inf)
+    if logits.ndim != 1:
+        raise ValueError(
+            f"Logits must be one-dimensional, received shape {tuple(logits.shape)}."
+        )
+
+    legal_mask = torch.as_tensor(
+        legal_mask,
+        device=logits.device,
+        dtype=torch.bool,
+    )
+
+    if legal_mask.shape != logits.shape:
+        raise ValueError(
+            "Logits and legal mask must have the same shape; "
+            f"received {tuple(logits.shape)} and {tuple(legal_mask.shape)}."
+        )
+
+    if not bool(legal_mask.any().item()):
+        raise ValueError("No legal actions available.")
+
+    if not bool(torch.isfinite(logits[legal_mask]).all().item()):
+        raise ValueError("Non-finite logits found for legal actions.")
+
+    return logits.masked_fill(~legal_mask, float("-inf"))
 
 
 def select_near_best_action(
-    probabilities: torch.Tensor,
+    probabilities: torch.Tensor | np.ndarray,
     tolerance: float = 0.02,
     rng: np.random.Generator | None = None,
+    legal_mask: torch.Tensor | np.ndarray | None = None,
 ) -> int:
-    """Choose uniformly among actions within `tolerance` of the best probability."""
-    if tolerance < 0:
-        raise ValueError("tolerance must be non-negative.")
+    """Choose randomly among legal actions close to the best probability.
 
-    action_probabilities = probabilities.detach().cpu().numpy()
+    ``tolerance`` is relative to the best legal probability. For example,
+    ``tolerance=0.02`` keeps actions whose probability is at least 98% of the
+    best legal probability. This avoids admitting zero-probability illegal
+    actions when the best probability is small, as can happen on a 19x19 board.
+
+    Pass ``legal_mask`` whenever it is available. If it is omitted, actions
+    with zero probability are treated as unavailable.
+    """
+    if not np.isfinite(tolerance) or not 0.0 <= tolerance < 1.0:
+        raise ValueError("tolerance must be non-negative and smaller than 1.")
+
+    if isinstance(probabilities, torch.Tensor):
+        action_probabilities = probabilities.detach().cpu().numpy()
+    else:
+        action_probabilities = np.asarray(probabilities)
+
+    action_probabilities = np.asarray(action_probabilities, dtype=np.float64)
+
     if action_probabilities.ndim != 1 or action_probabilities.size == 0:
-        raise ValueError("probabilities must be a non-empty one-dimensional tensor.")
-    if not np.isfinite(action_probabilities).all():
-        raise ValueError("probabilities must contain only finite values.")
+        raise ValueError(
+            "probabilities must be a non-empty one-dimensional array."
+        )
 
-    best_probability = float(action_probabilities.max())
-    candidates = np.flatnonzero(action_probabilities >= best_probability - tolerance)
+    if (
+        not np.isfinite(action_probabilities).all()
+        or (action_probabilities < 0.0).any()
+    ):
+        raise ValueError("probabilities must be finite and non-negative.")
+
+    if legal_mask is None:
+        valid_mask = action_probabilities > 0.0
+    elif isinstance(legal_mask, torch.Tensor):
+        valid_mask = legal_mask.detach().cpu().numpy().astype(bool)
+    else:
+        valid_mask = np.asarray(legal_mask, dtype=bool)
+
+    if valid_mask.shape != action_probabilities.shape:
+        raise ValueError(
+            "legal_mask and probabilities must have the same shape."
+        )
+
+    if not valid_mask.any():
+        raise ValueError("No legal actions available.")
+
+    best_probability = float(action_probabilities[valid_mask].max())
+    if best_probability <= 0.0:
+        raise ValueError("No legal action has positive probability.")
+
+    # Use a relative threshold, not an absolute subtraction such as 0.02.
+    threshold = best_probability * (1.0 - tolerance)
+    candidates = np.flatnonzero(
+        valid_mask & (action_probabilities >= threshold)
+    )
+
+    if candidates.size == 0:
+        # This should not happen because the maximum legal action is a candidate.
+        raise RuntimeError("Near-best action selection produced no candidates.")
+
     if rng is None:
-        return int(np.random.choice(candidates))
+        rng = np.random.default_rng()
+
     return int(rng.choice(candidates))
 
 
@@ -61,16 +136,21 @@ class GoAgent:
 class TRMAgent(GoAgent):
     """Agent driven by the trained TRM model."""
 
-    def __init__(self, checkpoint_path="checkpoints/best_model.pt", device=None):
-       class TRMAgent(GoAgent):
-        """Agent driven by the trained TRM model."""
+    def __init__(
+        self,
+        checkpoint_path="checkpoints/best_model.pt",
+        device=None,
+        move_tolerance=0.02,
+        rng=None,
+    ):
+        if not 0.0 <= move_tolerance < 1.0:
+            raise ValueError("move_tolerance must be between 0 and 1.")
 
-    def __init__(self, checkpoint_path="checkpoints/best_model.pt", device=None):
         if device is None:
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
             elif torch.backends.mps.is_available():
-                self.device = torch.device("mps")  
+                self.device = torch.device("mps")
             else:
                 self.device = torch.device("cpu")
         else:
@@ -82,7 +162,10 @@ class TRMAgent(GoAgent):
         self.model = GoTRMModel(config_dict).to(self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.eval()
+
         self.board_size = config_dict.get("board_size", 9)
+        self.move_tolerance = float(move_tolerance)
+        self.rng = rng if rng is not None else np.random.default_rng()
 
     def _extract_features(self, env):
         """Convert the current Go state into [1, 7, board_size, board_size]."""
@@ -119,30 +202,48 @@ class TRMAgent(GoAgent):
         return torch.from_numpy(tensor).unsqueeze(0).to(self.device)
 
     def get_policy(self, env):
-        """Return raw logits, legal mask, and masked policy probabilities.
+        """Return raw logits, legal mask, and masked policy probabilities."""
+        if env.game_over:
+            raise RuntimeError("Cannot calculate a move after the game has ended.")
 
-        This helper is useful both for deterministic move selection and for a
-        future GUI analysis panel showing the model's top candidate moves.
-        """
         if env.board_size != self.board_size:
             raise ValueError(
                 f"Agent checkpoint expects a {self.board_size}x{self.board_size} "
                 f"board, but environment uses {env.board_size}x{env.board_size}."
             )
+
         x = self._extract_features(env)
         legal_mask = env.get_legal_moves_mask().to(self.device)
 
         with torch.inference_mode():
             logits = self.model(x).squeeze(0)
 
+        expected_actions = self.board_size * self.board_size + 1
+        if logits.shape != (expected_actions,):
+            raise RuntimeError(
+                f"Expected {expected_actions} logits, "
+                f"received shape {tuple(logits.shape)}."
+            )
+
+        if legal_mask.shape != logits.shape:
+            raise RuntimeError(
+                f"Logits shape {tuple(logits.shape)} does not match "
+                f"legal mask shape {tuple(legal_mask.shape)}."
+            )
+
         masked_logits = apply_legal_move_mask(logits, legal_mask)
         probabilities = torch.softmax(masked_logits, dim=-1)
         return logits, legal_mask, probabilities
 
     def get_move(self, env):
-        """Return a best legal action, randomizing only among near-ties."""
-        _, _, probabilities = self.get_policy(env)
-        return select_near_best_action(probabilities)
+        """Return a near-best legal action, randomizing only among close moves."""
+        _, legal_mask, probabilities = self.get_policy(env)
+        return select_near_best_action(
+            probabilities,
+            tolerance=self.move_tolerance,
+            rng=self.rng,
+            legal_mask=legal_mask,
+        )
 
 
 class HumanAgent(GoAgent):
@@ -153,7 +254,13 @@ class HumanAgent(GoAgent):
             return None
 
         legal_mask = env.get_legal_moves_mask()
+        if not isinstance(move_idx, (int, np.integer)):
+            raise ValueError("Move index must be an integer.")
+
+        if move_idx < 0 or move_idx >= legal_mask.numel():
+            raise ValueError(f"Move index {move_idx} is out of bounds.")
+
         if bool(legal_mask[move_idx].item()):
-            return move_idx
+            return int(move_idx)
 
         raise ValueError(f"Move {move_idx} is not legal!")
