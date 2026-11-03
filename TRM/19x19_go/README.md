@@ -1,16 +1,17 @@
 # 19×19 Go datasets
 
-The raw archives include professional records in `go_raw_dataset/games/` and
-additional games in `go_raw_dataset/jgdb/`. The SGF files use nested layouts
-and may contain different board sizes.
+The professional archive is the **CWI Database of Go Games**. Its SGF files
+use nested layouts and may contain different board sizes. The separate
+`go_raw_dataset/jgdb/` source is not part of the practical training dataset
+described below.
 
 ## Recommended local training dataset
 
-For a practical local training run, start with the professional-player
-`games/` source. The directory currently contains 96,858 readable 19×19
-records; exact duplicates reduce that to 95,715 unique games. The commands
-below filter it and create deterministic, game-level train/validation/test
-splits from at most 10,000 games. Run from `TRM/`:
+For a practical local training run, use only the professional-player
+`games/` source. It currently contains 97,565 SGF files; filtering for valid
+19×19 games and removing exact duplicates produces 95,715 unique games. The
+commands below create deterministic, game-level train/validation/test splits
+from at most 10,000 games. Run from `TRM/`:
 
 ```bash
 python 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 \
@@ -18,28 +19,36 @@ python 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 \
   --destination 19x19_go/go_raw_dataset/19x19_professional_games
 python go_preprocessing.py --board-size 19 \
   --input-dir 19x19_go/go_raw_dataset/19x19_professional_games \
-  --max-games 10000 --storage-format npy
+  --output-dir 19x19_go/go_dataset_professional_10k \
+  --max-games 10000 \
+  --storage-format npy
 ```
 
 The sample is shuffled with seed 42 before the 80/10/10 split, so each game
 belongs to exactly one split. NPY split directories contain `X.npy` and
 `y.npy` arrays and are read via memory mapping. They do not require the entire
-dataset to be loaded into RAM. The generated sample contains 1,668,062 train,
-208,594 validation, and 208,653 test examples (two unreadable SGFs were
-skipped).
+dataset to be loaded into RAM. Raw SGFs have variable numbers of moves and
+therefore no single tensor shape. The current/previously generated sample
+contains 1,668,062 train, 208,594 validation, and 208,653 test examples
+(2,085,309 total); `X` has shape `[examples, 7, 19, 19]` and dtype
+`float32`, while `y` has shape `[examples]` and dtype `int64`. Counts may
+change if the input files or selected sample change.
 
 Start with a short smoke test, then launch the run with the available
 eight-hour budget:
 
 ```bash
-python train.py --board-size 19 --max-steps 100
-python train.py --board-size 19 --max-hours 8
+python train.py --board-size 19 \
+  --dataset-dir 19x19_go/go_dataset_professional_10k --max-steps 100
+python train.py --board-size 19 \
+  --dataset-dir 19x19_go/go_dataset_professional_10k --max-hours 8
 ```
 
-The NPY splits are written to `go_dataset/{train,val,test}/`, the standard
-board-size-specific dataset directory. Once a dataset is prepared, no
-`--dataset-dir` or `--dataset-format` argument is needed; training detects
-NPY directories (and otherwise falls back to NPZ files) in that location.
+The NPY splits are written to
+`19x19_go/go_dataset_professional_10k/{train,val,test}/`. Pass
+`--dataset-dir` when using this dedicated output directory. If no custom
+directory is supplied, training detects NPY directories (and otherwise falls
+back to NPZ files) under the standard `go_dataset/` location.
 For 19×19, the default batch size is 16. Validation is limited to 200 batches
 by default to leave time for training. A resume checkpoint is saved every
 500 steps and when the time limit is reached; `--resume` loads it. If it was

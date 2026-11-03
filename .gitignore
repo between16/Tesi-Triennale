@@ -9,3 +9,5 @@ TRM/19x19_go/go_dataset/val/
 TRM/19x19_go/go_dataset/test/
 TRM/checkpoints/19x19_go/*
 !TRM/checkpoints/19x19_go/best_model.pt
+
+TRM/9x9_go/go_dataset_go9/

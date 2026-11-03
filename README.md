@@ -33,62 +33,78 @@ When the TRM selects a move, it randomizes uniformly only among legal actions wh
 
 The 19x19 launch command requires a trained 19x19 checkpoint. The repository currently contains only the 9x9 model. After training a 19x19 model, commit its small inference checkpoint at `TRM/checkpoints/19x19_go/best_model.pt`; the large training datasets are not needed for inference.
 
-If you want to **prepare a dataset**, place SGF files under the matching raw-games directory and run preprocessing with the board size. By default, preprocessing reads 9x9 games from `9x9_go/go_raw_dataset/9x9_games/` and writes the train, validation, and test datasets to `9x9_go/go_dataset/`.
+## End-to-end Go training pipeline
+
+Run the commands from the `TRM/` directory after installing the project
+dependencies. The extraction helper filters SGF records by board size and
+removes exact duplicate files. Preprocessing creates game-level 80/10/10
+train/validation/test splits in NPY format; each split contains `X.npy` and
+`y.npy` and can be loaded by memory mapping. The dedicated output folders
+below keep these datasets separate from any existing splits.
+
+### 9×9
+
+The `go9/` directory contains the new 9×9 SGF corpus:
+
 ```bash
 cd TRM/
-python3 go_preprocessing.py --board-size 9
+python3 9x9_go/go_raw_dataset/extract_9x9.py --board-size 9 \
+  --source 9x9_go/go_raw_dataset/go9 \
+  --destination 9x9_go/go_raw_dataset/go9_filtered
+python3 go_preprocessing.py --board-size 9 \
+  --input-dir 9x9_go/go_raw_dataset/go9_filtered \
+  --output-dir 9x9_go/go_dataset_go9 \
+  --storage-format npy
+python3 train.py --board-size 9 \
+  --dataset-dir 9x9_go/go_dataset_go9 \
+  --epochs 20
 ```
 
-To prepare a full 19x19 dataset from already filtered SGF files under `19x19_go/go_raw_dataset/19x19_games/`, run:
-```bash
-python3 go_preprocessing.py --board-size 19
-```
+### 19×19
 
-For the default source/output convention, preprocessing for either board size
-uses `go_raw_dataset/<N>x<N>_games/` as input and `go_dataset/` as output;
-changing `--board-size` selects the corresponding `N` folders and validates
-the SGF board size. The same script can write either compressed NPZ files or
-memory-mapped NPY split directories.
+For a practical local run, use the professional games archive, filter it to
+19×19, and deterministically sample at most 10,000 games for preprocessing:
 
-For local training, the recommended path uses the professional-player records in `19x19_go/go_raw_dataset/games/`, samples up to 10,000 games, and writes memory-mapped NPY splits into the standard 19x19 dataset folder. Run from `TRM/`:
 ```bash
+cd TRM/
 python3 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 \
   --source 19x19_go/go_raw_dataset/games \
   --destination 19x19_go/go_raw_dataset/19x19_professional_games
 python3 go_preprocessing.py --board-size 19 \
   --input-dir 19x19_go/go_raw_dataset/19x19_professional_games \
-  --max-games 10000 --storage-format npy
+  --output-dir 19x19_go/go_dataset_professional_10k \
+  --max-games 10000 \
+  --storage-format npy
+python3 train.py --board-size 19 \
+  --dataset-dir 19x19_go/go_dataset_professional_10k \
+  --epochs 5
 ```
 
-The source contains 96,858 readable 19x19 games; after exact duplicate removal, 95,715 remain. Sampling is deterministic (seed 42), and the games are split 80/10/10 before preprocessing, so moves from one game never cross splits. The current 10,000-game sample produced 1,668,062 train examples, 208,594 validation examples, and 208,653 test examples. Two unreadable SGFs were skipped. These local datasets are excluded from Git because of their size.
+The 19×19 corpus is much larger, so the 10,000-game sample and NPY format are
+recommended for local training. The sample is selected with seed 42. The
+previously tested sample produced about 2.1 million examples across the three
+splits; counts can vary if the input files change.
 
-The preprocessing script reconstructs missing terminal PASS moves only for fully processed games with an explicitly scored result. It does not add PASS moves to games ending by resignation, time loss, or forfeiture.
+For either size, training saves the best inference checkpoint and a resumable
+latest checkpoint. The 9×9 checkpoint is `checkpoints/best_model.pt`; 19×19 is
+`checkpoints/19x19_go/best_model.pt`. A new 9×9 run writes to the same checkpoint
+paths as the existing 9×9 model, so back up those files first if you need to
+keep them. Add `--resume` only when continuing a previous run with its
+`latest_model.pt`.
 
-To **filter SGF files by board size** from an archive directory, use the extraction helper. The source path is relative to the current working directory:
+The preprocessing script reconstructs missing terminal PASS moves only for
+fully processed games with an explicitly scored result. It does not add PASS
+moves to games ending by resignation, time loss, or forfeiture.
+
+To evaluate each model on the test split produced by the same pipeline, pass
+its path explicitly:
+
 ```bash
-cd TRM/
-python3 9x9_go/go_raw_dataset/extract_9x9.py --board-size 9 --source ./games
-python3 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 --source ./games
+python3 go_eval.py --checkpoint checkpoints/best_model.pt \
+  --test-data 9x9_go/go_dataset_go9/test
+python3 go_eval.py --checkpoint checkpoints/19x19_go/best_model.pt \
+  --test-data 19x19_go/go_dataset_professional_10k/test
 ```
-
-If you want to **train the model from scratch**, pass the same board size used to prepare the dataset. The 9x9 checkpoint is saved to `checkpoints/best_model.pt`; models for other sizes are saved in a size-specific subdirectory such as `checkpoints/19x19_go/best_model.pt`.
-```bash
-cd TRM/
-python3 train.py --board-size 9
-```
-
-For 9x9 and 19x19, the same training script and data loader are used. The
-board-size option selects the model dimensions and the matching dataset and
-checkpoint directories. The current 9x9 dataset is NPZ; the recommended
-19x19 sample is NPY memory-mapped. The loader detects either format
-automatically, so once each dataset is in its standard board-size folder, the
-only required training option is `--board-size`:
-```bash
-python3 train.py --board-size 9 --epochs 20
-python3 train.py --board-size 19 --epochs 5
-```
-
-The 19x19 defaults are batch size 16 and two data-loader workers; the 9x9 batch size remains 128. Use `--dataset-dir` to select a non-standard dataset location, `--dataset-format npy` or `--dataset-format npz` to override auto-detection, and `--max-hours` or `--max-steps` for a bounded run. `--epochs 5` means five complete passes over the train split. On the local RTX 4060, a 1,000-step benchmark measured about 480 examples/s with batch size 16. At that rate, one pass over the current 19x19 train split takes around 58 minutes; five passes are approximately 4 hours 50 minutes, before validation and checkpoint overhead. These are estimates, not guarantees. Training reports throughput, saves a resumable `latest_model.pt` every 500 steps, and saves the best validation model as `checkpoints/19x19_go/best_model.pt`.
 
 The inference checkpoint contains only model weights and configuration and is about 3.3 MB of weights, well below GitHub's 100 MB per-file limit. `latest_model.pt` contains optimizer state and remains ignored; the best checkpoint is intentionally allowed by `.gitignore`. After training, add the inference checkpoint to the repository with:
 ```bash
@@ -123,10 +139,34 @@ python3 micro_train.py --board-size 9
 python3 micro_train.py --board-size 19
 ```
 
-# Dataset
-The dataset source is: https://homepages.cwi.nl/~aeb/go/games/
+# Dataset provenance and shapes
 
-The repository includes the processed 9x9 dataset. The 19x19 professional SGFs, generated NPY splits, and full NPZ datasets are local data artifacts and are excluded from Git. The `games/` directory contains the professional records; `jgdb/` is an additional, separate source that can be included when building the full 19x19 archive. The 9x9 and 19x19 splits are stored in their respective `TRM/<N>x<N>_go/go_dataset/` directories.
+- **9×9:** source `Go Quest – Top 50 players`. The current raw corpus at
+  `TRM/9x9_go/go_raw_dataset/go9/` contains 8,606 SGF files. The extraction
+  step retains the readable 9×9 games and removes exact duplicates.
+- **19×19:** source `CWI Database of Go Games`
+  (https://homepages.cwi.nl/~aeb/go/games/). The practical training pipeline
+  deliberately uses the professional `games/` archive only, not the complete
+  archive or the additional `jgdb/` source. The current `games/` folder has
+  97,565 SGF files; size filtering and exact deduplication produce 95,715
+  unique 19×19 files. Preprocessing then deterministically samples at most
+  10,000 games (seed 42) for local training.
+
+Raw SGF games have variable numbers of moves, so they do not have one fixed
+tensor shape. The processed arrays use `X: [examples, 7, N, N]` (`float32`)
+and `y: [examples]` (`int64`). The current/previously verified NPY splits
+have these shapes:
+
+| Board size | Raw SGFs selected for the pipeline | Train examples | Validation examples | Test examples | Total examples |
+|---|---:|---:|---:|---:|---:|
+| 9×9 | 8,606 | 331,251 | 41,500 | 41,380 | 414,131 |
+| 19×19 | 95,715 unique; at most 10,000 sampled | 1,668,062 | 208,594 | 208,653 | 2,085,309 |
+
+These are counts from the datasets currently generated and can change if the
+input SGFs or sampled games change. NPY split directories contain `X.npy` and
+`y.npy` and are excluded from Git along with the raw archives. The larger
+19×19 full archive is available separately; it is not the recommended input
+for the local training run described above.
 
 # Changes Made:
 Below you can find the list of all the changes made to the original TRM:
@@ -209,7 +249,7 @@ size-specific `evaluation_results/` folder. Test Top-1 is not expected to
 match validation Top-1 exactly.
 
 ```bash
-TRM/test_go_preprocessing.py
+TRM/tests/test_go_preprocessing.py
 ```
 This regression suite checks SGF extraction, game filtering, position counts,
 NPZ and memory-mapped NPY creation, and automatic split-format selection.
@@ -265,15 +305,16 @@ board dimensions from the checkpoint. `TRM/game_env.py` supplies the rules and
 legal-move checks consumed by both the GUI and self-play evaluation.
 
 # Testing
-`test_game_env.py` checks board rules and legal-move behavior.
-`test_go_board_size.py` checks model output dimensions, GUI checkpoint
-selection, board symmetries, and action-selection helpers for both board
-sizes. `test_go_preprocessing.py` checks SGF filtering/deduplication,
-position counting, NPZ/NPY dataset writing, and dataset loading.
+`TRM/tests/test_game_env.py` checks board rules and legal-move behavior.
+`TRM/tests/test_go_board_size.py` checks model output dimensions, GUI
+checkpoint selection, board symmetries, and action-selection helpers for both
+board sizes. `TRM/tests/test_go_preprocessing.py` checks SGF
+filtering/deduplication, position counting, NPZ/NPY dataset writing, and
+dataset loading.
 
-Run the unit tests from the repository root with:
+Run all unit tests from the repository root with:
 ```bash
-python3 -m pytest TRM/test_game_env.py TRM/test_go_board_size.py TRM/test_go_preprocessing.py
+python3 -m pytest
 ```
 
 # Pipeline

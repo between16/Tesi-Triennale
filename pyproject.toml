@@ -29,3 +29,7 @@ dependencies = [
     "wandb>=0.28.2",
     "wheel>=0.48.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["TRM/tests"]
+pythonpath = ["TRM"]
