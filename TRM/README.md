@@ -191,8 +191,26 @@ its size-specific checkpoint:
 
 ```bash
 python app.py --checkpoint checkpoints/19x19_go/best_model.pt
-python go_eval.py --checkpoint checkpoints/19x19_go/best_model.pt
+python model_evaluation/go_eval.py --checkpoint checkpoints/19x19_go/best_model.pt
 ```
+
+## Go verification tests
+
+Run the unit and checkpoint-backed tests from the repository root with:
+
+```bash
+uv run pytest -q TRM/tests
+```
+
+The optional live KataGo GTP integration test requires the local engine,
+configuration, and network files. Enable it with:
+
+```bash
+KATAGO_INTEGRATION_TESTS=1 uv run pytest -q TRM/tests/test_go_katago_integration.py
+```
+
+Set `KATAGO_EXECUTABLE`, `KATAGO_CONFIG`, `KATAGO_MODEL_9`, or
+`KATAGO_MODEL_19` to override the local KataGo resources.
 
 ## Reference
 

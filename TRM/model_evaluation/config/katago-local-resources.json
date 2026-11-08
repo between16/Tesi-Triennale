@@ -1,0 +1,47 @@
+{
+  "prepared_at": "2026-11-07",
+  "engine": {
+    "version": "1.18.2",
+    "download_url": "https://github.com/lightvector/KataGo/releases/download/v1.18.2/katago-v1.18.2-cuda13.2-cudnn9.24.0-linux-x64.zip",
+    "archive_sha256": "f75ad848543014c3ff8df6e9d378efc078c07d458c5e6def06bbb5df8accb169",
+    "executable": "TRM/model_evaluation/katago-local/engine/squashfs-root/usr/bin/katago",
+    "config": "TRM/model_evaluation/katago-local/engine/default_gtp.cfg"
+  },
+  "cuda_runtime": {
+    "package": "nvidia-cudnn-cu13==9.28.1.4",
+    "download_url": "https://files.pythonhosted.org/packages/ef/6f/94535c450d44a68ef0b43d7a5e54c0e5ecda2ca3db7daec5d54c8d94e0d8/nvidia_cudnn_cu13-9.28.1.4-py3-none-manylinux_2_27_x86_64.whl",
+    "archive_sha256": "a54f205b1db1f2895d99f398754db1369816f0569dd459731f925635cf7b65ec",
+    "license": "NVIDIA proprietary runtime; free to use locally, not open-source"
+  },
+  "networks": [
+    {
+      "board_size": 9,
+      "name": "KataGo Finetuned 9x9 Net (October 2023)",
+      "file": "TRM/model_evaluation/katago-local/downloads/kata9x9-b18c384nbt-20231025.bin.gz",
+      "download_url": "https://media.katagotraining.org/uploaded/networks/models_extra/kata9x9-b18c384nbt-20231025.bin.gz",
+      "size_bytes": 97878277,
+      "sha256": "a1298ce1adc1dad7bd868ca962b2384cc8388ed373a00e6bae1114fa6f9e2d61",
+      "rating_note": "Specialized 9x9 net; the official page does not provide a directly comparable KGS/AGA rating."
+    },
+    {
+      "board_size": 19,
+      "name": "kata1-tf3-b11c768-s12382M-d6533M",
+      "file": "TRM/model_evaluation/katago-local/downloads/kata1-tf3-b11c768-s12382M-d6533M.bin.gz",
+      "download_url": "https://media.katagotraining.org/uploaded/networks/models/kata1/kata1-tf3-b11c768-s12382M-d6533M.bin.gz",
+      "size_bytes": 262041254,
+      "sha256": "956c98c653825131233ca63ffe39f2a2270db957faf8650cddc8a60165b438a1",
+      "rating_note": "Official page listed 14635.0 +/- 29.3 internal Elo from 1,319 games on 2026-11-01; KataGo warns these ratings are not necessarily comparable to other bots or runs."
+    },
+    {
+      "board_sizes": [9, 19],
+      "name": "KataGo Human SL Network (July 2024)",
+      "file": "TRM/model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz",
+      "download_url": "https://media.katagotraining.org/uploaded/networks/models_extra/b18c384nbt-humanv0.bin.gz",
+      "size_bytes": 99066230,
+      "sha256": "637746e44f0efe00ad1245a50aa9bbf0716efe364c43965ead97bd6835d84ab5",
+      "license": "KataGo Neural Network License (MIT)",
+      "rating_note": "Supervised human-move model used by KataGo HumanSL rank profiles; the rank profile imitates human move distributions and is not a measured Elo anchor. Suitable for both board sizes as a human-move model."
+    }
+  ],
+  "network_license": "https://katagotraining.org/network_license/"
+}

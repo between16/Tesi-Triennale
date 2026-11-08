@@ -7,7 +7,7 @@ from sgfmill import sgf
 
 from go_dataset import GoDataset
 from train import resolve_dataset_paths
-from go_eval import default_test_data_path
+from model_evaluation.go_eval import default_test_data_path
 from go_preprocessing import (
     build_dataset,
     build_memmap_dataset,
@@ -208,7 +208,7 @@ def test_training_auto_format_prefers_memory_mapped_splits(tmp_path):
 
 
 def test_default_evaluation_split_prefers_memory_mapped_data(tmp_path, monkeypatch):
-    import go_eval
+    import model_evaluation.go_eval as go_eval
 
     monkeypatch.setattr(go_eval, "SCRIPT_DIR", tmp_path)
     dataset_dir = tmp_path / "19x19_go" / "go_dataset"
@@ -220,3 +220,16 @@ def test_default_evaluation_split_prefers_memory_mapped_data(tmp_path, monkeypat
 
     npy_test.rmdir()
     assert default_test_data_path(19) == dataset_dir / "test.npz"
+
+
+def test_default_nine_by_nine_evaluation_uses_documented_dataset_directory(
+    tmp_path, monkeypatch
+):
+    import model_evaluation.go_eval as go_eval
+
+    monkeypatch.setattr(go_eval, "SCRIPT_DIR", tmp_path)
+    dataset_dir = tmp_path / "9x9_go" / "go_dataset_go9"
+    npy_test = dataset_dir / "test"
+    npy_test.mkdir(parents=True)
+
+    assert default_test_data_path(9) == npy_test

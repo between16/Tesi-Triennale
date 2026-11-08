@@ -1,8 +1,14 @@
+import math
+from pathlib import Path
+
 import numpy as np
 import torch
 
 from models.go_trm import TinyRecursiveReasoningModel_ACTV1
 from models.go_policy_head import GoPolicyHead
+
+DEFAULT_PASS_LOGIT_PENALTY = 3.5
+DEFAULT_PASS_PENALTY_BEFORE_STONES = 16
 
 
 def apply_legal_move_mask(
@@ -34,6 +40,42 @@ def apply_legal_move_mask(
         raise ValueError("Non-finite logits found for legal actions.")
 
     return logits.masked_fill(~legal_mask, float("-inf"))
+
+
+def apply_early_pass_penalty(
+    logits: torch.Tensor,
+    board_size: int,
+    occupied_stones: int,
+    penalty: float,
+    before_stones: int,
+) -> torch.Tensor:
+    """Lower the PASS logit only while fewer than ``before_stones`` are occupied."""
+    if logits.ndim != 1 or logits.numel() != board_size * board_size + 1:
+        raise ValueError("Logits must contain one action per intersection plus PASS.")
+    if (
+        isinstance(occupied_stones, bool)
+        or not isinstance(occupied_stones, int)
+        or occupied_stones < 0
+    ):
+        raise ValueError("occupied_stones must be a non-negative integer.")
+    if not math.isfinite(penalty) or penalty < 0:
+        raise ValueError("penalty must be finite and non-negative.")
+    if (
+        isinstance(before_stones, bool)
+        or not isinstance(before_stones, int)
+        or before_stones < 0
+    ):
+        raise ValueError("before_stones must be a non-negative integer.")
+    if (penalty == 0) != (before_stones == 0):
+        raise ValueError(
+            "Set both penalty and before_stones to zero to disable the adjustment, "
+            "or set both to positive values."
+        )
+    if penalty == 0 or occupied_stones >= before_stones:
+        return logits
+    adjusted_logits = logits.clone()
+    adjusted_logits[-1] -= penalty
+    return adjusted_logits
 
 
 def select_near_best_action(
@@ -138,11 +180,13 @@ class TRMAgent(GoAgent):
 
     def __init__(
         self,
-        checkpoint_path="checkpoints/best_model.pt",
+        checkpoint_path: str | Path = "checkpoints/best_model.pt",
         device=None,
         move_tolerance=0.02,
         rng=None,
-    ):
+        pass_logit_penalty=DEFAULT_PASS_LOGIT_PENALTY,
+        pass_penalty_before_stones=DEFAULT_PASS_PENALTY_BEFORE_STONES,
+    ) -> None:
         if not 0.0 <= move_tolerance < 1.0:
             raise ValueError("move_tolerance must be between 0 and 1.")
 
@@ -165,6 +209,21 @@ class TRMAgent(GoAgent):
 
         self.board_size = config_dict.get("board_size", 9)
         self.move_tolerance = float(move_tolerance)
+        if not math.isfinite(pass_logit_penalty) or pass_logit_penalty < 0:
+            raise ValueError("pass_logit_penalty must be finite and non-negative.")
+        if (
+            isinstance(pass_penalty_before_stones, bool)
+            or not isinstance(pass_penalty_before_stones, int)
+            or pass_penalty_before_stones < 0
+        ):
+            raise ValueError("pass_penalty_before_stones must be a non-negative integer.")
+        if (pass_logit_penalty == 0) != (pass_penalty_before_stones == 0):
+            raise ValueError(
+                "Set both PASS penalty options to zero to disable the adjustment, "
+                "or set both to positive values."
+            )
+        self.pass_logit_penalty = float(pass_logit_penalty)
+        self.pass_penalty_before_stones = pass_penalty_before_stones
         self.rng = rng if rng is not None else np.random.default_rng()
 
     def _extract_features(self, env):
@@ -232,6 +291,19 @@ class TRMAgent(GoAgent):
             )
 
         masked_logits = apply_legal_move_mask(logits, legal_mask)
+        if self.pass_logit_penalty:
+            occupied_stones = sum(
+                env.board.get(row, column) is not None
+                for row in range(self.board_size)
+                for column in range(self.board_size)
+            )
+            masked_logits = apply_early_pass_penalty(
+                masked_logits,
+                self.board_size,
+                occupied_stones,
+                self.pass_logit_penalty,
+                self.pass_penalty_before_stones,
+            )
         probabilities = torch.softmax(masked_logits, dim=-1)
         return logits, legal_mask, probabilities
 

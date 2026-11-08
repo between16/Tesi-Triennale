@@ -11,3 +11,7 @@ TRM/checkpoints/19x19_go/*
 !TRM/checkpoints/19x19_go/best_model.pt
 
 TRM/9x9_go/go_dataset_go9/
+
+# Local model-evaluation artifacts and KataGo binaries, runtimes, and weights.
+TRM/model_evaluation/katago-local/
+TRM/model_evaluation/results/

@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 import pytest
 import torch
@@ -5,7 +7,14 @@ import torch
 from go_dataset import apply_board_symmetry
 from app import checkpoint_for_board_size
 from train import GoTRMModel, evaluate
-from agents import apply_legal_move_mask, select_near_best_action
+from agents import (
+    DEFAULT_PASS_LOGIT_PENALTY,
+    DEFAULT_PASS_PENALTY_BEFORE_STONES,
+    TRMAgent,
+    apply_early_pass_penalty,
+    apply_legal_move_mask,
+    select_near_best_action,
+)
 
 
 @pytest.mark.parametrize(
@@ -146,6 +155,39 @@ def test_apply_legal_move_mask_rejects_empty_legal_mask():
 
     with pytest.raises(ValueError, match="No legal actions"):
         apply_legal_move_mask(logits, legal_mask)
+
+
+def test_early_pass_penalty_only_applies_below_occupied_stone_threshold():
+    logits = torch.zeros(82)
+    logits[-1] = 2.0
+
+    adjusted = apply_early_pass_penalty(logits, 9, 5, 3.5, 16)
+    unchanged = apply_early_pass_penalty(logits, 9, 16, 3.5, 16)
+
+    assert adjusted[-1] == pytest.approx(-1.5)
+    assert logits[-1] == 2.0
+    assert unchanged is logits
+
+
+def test_early_pass_penalty_rejects_partial_configuration():
+    with pytest.raises(ValueError, match="Set both"):
+        apply_early_pass_penalty(torch.zeros(82), 9, 0, 3.5, 0)
+
+
+def test_early_pass_penalty_accepts_both_supported_board_sizes():
+    for board_size in (9, 19):
+        logits = torch.zeros(board_size * board_size + 1)
+        logits[-1] = 2.0
+        adjusted = apply_early_pass_penalty(logits, board_size, 3, 3.5, 16)
+        assert adjusted[-1] == pytest.approx(-1.5)
+
+
+def test_agent_defaults_to_the_calibrated_early_pass_adjustment():
+    parameters = inspect.signature(TRMAgent).parameters
+    assert DEFAULT_PASS_LOGIT_PENALTY == 3.5
+    assert DEFAULT_PASS_PENALTY_BEFORE_STONES == 16
+    assert parameters["pass_logit_penalty"].default == 3.5
+    assert parameters["pass_penalty_before_stones"].default == 16
 
 
 def test_validation_accuracy_weights_each_example_equally():

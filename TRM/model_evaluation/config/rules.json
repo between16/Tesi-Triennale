@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "description": "Custom TRM Go rules applied to both supported board sizes.",
+  "boards": {
+    "9": {
+      "board_size": 9,
+      "komi": 7.5
+    },
+    "19": {
+      "board_size": 19,
+      "komi": 7.5
+    }
+  },
+  "rules": {
+    "scoring": "AREA",
+    "ko": "POSITIONAL",
+    "suicide": false,
+    "tax": "NONE",
+    "hasButton": false,
+    "whiteHandicapBonus": "0",
+    "friendlyPassOk": true,
+    "pass_allowed": true,
+    "game_end": "two_consecutive_passes"
+  }
+}
