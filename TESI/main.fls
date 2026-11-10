@@ -1,9 +1,9 @@
-PWD /home/f/Documents/GitHub/Tesi-Triennale/TESI
+PWD ./TESI
 INPUT /etc/texmf/web2c/texmf.cnf
 INPUT /usr/share/texmf/web2c/texmf.cnf
 INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT /home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex
+INPUT ./TESI/main.tex
 OUTPUT main.log
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls

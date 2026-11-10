@@ -9,30 +9,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
 
-from models.go_trm import TinyRecursiveReasoningModel_ACTV1
-from models.go_policy_head import GoPolicyHead
-from go_dataset import create_go_dataloaders
+from models.go_model import GoTRMModel
+from go_dataset import create_go_dataloaders, default_go_dataset_dir
 
 
 SCHEDULER_TYPE = "warmup_cosine_per_step_v1"
-
-
-class GoTRMModel(nn.Module):
-    """Unified Go model wrapping the TRM core and the Go policy head."""
-
-    def __init__(self, config_dict):
-        super().__init__()
-        self.trm = TinyRecursiveReasoningModel_ACTV1(config_dict)
-        self.policy_head = GoPolicyHead(
-            hidden_size=config_dict["hidden_size"],
-            board_size=config_dict.get("board_size", 9),
-        )
-
-    def forward(self, x):
-        batch_dict = {"inputs": x}
-        carry = self.trm.initial_carry(batch_dict)
-        carry, hidden_features = self.trm(carry, batch_dict)
-        return self.policy_head(hidden_features)
 
 
 def calculate_topk_correct_count(logits, targets, k=1):
@@ -257,10 +238,10 @@ def train(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting training on device: {device}")
 
-    dataset_dir = Path(dataset_dir) if dataset_dir else (
-        Path(__file__).resolve().parent
-        / f"{board_size}x{board_size}_go"
-        / "go_dataset"
+    dataset_dir = (
+        Path(dataset_dir)
+        if dataset_dir
+        else default_go_dataset_dir(board_size)
     )
     train_path, val_path = resolve_dataset_paths(dataset_dir, dataset_format)
 

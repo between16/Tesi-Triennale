@@ -11,10 +11,30 @@ from pathlib import Path
 import numpy as np
 from sgfmill import sgf, sgf_moves
 
+from go_dataset import default_go_dataset_dir
+
 
 NUM_CHANNELS = 7
 DEFAULT_BOARD_SIZE = 9
 TERMINAL_PASSES_REQUIRED = 2
+
+
+def default_sgf_dir(
+    board_size: int,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Return the conventional filtered-SGF directory for a board size."""
+    trm_dir = (
+        Path(base_dir)
+        if base_dir is not None
+        else Path(__file__).resolve().parent
+    )
+    go_dir = trm_dir / f"{board_size}x{board_size}_go" / "go_raw_dataset"
+    if board_size == 9:
+        return go_dir / "go9_filtered"
+    if board_size == 19:
+        return go_dir / "19x19_professional_games"
+    return go_dir / f"{board_size}x{board_size}_games"
 
 
 def extract_features(board_history, current_color, board_size=DEFAULT_BOARD_SIZE):
@@ -610,7 +630,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="Dataset output directory (defaults to the matching go_dataset folder).",
+        help="Dataset output directory (defaults to the conventional board-size folder).",
     )
     parser.add_argument(
         "--max-games",
@@ -630,10 +650,7 @@ if __name__ == "__main__":
         parser.error("--max-games must be at least 3.")
 
     base_dir = Path(__file__).resolve().parent
-    go_dir = base_dir / f"{args.board_size}x{args.board_size}_go"
-    sgf_dir = args.input_dir or (
-        go_dir / "go_raw_dataset" / f"{args.board_size}x{args.board_size}_games"
-    )
+    sgf_dir = args.input_dir or default_sgf_dir(args.board_size, base_dir)
     sgf_files = sorted(
         path
         for path in sgf_dir.rglob("*")
@@ -683,7 +700,9 @@ if __name__ == "__main__":
         "test": shuffled_files[val_end:],
     }
 
-    dataset_dir = args.output_dir or (go_dir / "go_dataset")
+    dataset_dir = args.output_dir or default_go_dataset_dir(
+        args.board_size, base_dir
+    )
     split_summary = {}
 
     for split_name, split_files in splits.items():

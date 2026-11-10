@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1792219253.11529 "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1792219253.3414 0
+["pdflatex"] 1792219253.11529 "./TESI/main.tex" "main.pdf" "main" 1792219253.3414 0
   "/etc/texmf/web2c/texmf.cnf" 1786722357.03613 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/f/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1792219252.67639 481 095e25be47ba5fab7ce94cc37824fcd1 ""
+  "./TESI/main.tex" 1792219252.67639 481 095e25be47ba5fab7ce94cc37824fcd1 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""

@@ -1,14 +1,28 @@
-# To ignore the dataset files delete the '#' in front of the following lines:
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
-TRM/19x19_go/go_raw_dataset/
-TRM/19x19_go/go_dataset/*.npz
-TRM/19x19_go/go_dataset/train/
-TRM/19x19_go/go_dataset/val/
-TRM/19x19_go/go_dataset/test/
+# Raw 19x19 archive and filtered intermediate files. Keep only the source
+# directory's README visible in the repository.
+TRM/19x19_go/go_raw_dataset/*
+!TRM/19x19_go/go_raw_dataset/games/
+TRM/19x19_go/go_raw_dataset/games/**
+!TRM/19x19_go/go_raw_dataset/games/README.md
+TRM/9x9_go/go_raw_dataset/go9_filtered/
+TRM/19x19_go/go_raw_dataset/19x19_professional_games/
+
+# Generated datasets (compressed archives or memory-mapped split directories).
+TRM/9x9_go/go_dataset_go9/
+TRM/9x9_go/go_dataset/
+TRM/9x9_go/go_raw_dataset/9x9_games/
+TRM/19x19_go/go_dataset_professional_10k/
+TRM/19x19_go/go_dataset_full/
+TRM/19x19_go/go_dataset/
+
+# Model checkpoints
 TRM/checkpoints/19x19_go/*
 !TRM/checkpoints/19x19_go/best_model.pt
-
-TRM/9x9_go/go_dataset_go9/
 
 # Local model-evaluation artifacts and KataGo binaries, runtimes, and weights.
 TRM/model_evaluation/katago-local/

@@ -523,5 +523,5 @@ PASS precision:     0.9939759036144579
 PASS recall:        0.48316251830161056
 PASS F1:            0.6502463054187193
 
-Results saved to: /home/f/Documents/GitHub/Tesi-Triennale/TRM/evaluation_results/19x19_go
+Results saved to: ./TRM/evaluation_results/19x19_go
 Generated: metrics.json, predictions.csv, and four PNG plots.

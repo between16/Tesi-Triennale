@@ -1,17 +1,20 @@
 # 19×19 Go datasets
 
-The professional archive is the **CWI Database of Go Games**. Its SGF files
-use nested layouts and may contain different board sizes. The separate
+The professional archive is the **CWI Database of Go Games**
+([download page](https://homepages.cwi.nl/~aeb/go/games/), with `games.tgz`
+and `games.7z` archives). Its SGF files use nested layouts and may contain
+different board sizes. Extract the archive so the source is
+`go_raw_dataset/games/`. The separate
 `go_raw_dataset/jgdb/` source is not part of the practical training dataset
 described below.
 
 ## Recommended local training dataset
 
 For a practical local training run, use only the professional-player
-`games/` source. It currently contains 97,565 SGF files; filtering for valid
-19×19 games and removing exact duplicates produces 95,715 unique games. The
-commands below create deterministic, game-level train/validation/test splits
-from at most 10,000 games. Run from `TRM/`:
+`games/` source. The snapshot used by this project contains 97,565 SGF files;
+filtering for valid 19×19 games and removing exact duplicates produces 95,715
+unique games. The commands below create deterministic, game-level
+train/validation/test splits from at most 10,000 games. Run from `TRM/`:
 
 ```bash
 python 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 \
@@ -32,7 +35,9 @@ therefore no single tensor shape. The current/previously generated sample
 contains 1,668,062 train, 208,594 validation, and 208,653 test examples
 (2,085,309 total); `X` has shape `[examples, 7, 19, 19]` and dtype
 `float32`, while `y` has shape `[examples]` and dtype `int64`. Counts may
-change if the input files or selected sample change.
+change if the input files or selected sample change. The archive has no
+version tag; its snapshot fingerprint is recorded in
+[`../../docs/DATASETS.md`](../../docs/DATASETS.md).
 
 Start with a short smoke test, then launch the run with the available
 eight-hour budget:
@@ -48,7 +53,7 @@ The NPY splits are written to
 `19x19_go/go_dataset_professional_10k/{train,val,test}/`. Pass
 `--dataset-dir` when using this dedicated output directory. If no custom
 directory is supplied, training detects NPY directories (and otherwise falls
-back to NPZ files) under the standard `go_dataset/` location.
+back to NPZ files) under `go_dataset_professional_10k/`.
 For 19×19, the default batch size is 16. Validation is limited to 200 batches
 by default to leave time for training. A resume checkpoint is saved every
 500 steps and when the time limit is reached; `--resume` loads it. If it was
@@ -71,14 +76,16 @@ larger `latest_model.pt` resume checkpoint remains ignored.
 
 ## Full archive
 
-To combine the professional and JGDB records, first extract them into the
-general filtered folder and preprocess with the default compressed NPZ
-format:
+To combine the professional and JGDB records, filter them into a separate
+folder and preprocess with the compressed NPZ format:
 
 ```bash
 python 9x9_go/go_raw_dataset/extract_9x9.py --board-size 19 \
-  --source 19x19_go/go_raw_dataset/games 19x19_go/go_raw_dataset/jgdb
-python go_preprocessing.py --board-size 19
+  --source 19x19_go/go_raw_dataset/games 19x19_go/go_raw_dataset/jgdb \
+  --destination 19x19_go/go_raw_dataset/19x19_all_games
+python go_preprocessing.py --board-size 19 \
+  --input-dir 19x19_go/go_raw_dataset/19x19_all_games \
+  --output-dir 19x19_go/go_dataset_full --storage-format npz
 ```
 
 This full dataset is very large. NPZ loading decompresses the arrays into

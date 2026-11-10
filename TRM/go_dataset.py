@@ -2,8 +2,29 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import os
+from pathlib import Path
 
 DEFAULT_BOARD_SIZE = 9
+
+
+def default_go_dataset_dir(
+    board_size: int,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Return the conventional generated-dataset directory for a board size."""
+    if board_size == 9:
+        dataset_name = "go_dataset_go9"
+    elif board_size == 19:
+        dataset_name = "go_dataset_professional_10k"
+    else:
+        dataset_name = "go_dataset"
+
+    trm_dir = (
+        Path(base_dir)
+        if base_dir is not None
+        else Path(__file__).resolve().parent
+    )
+    return trm_dir / f"{board_size}x{board_size}_go" / dataset_name
 
 
 def apply_board_symmetry(x_tensor, y_target, symmetry_idx, board_size=None):
@@ -162,14 +183,10 @@ def create_go_dataloaders(
 
 if __name__ == "__main__":
     # Example validation of dataset and dataloader output shapes
-    dataset_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        f"{DEFAULT_BOARD_SIZE}x{DEFAULT_BOARD_SIZE}_go",
-        "go_dataset",
-    )
+    dataset_dir = default_go_dataset_dir(DEFAULT_BOARD_SIZE)
     train_loader, val_loader, _ = create_go_dataloaders(
-        os.path.join(dataset_dir, "train.npz"),
-        os.path.join(dataset_dir, "val.npz"),
+        dataset_dir / "train.npz",
+        dataset_dir / "val.npz",
         batch_size=32,
     )
     x_batch, y_batch = next(iter(train_loader))

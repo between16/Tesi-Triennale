@@ -1,7 +1,7 @@
 {
   "board_size": 19,
   "match_configuration": {
-    "target_checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/19x19_go/best_model.pt",
+    "target_checkpoint": "./TRM/checkpoints/19x19_go/best_model.pt",
     "katago_model": null,
     "katago_config": null,
     "search_max_visits": null,

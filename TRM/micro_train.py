@@ -1,41 +1,11 @@
 import argparse
-from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.go_trm import TinyRecursiveReasoningModel_ACTV1
-from models.go_policy_head import GoPolicyHead
-from go_dataset import create_go_dataloaders
-
-
-class GoTRMModel(nn.Module):
-    """
-    Complete End-to-End Go Model:
-    GoEncoder (inside TRM) -> TRM Core -> GoPolicyHead
-    """
-    def __init__(self, config_dict):
-        super(GoTRMModel, self).__init__()
-        self.trm = TinyRecursiveReasoningModel_ACTV1(config_dict)
-        self.policy_head = GoPolicyHead(
-            hidden_size=config_dict["hidden_size"],
-            board_size=config_dict.get("board_size", 9),
-        )
-
-    def forward(self, x):
-        """
-        Args:
-            x (torch.Tensor): Input board states of shape [Batch, 7, N, N]
-            
-        Returns:
-            torch.Tensor: Move logits of shape [Batch, N*N+1]
-        """
-        batch_dict = {"inputs": x}
-        carry = self.trm.initial_carry(batch_dict)
-        carry, hidden_features = self.trm(carry, batch_dict)
-        logits = self.policy_head(hidden_features)
-        return logits
+from models.go_model import GoTRMModel
+from go_dataset import create_go_dataloaders, default_go_dataset_dir
 
 
 def run_micro_train(board_size=9):
@@ -74,11 +44,7 @@ def run_micro_train(board_size=9):
     criterion = nn.CrossEntropyLoss()
 
     # 3. Create dummy data batch or load 1 real batch
-    dataset_dir = (
-        Path(__file__).resolve().parent
-        / f"{board_size}x{board_size}_go"
-        / "go_dataset"
-    )
+    dataset_dir = default_go_dataset_dir(board_size)
     train_path = dataset_dir / "train"
     val_path = dataset_dir / "val"
     if not train_path.is_dir() or not val_path.is_dir():

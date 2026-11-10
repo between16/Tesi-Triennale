@@ -1,5 +1,5 @@
 {
-  "checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt",
+  "checkpoint": "./TRM/checkpoints/best_model.pt",
   "device": "cuda",
   "selection": "greedy",
   "temperature": null,

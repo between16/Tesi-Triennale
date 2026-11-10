@@ -160,8 +160,8 @@ Epoch 20 Validation Summary -> Val Loss: 2.3706 | Val Top-1 Acc: 30.99% | Val To
 ---------------------------------------------------------------------------
 (tesi-triennale) f@f-Nitro-ANV16S-41:~/Documents/GitHub/Tesi-Triennale/TRM$ python3 go_eval.py 
 Device: cuda
-Checkpoint: /home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt
-Test dataset: /home/f/Documents/GitHub/Tesi-Triennale/TRM/9x9_go/go_dataset/test.npz
+Checkpoint: ./TRM/checkpoints/best_model.pt
+Test dataset: ./TRM/9x9_go/go_dataset/test.npz
 Test examples: 2798
 Evaluating on test set...
 

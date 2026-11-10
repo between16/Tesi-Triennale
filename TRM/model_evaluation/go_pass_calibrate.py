@@ -22,8 +22,8 @@ TRM_DIR = SCRIPT_DIR.parent
 if str(TRM_DIR) not in sys.path:
     sys.path.insert(0, str(TRM_DIR))
 
-from agents import GoTRMModel
-from go_dataset import GoDataset
+from go_dataset import GoDataset, default_go_dataset_dir
+from models.go_model import GoTRMModel
 
 
 def pass_decision_metrics(
@@ -80,14 +80,19 @@ def pass_decision_metrics(
 def default_validation_data_path(board_size: int) -> Path:
     """Locate the repository's conventional validation split."""
     board_dir = TRM_DIR / f"{board_size}x{board_size}_go"
-    dataset_dir = board_dir / ("go_dataset_go9" if board_size == 9 else "go_dataset")
+    dataset_dir = default_go_dataset_dir(board_size, TRM_DIR)
     npy_validation = dataset_dir / "val"
     if npy_validation.is_dir():
         return npy_validation
     npz_validation = dataset_dir / "val.npz"
     if npz_validation.is_file():
         return npz_validation
-    return npy_validation
+    legacy_dir = board_dir / "go_dataset"
+    legacy_npy = legacy_dir / "val"
+    if legacy_npy.is_dir():
+        return legacy_npy
+    legacy_npz = legacy_dir / "val.npz"
+    return legacy_npz if legacy_npz.is_file() else npy_validation
 
 
 def parse_args() -> argparse.Namespace:

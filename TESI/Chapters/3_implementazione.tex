@@ -2,3 +2,19 @@
 %Qui vado più nel dettaglio tecnico dei cambiamenti %
 
 \section{Implementazione}
+
+\subsection{Selezione stocastica delle mosse}
+
+In fase di inferenza, dopo aver escluso le mosse illegali, il modello produce
+una distribuzione di probabilità sulle azioni. Indicando con $p_{\max}$ la
+probabilità della migliore azione legale e con $\tau=0{,}02$ la tolleranza,
+vengono considerate candidate le azioni $a$ per cui
+\[
+    p(a) \geq p_{\max}(1-\tau).
+\]
+L'agente sceglie uniformemente a caso tra queste candidate; se la migliore è
+l'unica a superare la soglia, viene selezionata determinististicamente.
+La tolleranza è relativa alla probabilità massima: il 2\% indica una riduzione
+relativa rispetto a $p_{\max}$ e non una differenza assoluta di due punti
+percentuali. In questo modo la regola si adatta alla scala delle probabilità,
+che varia anche con la dimensione del tabellone.

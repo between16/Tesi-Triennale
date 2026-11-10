@@ -5,13 +5,14 @@ import numpy as np
 import pytest
 from sgfmill import sgf
 
-from go_dataset import GoDataset
+from go_dataset import GoDataset, default_go_dataset_dir
 from train import resolve_dataset_paths
 from model_evaluation.go_eval import default_test_data_path
 from go_preprocessing import (
     build_dataset,
     build_memmap_dataset,
     count_sgf_examples,
+    default_sgf_dir,
     process_sgf_file,
 )
 
@@ -66,6 +67,23 @@ def test_extractor_filters_nested_sources_and_deduplicates(tmp_path):
     assert summary["unreadable"] == 1
     assert len(extracted) == 1
     assert sgf.Sgf_game.from_bytes(extracted[0].read_bytes()).get_size() == 19
+
+
+@pytest.mark.parametrize(
+    ("board_size", "directory_name"),
+    [(9, "go9_filtered"), (19, "19x19_professional_games")],
+)
+def test_extractor_defaults_to_documented_filtered_directory(
+    tmp_path, board_size, directory_name
+):
+    destination = EXTRACTOR_MODULE.default_destination_dir(board_size, tmp_path)
+
+    assert destination == (
+        tmp_path
+        / f"{board_size}x{board_size}_go"
+        / "go_raw_dataset"
+        / directory_name
+    )
 
 
 def test_count_matches_processed_moves_and_reconstructed_passes(tmp_path):
@@ -207,11 +225,29 @@ def test_training_auto_format_prefers_memory_mapped_splits(tmp_path):
     assert resolve_dataset_paths(tmp_path, "npz") == (npz_train, npz_val)
 
 
+@pytest.mark.parametrize(
+    ("board_size", "dataset_name", "input_name"),
+    [
+        (9, "go_dataset_go9", "go9_filtered"),
+        (19, "go_dataset_professional_10k", "19x19_professional_games"),
+    ],
+)
+def test_default_dataset_paths_match_board_size_layout(
+    tmp_path, board_size, dataset_name, input_name
+):
+    assert default_go_dataset_dir(board_size, tmp_path) == (
+        tmp_path / f"{board_size}x{board_size}_go" / dataset_name
+    )
+    assert default_sgf_dir(board_size, tmp_path) == (
+        tmp_path / f"{board_size}x{board_size}_go" / "go_raw_dataset" / input_name
+    )
+
+
 def test_default_evaluation_split_prefers_memory_mapped_data(tmp_path, monkeypatch):
     import model_evaluation.go_eval as go_eval
 
     monkeypatch.setattr(go_eval, "SCRIPT_DIR", tmp_path)
-    dataset_dir = tmp_path / "19x19_go" / "go_dataset"
+    dataset_dir = tmp_path / "19x19_go" / "go_dataset_professional_10k"
     npy_test = dataset_dir / "test"
     npy_test.mkdir(parents=True)
     (dataset_dir / "test.npz").touch()

@@ -1,6 +1,6 @@
 {
-  "checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt",
-  "test_data": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/9x9_go/go_dataset_go9/test",
+  "checkpoint": "./TRM/checkpoints/best_model.pt",
+  "test_data": "./TRM/9x9_go/go_dataset_go9/test",
   "board_size": 9,
   "num_actions": 82,
   "num_examples": 41380,

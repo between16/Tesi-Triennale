@@ -29,8 +29,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from agents import GoTRMModel
-from go_dataset import GoDataset
+from go_dataset import GoDataset, default_go_dataset_dir
+from models.go_model import GoTRMModel
 
 DEFAULT_BOARD_SIZE = 9
 
@@ -74,21 +74,17 @@ def parse_args() -> argparse.Namespace:
 def default_test_data_path(board_size: int) -> Path:
     """Choose the default test split, preferring memory-mapped NPY."""
     board_dir = SCRIPT_DIR / f"{board_size}x{board_size}_go"
-    dataset_dir = (
-        board_dir / "go_dataset_go9"
-        if board_size == 9
-        else board_dir / "go_dataset"
-    )
+    dataset_dir = default_go_dataset_dir(board_size, SCRIPT_DIR)
     test_dir = dataset_dir / "test"
     if test_dir.is_dir():
         return test_dir
-    fallback_dir = board_dir / "go_dataset"
-    fallback_test_dir = fallback_dir / "test"
-    if board_size == 9 and fallback_test_dir.is_dir():
-        return fallback_test_dir
-    fallback_test_file = fallback_dir / "test.npz"
-    if board_size == 9 and fallback_test_file.is_file():
-        return fallback_test_file
+    legacy_dir = board_dir / "go_dataset"
+    legacy_test_dir = legacy_dir / "test"
+    if legacy_test_dir.is_dir():
+        return legacy_test_dir
+    legacy_test_file = legacy_dir / "test.npz"
+    if legacy_test_file.is_file():
+        return legacy_test_file
     return dataset_dir / "test.npz"
 
 

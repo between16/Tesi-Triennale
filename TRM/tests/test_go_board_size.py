@@ -5,6 +5,7 @@ import pytest
 import torch
 
 from go_dataset import apply_board_symmetry
+from models.go_model import GoTRMModel as SharedGoTRMModel
 from app import checkpoint_for_board_size
 from train import GoTRMModel, evaluate
 from agents import (
@@ -15,6 +16,17 @@ from agents import (
     apply_legal_move_mask,
     select_near_best_action,
 )
+
+
+def test_training_and_inference_import_the_shared_model():
+    from agents import GoTRMModel as AgentGoTRMModel
+    from micro_train import GoTRMModel as MicroTrainGoTRMModel
+    from model_evaluation.go_eval import GoTRMModel as EvaluatorGoTRMModel
+
+    assert GoTRMModel is SharedGoTRMModel
+    assert AgentGoTRMModel is SharedGoTRMModel
+    assert MicroTrainGoTRMModel is SharedGoTRMModel
+    assert EvaluatorGoTRMModel is SharedGoTRMModel
 
 
 @pytest.mark.parametrize(

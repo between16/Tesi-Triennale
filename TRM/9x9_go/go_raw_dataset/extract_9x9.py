@@ -85,6 +85,16 @@ def extract_games(sources, destination, board_size):
     }
 
 
+def default_destination_dir(board_size, trm_dir):
+    """Return the conventional filtered-SGF directory for a board size."""
+    go_dir = trm_dir / f"{board_size}x{board_size}_go" / "go_raw_dataset"
+    if board_size == 9:
+        return go_dir / "go9_filtered"
+    if board_size == 19:
+        return go_dir / "19x19_professional_games"
+    return go_dir / f"{board_size}x{board_size}_games"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Extract SGF games for a board size.")
     parser.add_argument("--board-size", type=int, default=9)
@@ -105,11 +115,8 @@ def main():
         parser.error("--board-size must be at least 2.")
 
     trm_dir = Path(__file__).resolve().parents[2]
-    destination = args.destination or (
-        trm_dir
-        / f"{args.board_size}x{args.board_size}_go"
-        / "go_raw_dataset"
-        / f"{args.board_size}x{args.board_size}_games"
+    destination = args.destination or default_destination_dir(
+        args.board_size, trm_dir
     )
     extract_games(args.source, destination, args.board_size)
 
