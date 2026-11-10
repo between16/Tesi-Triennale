@@ -1,0 +1,33 @@
+{
+  "board_size": 19,
+  "match_configuration": {
+    "target_checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/19x19_go/best_model.pt",
+    "katago_model": "model_evaluation/katago-local/downloads/kata1-tf3-b11c768-s12382M-d6533M.bin.gz",
+    "katago_config": "model_evaluation/katago-local/engine/default_gtp.cfg",
+    "search_max_visits": "1",
+    "human_model": "model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz",
+    "opponent_profile": "rank_20k",
+    "human_temperature_mode": "full",
+    "opponent_type": "human_sl",
+    "pass_logit_penalty": "3.5",
+    "pass_penalty_before_stones": "16",
+    "komi": "7.5"
+  },
+  "games": 100,
+  "wins": 25,
+  "draws": 0,
+  "losses": 75,
+  "score_rate": 0.25,
+  "elo_difference": -190.84850188786498,
+  "elo_difference_95ci": [
+    -269.48057718825646,
+    -112.21642658747353
+  ],
+  "standard_error": 40.11840576550584,
+  "rating_status": "finite_mle",
+  "estimator": "maximum-likelihood score fit to the standard Elo curve; draws score 0.5",
+  "anchor_elo": null,
+  "absolute_elo": null,
+  "rank_tier": null,
+  "rank_calibration_file": null
+}

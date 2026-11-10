@@ -1,0 +1,27 @@
+{
+  "board_size": 9,
+  "match_configuration": {
+    "target_checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/best_model.pt",
+    "katago_model": null,
+    "katago_config": null,
+    "search_max_visits": null,
+    "komi": "7.5"
+  },
+  "games": 20,
+  "wins": 19,
+  "draws": 0,
+  "losses": 1,
+  "score_rate": 0.95,
+  "elo_difference": 511.50144038113143,
+  "elo_difference_95ci": [
+    162.16927868071673,
+    860.8336020815461
+  ],
+  "standard_error": 178.23069474510953,
+  "rating_status": "finite_mle",
+  "estimator": "maximum-likelihood score fit to the standard Elo curve; draws score 0.5",
+  "anchor_elo": null,
+  "absolute_elo": null,
+  "rank_tier": null,
+  "rank_calibration_file": null
+}

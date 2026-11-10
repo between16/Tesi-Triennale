@@ -1,6 +1,4 @@
 # To ignore the dataset files delete the '#' in front of the following lines:
-# TRM/9x9_go/go_raw_dataset/
-# TRM/9x9_go/dataset/
 
 TRM/19x19_go/go_raw_dataset/
 TRM/19x19_go/go_dataset/*.npz
@@ -14,4 +12,4 @@ TRM/9x9_go/go_dataset_go9/
 
 # Local model-evaluation artifacts and KataGo binaries, runtimes, and weights.
 TRM/model_evaluation/katago-local/
-TRM/model_evaluation/results/
+# TRM/model_evaluation/results/

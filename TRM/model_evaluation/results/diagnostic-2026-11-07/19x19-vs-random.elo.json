@@ -1,0 +1,24 @@
+{
+  "board_size": 19,
+  "match_configuration": {
+    "target_checkpoint": "/home/f/Documents/GitHub/Tesi-Triennale/TRM/checkpoints/19x19_go/best_model.pt",
+    "katago_model": null,
+    "katago_config": null,
+    "search_max_visits": null,
+    "komi": "7.5"
+  },
+  "games": 20,
+  "wins": 20,
+  "draws": 0,
+  "losses": 0,
+  "score_rate": 1.0,
+  "elo_difference": null,
+  "elo_difference_95ci": null,
+  "standard_error": null,
+  "rating_status": "unbounded_above",
+  "estimator": "maximum-likelihood score fit to the standard Elo curve; draws score 0.5",
+  "anchor_elo": null,
+  "absolute_elo": null,
+  "rank_tier": null,
+  "rank_calibration_file": null
+}

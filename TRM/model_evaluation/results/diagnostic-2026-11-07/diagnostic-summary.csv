@@ -1,0 +1,5 @@
+board,opponent,games,wins,draws,losses,score_rate,elo_difference,elo_95ci_low,elo_95ci_high,rating_status,black_wins,black_draws,black_losses,white_wins,white_draws,white_losses,mean_margin
+9x9,uniform_random,20,19,0,1,0.95,511.50144038113143,162.16927868071673,860.8336020815461,finite_mle,10,0,0,9,0,1,31.65
+19x19,uniform_random,20,20,0,0,1.0,,,,unbounded_above,10,0,0,10,0,0,87.8
+9x9,KataGo_1_visit,50,3,0,47,0.06,-477.990641286422,-680.7476240420345,-275.2336585308094,finite_mle,0,0,25,3,0,22,27.2
+19x19,KataGo_1_visit,50,0,0,50,0.0,,,,unbounded_below,0,0,25,0,0,25,147.1
