@@ -21,8 +21,8 @@ TRM/19x19_go/go_dataset_full/
 TRM/19x19_go/go_dataset/
 
 # Model checkpoints
-TRM/checkpoints/19x19_go/*
-!TRM/checkpoints/19x19_go/best_model.pt
+#TRM/checkpoints/19x19_go/*
+#TRM/checkpoints/19x19_go/best_model.pt
 
 # Local model-evaluation artifacts and KataGo binaries, runtimes, and weights.
 TRM/model_evaluation/katago-local/
