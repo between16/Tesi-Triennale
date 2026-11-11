@@ -1,9 +1,11 @@
 import os
 import argparse
 import math
+import random
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,6 +16,74 @@ from go_dataset import create_go_dataloaders, default_go_dataset_dir
 
 
 SCHEDULER_TYPE = "warmup_cosine_per_step_v1"
+
+
+def _seed_everything(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+def _capture_rng_state(train_generator):
+    numpy_state = np.random.get_state()
+    return {
+        "python": random.getstate(),
+        "numpy": {
+            "algorithm": numpy_state[0],
+            "keys": numpy_state[1].tolist(),
+            "position": numpy_state[2],
+            "has_gauss": numpy_state[3],
+            "cached_gaussian": numpy_state[4],
+        },
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
+        "train_generator": train_generator.get_state(),
+    }
+
+
+def _restore_rng_state(state, train_generator):
+    random.setstate(state["python"])
+    numpy_state = state["numpy"]
+    np.random.set_state(
+        (
+            numpy_state["algorithm"],
+            np.asarray(numpy_state["keys"], dtype=np.uint32),
+            numpy_state["position"],
+            numpy_state["has_gauss"],
+            numpy_state["cached_gaussian"],
+        )
+    )
+    torch.set_rng_state(state["torch"].cpu())
+    if torch.cuda.is_available() and state.get("cuda"):
+        torch.cuda.set_rng_state_all([rng_state.cpu() for rng_state in state["cuda"]])
+    train_generator.set_state(state["train_generator"].cpu())
+
+
+def _dataset_split_info(path, dataset):
+    path = Path(path).resolve()
+    files = (
+        (path / "X.npy", path / "y.npy")
+        if path.is_dir()
+        else (path,)
+    )
+    return {
+        "path": str(path),
+        "num_examples": len(dataset),
+        "feature_shape": list(dataset.X.shape[1:]),
+        "target_shape": list(dataset.y.shape[1:]),
+        "files": {
+            file.name: {
+                "size_bytes": file.stat().st_size,
+                "modified_ns": file.stat().st_mtime_ns,
+            }
+            for file in files
+        },
+    }
 
 
 def calculate_topk_correct_count(logits, targets, k=1):
@@ -98,6 +168,12 @@ def _save_checkpoint(
     epoch,
     step,
     global_step,
+    seed,
+    training_config,
+    dataset_info,
+    rng_state,
+    resume_epoch,
+    completed_epoch,
     **metrics,
 ):
     """Atomically save a resumable training checkpoint."""
@@ -107,11 +183,19 @@ def _save_checkpoint(
             "epoch": epoch,
             "step": step,
             "global_step": global_step,
+            "resume_epoch": resume_epoch,
+            "completed_epoch": completed_epoch,
+            "seed": seed,
             "scheduler_type": SCHEDULER_TYPE,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
             "config_dict": config_dict,
+            "training_config": training_config,
+            "optimizer_config": training_config["optimizer"],
+            "scheduler_config": training_config["scheduler"],
+            "dataset_info": dataset_info,
+            "rng_state": rng_state,
             **metrics,
         },
         temporary_path,
@@ -120,7 +204,15 @@ def _save_checkpoint(
 
 
 def _save_inference_checkpoint(
-    path, model, config_dict, epoch, step, **metrics
+    path,
+    model,
+    config_dict,
+    epoch,
+    step,
+    seed=None,
+    training_config=None,
+    dataset_info=None,
+    **metrics,
 ):
     """Save only what is needed to load the model for inference."""
     temporary_path = path.with_suffix(path.suffix + ".tmp")
@@ -130,6 +222,9 @@ def _save_inference_checkpoint(
             "config_dict": config_dict,
             "epoch": epoch,
             "step": step,
+            "seed": seed,
+            "training_config": training_config,
+            "dataset_info": dataset_info,
             **metrics,
         },
         temporary_path,
@@ -168,30 +263,174 @@ def resolve_dataset_paths(dataset_dir, dataset_format="auto"):
 def train(
     board_size=9,
     dataset_dir=None,
-    dataset_format="auto",
+    dataset_format=None,
     batch_size=None,
     num_workers=None,
-    epochs=20,
-    learning_rate=1e-4,
-    min_learning_rate=1e-5,
-    warmup_steps=2000,
-    weight_decay=1e-4,
-    beta1=0.9,
-    beta2=0.95,
+    epochs=None,
+    learning_rate=None,
+    min_learning_rate=None,
+    warmup_steps=None,
+    weight_decay=None,
+    beta1=None,
+    beta2=None,
     max_hours=None,
     max_steps=None,
     validation_batches=None,
-    checkpoint_every_steps=500,
+    checkpoint_every_steps=None,
+    seed=None,
     resume=False,
 ):
     """Train the Go TRM with supervised next-move prediction."""
-    batch_size = batch_size if batch_size is not None else (
-        16 if board_size == 19 else 128
-    )
-    num_workers = num_workers if num_workers is not None else (
-        2 if board_size == 19 else 4
-    )
+    checkpoint_dir = Path(__file__).resolve().parent / "checkpoints"
+    if board_size != 9:
+        checkpoint_dir /= f"{board_size}x{board_size}_go"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    latest_checkpoint = checkpoint_dir / "latest_model.pt"
 
+    checkpoint = None
+    saved_training_config = {}
+    saved_optimizer_config = {}
+    saved_scheduler_config = {}
+    if resume:
+        if not latest_checkpoint.exists():
+            raise FileNotFoundError(
+                f"Cannot resume: checkpoint not found at {latest_checkpoint}"
+            )
+        checkpoint = torch.load(latest_checkpoint, map_location="cpu")
+        if checkpoint.get("scheduler_type") != SCHEDULER_TYPE:
+            raise ValueError(
+                "The latest checkpoint was created with a different scheduler "
+                "or an older version of train.py. Start a fresh run without "
+                "--resume, or restore a checkpoint created by this version."
+            )
+        saved_training_config = checkpoint.get("training_config", {})
+        saved_optimizer_config = saved_training_config.get(
+            "optimizer", checkpoint.get("optimizer_config", {})
+        )
+        saved_scheduler_config = saved_training_config.get(
+            "scheduler", checkpoint.get("scheduler_config", {})
+        )
+        saved_model_config = checkpoint.get("config_dict", {})
+        saved_board_size = saved_model_config.get("board_size")
+        if saved_board_size is not None and saved_board_size != board_size:
+            raise ValueError(
+                f"Checkpoint board size is {saved_board_size}, but the requested "
+                f"board size is {board_size}."
+            )
+
+    def resume_setting(value, saved_value, default, name):
+        if value is not None and saved_value is not None and value != saved_value:
+            raise ValueError(
+                f"--{name.replace('_', '-')}={value} differs from the saved "
+                f"training value ({saved_value}). Omit it to restore the saved "
+                "configuration, or start a fresh run."
+            )
+        return value if value is not None else (
+            saved_value if saved_value is not None else default
+        )
+
+    batch_size = resume_setting(
+        batch_size,
+        saved_training_config.get("batch_size", checkpoint.get("config_dict", {}).get("batch_size"))
+        if checkpoint is not None
+        else None,
+        16 if board_size == 19 else 128,
+        "batch_size",
+    )
+    num_workers = resume_setting(
+        num_workers,
+        saved_training_config.get("num_workers") if checkpoint is not None else None,
+        2 if board_size == 19 else 4,
+        "num_workers",
+    )
+    dataset_format = resume_setting(
+        dataset_format,
+        saved_training_config.get("dataset_format") if checkpoint is not None else None,
+        "auto",
+        "dataset_format",
+    )
+    learning_rate = resume_setting(
+        learning_rate,
+        saved_optimizer_config.get("learning_rate") if checkpoint is not None else None,
+        1e-4,
+        "learning_rate",
+    )
+    min_learning_rate = resume_setting(
+        min_learning_rate,
+        saved_scheduler_config.get("min_learning_rate") if checkpoint is not None else None,
+        1e-5,
+        "min_learning_rate",
+    )
+    warmup_steps = resume_setting(
+        warmup_steps,
+        saved_scheduler_config.get("warmup_steps") if checkpoint is not None else None,
+        2000,
+        "warmup_steps",
+    )
+    weight_decay = resume_setting(
+        weight_decay,
+        saved_optimizer_config.get("weight_decay") if checkpoint is not None else None,
+        1e-4,
+        "weight_decay",
+    )
+    beta1 = resume_setting(
+        beta1,
+        saved_optimizer_config.get("betas", [0.9, 0.95])[0]
+        if checkpoint is not None
+        else None,
+        0.9,
+        "beta1",
+    )
+    beta2 = resume_setting(
+        beta2,
+        saved_optimizer_config.get("betas", [0.9, 0.95])[1]
+        if checkpoint is not None
+        else None,
+        0.95,
+        "beta2",
+    )
+    checkpoint_every_steps = resume_setting(
+        checkpoint_every_steps,
+        saved_training_config.get("checkpoint_every_steps")
+        if checkpoint is not None
+        else None,
+        500,
+        "checkpoint_every_steps",
+    )
+    if validation_batches is None and checkpoint is not None:
+        validation_batches = saved_training_config.get("validation_batches")
+    if dataset_dir is None and checkpoint is not None:
+        saved_dataset_dir = saved_training_config.get("dataset_dir")
+        if saved_dataset_dir is not None:
+            dataset_dir = Path(saved_dataset_dir)
+    dataset_dir = (
+        Path(dataset_dir)
+        if dataset_dir is not None
+        else default_go_dataset_dir(board_size)
+    )
+    dataset_dir = dataset_dir.resolve()
+    train_path, val_path = resolve_dataset_paths(dataset_dir, dataset_format)
+
+    if checkpoint is not None:
+        saved_seed = checkpoint.get("seed", saved_training_config.get("seed"))
+        if seed is not None and saved_seed is not None and seed != saved_seed:
+            raise ValueError(
+                f"--seed={seed} differs from the checkpoint seed ({saved_seed}). "
+                "Omit --seed to restore the saved seed."
+            )
+        seed = seed if seed is not None else saved_seed
+        if seed is None:
+            seed = 42
+        if epochs is None:
+            epochs = saved_training_config.get("epochs", 20)
+    else:
+        seed = 42 if seed is None else seed
+        epochs = 20 if epochs is None else epochs
+
+    if seed < 0 or seed > 2**63 - 1:
+        raise ValueError("seed must be between 0 and 2**63 - 1.")
+    if epochs < 1:
+        raise ValueError("epochs must be positive.")
     if learning_rate <= 0:
         raise ValueError("learning_rate must be positive.")
     if min_learning_rate <= 0 or min_learning_rate > learning_rate:
@@ -204,13 +443,11 @@ def train(
         raise ValueError("weight_decay cannot be negative.")
     if not (0.0 <= beta1 < 1.0 and 0.0 <= beta2 < 1.0):
         raise ValueError("beta1 and beta2 must be in the range [0, 1).")
+    if checkpoint_every_steps < 1:
+        raise ValueError("checkpoint_every_steps must be positive.")
 
+    _seed_everything(seed)
     board_area = board_size * board_size
-    checkpoint_dir = Path(__file__).resolve().parent / "checkpoints"
-    if board_size != 9:
-        checkpoint_dir /= f"{board_size}x{board_size}_go"
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
-
     config_dict = {
         "batch_size": batch_size,
         "board_size": board_size,
@@ -234,24 +471,41 @@ def train(
         "puzzle_emb_len": 0,
         "no_ACT_continue": True,
     }
+    if checkpoint is not None and checkpoint.get("config_dict"):
+        config_dict = checkpoint["config_dict"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting training on device: {device}")
 
-    dataset_dir = (
-        Path(dataset_dir)
-        if dataset_dir
-        else default_go_dataset_dir(board_size)
-    )
-    train_path, val_path = resolve_dataset_paths(dataset_dir, dataset_format)
-
+    train_generator = torch.Generator()
+    train_generator.manual_seed(seed)
+    val_generator = torch.Generator()
+    val_generator.manual_seed((seed + 1) % (2**63 - 1))
     train_loader, val_loader, _ = create_go_dataloaders(
         train_npz=train_path,
         val_npz=val_path,
         batch_size=batch_size,
         num_workers=num_workers,
         board_size=board_size,
+        train_seed=seed,
+        train_generator=train_generator,
+        val_generator=val_generator,
     )
+
+    dataset_info = {
+        "dataset_dir": str(dataset_dir),
+        "format": dataset_format,
+        "train": _dataset_split_info(train_path, train_loader.dataset),
+        "validation": _dataset_split_info(val_path, val_loader.dataset),
+    }
+    if checkpoint is not None:
+        saved_dataset_info = checkpoint.get("dataset_info")
+        if saved_dataset_info is not None and saved_dataset_info != dataset_info:
+            raise ValueError(
+                "The resolved training/validation dataset does not match the "
+                "dataset recorded in latest_model.pt. Use the original dataset "
+                "or start a fresh run."
+            )
 
     steps_per_epoch = len(train_loader)
     if steps_per_epoch == 0:
@@ -259,10 +513,59 @@ def train(
             "The training split is too small for the selected batch size."
         )
     total_training_steps = steps_per_epoch * epochs
-    effective_warmup_steps = min(
-        warmup_steps, max(total_training_steps - 1, 0)
-    )
     min_learning_rate_ratio = min_learning_rate / learning_rate
+    scheduler_config = saved_scheduler_config
+    saved_scheduler_steps = scheduler_config.get("total_steps")
+    saved_scheduler_warmup = scheduler_config.get("effective_warmup_steps")
+    if checkpoint is not None and saved_scheduler_steps is not None:
+        scheduler_total_steps = saved_scheduler_steps
+        effective_warmup_steps = saved_scheduler_warmup
+    elif (
+        checkpoint is not None
+        and checkpoint["optimizer_state_dict"]["param_groups"][0]["lr"]
+        <= min_learning_rate
+    ):
+        scheduler_total_steps = max(checkpoint.get("global_step", 1), 1)
+        effective_warmup_steps = min(
+            warmup_steps, max(scheduler_total_steps - 1, 0)
+        )
+    else:
+        scheduler_total_steps = total_training_steps
+        effective_warmup_steps = min(
+            warmup_steps, max(scheduler_total_steps - 1, 0)
+        )
+
+    training_config = {
+        "seed": seed,
+        "board_size": board_size,
+        "dataset_dir": str(dataset_dir),
+        "dataset_format": dataset_format,
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "epochs": epochs,
+        "optimizer": {
+            "name": "AdamW",
+            "learning_rate": learning_rate,
+            "betas": [beta1, beta2],
+            "weight_decay": weight_decay,
+        },
+        "scheduler": {
+            "name": "LambdaLR",
+            "type": SCHEDULER_TYPE,
+            "learning_rate": learning_rate,
+            "min_learning_rate": min_learning_rate,
+            "warmup_steps": warmup_steps,
+            "effective_warmup_steps": effective_warmup_steps,
+            "total_steps": scheduler_total_steps,
+            "min_learning_rate_ratio": min_learning_rate_ratio,
+            "step_interval": "optimizer_step",
+        },
+        "max_hours": max_hours,
+        "max_steps": max_steps,
+        "validation_batches": validation_batches,
+        "checkpoint_every_steps": checkpoint_every_steps,
+        "deterministic_cudnn": True,
+    }
 
     model = GoTRMModel(config_dict).to(device)
     optimizer = optim.AdamW(
@@ -273,7 +576,7 @@ def train(
     )
     scheduler = build_warmup_cosine_scheduler(
         optimizer=optimizer,
-        total_steps=total_training_steps,
+        total_steps=scheduler_total_steps,
         warmup_steps=effective_warmup_steps,
         min_learning_rate_ratio=min_learning_rate_ratio,
     )
@@ -295,48 +598,35 @@ def train(
         print(f"Validation: at most {validation_batches:,} batches")
 
     best_val_loss = float("inf")
-    latest_checkpoint = checkpoint_dir / "latest_model.pt"
     start_epoch = 1
+    resume_step = 0
     global_step = 0
 
-    if resume:
-        if not latest_checkpoint.exists():
-            raise FileNotFoundError(
-                f"Cannot resume: checkpoint not found at {latest_checkpoint}"
-            )
-
-        checkpoint = torch.load(latest_checkpoint, map_location=device)
-        if checkpoint.get("scheduler_type") != SCHEDULER_TYPE:
-            raise ValueError(
-                "The latest checkpoint was created with a different scheduler "
-                "or an older version of train.py. Start a fresh run without "
-                "--resume, or restore a checkpoint created by this version."
-            )
-
-        saved_config = checkpoint.get("config_dict", {})
-        saved_board_size = saved_config.get("board_size")
-        if saved_board_size is not None and saved_board_size != board_size:
-            raise ValueError(
-                f"Checkpoint board size is {saved_board_size}, but the requested "
-                f"board size is {board_size}."
-            )
-
+    if checkpoint is not None:
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
         best_val_loss = checkpoint.get("best_val_loss", best_val_loss)
-        start_epoch = checkpoint["epoch"]
+        start_epoch = checkpoint.get("resume_epoch", checkpoint["epoch"])
+        resume_step = checkpoint.get("step", 0)
         global_step = checkpoint.get("global_step", 0)
+        rng_state = checkpoint.get("rng_state")
+        if rng_state is None:
+            print(
+                "Warning: this checkpoint has no saved RNG states; resuming "
+                "from its model/optimizer state with the selected seed."
+            )
+        else:
+            _restore_rng_state(rng_state, train_generator)
         print(
-            f"Resuming at epoch {start_epoch}; global optimizer step "
-            f"{global_step:,}. If the saved epoch was incomplete, it is "
-            "restarted from its beginning."
+            f"Resuming at epoch {start_epoch}, batch {resume_step + 1}; "
+            f"global optimizer step {global_step:,}."
         )
 
     if start_epoch > epochs:
         raise ValueError(
-            f"Checkpoint is already at epoch {start_epoch}, but --epochs is "
-            f"{epochs}. Increase --epochs to continue training."
+            f"Checkpoint is already complete through epoch {start_epoch - 1}, "
+            f"but the requested total is {epochs}. Increase --epochs to continue."
         )
     if max_steps is not None and global_step >= max_steps:
         raise ValueError(
@@ -351,13 +641,22 @@ def train(
     stopped_early = False
 
     for epoch in range(start_epoch, epochs + 1):
+        step_offset = resume_step if epoch == start_epoch else 0
+        train_loader.dataset.set_epoch(epoch - 1)
+        train_loader.sampler.set_epoch(
+            epoch - 1,
+            start_index=step_offset * batch_size,
+        )
         model.train()
         epoch_start_time = time.monotonic()
         running_loss = 0.0
         running_top1_correct = 0
         running_examples = 0
+        step = step_offset
 
-        for step, (x_batch, y_batch) in enumerate(train_loader, start=1):
+        for step, (x_batch, y_batch) in enumerate(
+            train_loader, start=step_offset + 1
+        ):
             x_batch = x_batch.to(device, non_blocking=True)
             y_batch = y_batch.to(device, non_blocking=True)
 
@@ -399,6 +698,12 @@ def train(
                     epoch,
                     step,
                     global_step,
+                    seed,
+                    training_config,
+                    dataset_info,
+                    _capture_rng_state(train_generator),
+                    epoch,
+                    epoch - 1,
                     best_val_loss=best_val_loss,
                 )
 
@@ -419,6 +724,12 @@ def train(
                 epoch,
                 step,
                 global_step,
+                seed,
+                training_config,
+                dataset_info,
+                _capture_rng_state(train_generator),
+                epoch,
+                epoch - 1,
                 best_val_loss=best_val_loss,
             )
 
@@ -443,6 +754,9 @@ def train(
                     config_dict,
                     epoch,
                     global_step,
+                    seed=seed,
+                    training_config=training_config,
+                    dataset_info=dataset_info,
                     val_loss=val_loss,
                     val_top1=val_top1,
                     val_top3=val_top3,
@@ -462,6 +776,12 @@ def train(
                 epoch,
                 step,
                 global_step,
+                seed,
+                training_config,
+                dataset_info,
+                _capture_rng_state(train_generator),
+                epoch,
+                epoch - 1,
                 best_val_loss=best_val_loss,
             )
             elapsed_hours = (time.monotonic() - start_time) / 3600.0
@@ -474,6 +794,7 @@ def train(
             )
             break
 
+        resume_step = 0
         val_loss, val_top1, val_top3 = evaluate(
             model,
             val_loader,
@@ -498,6 +819,9 @@ def train(
                 config_dict,
                 epoch,
                 global_step,
+                seed=seed,
+                training_config=training_config,
+                dataset_info=dataset_info,
                 val_loss=val_loss,
                 val_top1=val_top1,
                 val_top3=val_top3,
@@ -518,6 +842,12 @@ def train(
             epoch + 1,
             0,
             global_step,
+            seed,
+            training_config,
+            dataset_info,
+            _capture_rng_state(train_generator),
+            epoch + 1,
+            epoch,
             best_val_loss=best_val_loss,
         )
 
@@ -538,18 +868,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset-format",
         choices=("auto", "npy", "npz"),
-        default="auto",
         help="Split format; auto prefers memory-mapped NPY when both are present.",
     )
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--num-workers", type=int)
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--learning-rate", type=float, default=1e-4)
-    parser.add_argument("--min-learning-rate", type=float, default=1e-5)
-    parser.add_argument("--warmup-steps", type=int, default=2000)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--beta1", type=float, default=0.9)
-    parser.add_argument("--beta2", type=float, default=0.95)
+    parser.add_argument("--epochs", type=int)
+    parser.add_argument("--learning-rate", type=float)
+    parser.add_argument("--min-learning-rate", type=float)
+    parser.add_argument("--warmup-steps", type=int)
+    parser.add_argument("--weight-decay", type=float)
+    parser.add_argument("--beta1", type=float)
+    parser.add_argument("--beta2", type=float)
     parser.add_argument("--max-hours", type=float)
     parser.add_argument("--max-steps", type=int)
     parser.add_argument(
@@ -557,13 +886,18 @@ if __name__ == "__main__":
         type=int,
         help="Optional validation limit. Omit it to evaluate the full validation split.",
     )
-    parser.add_argument("--checkpoint-every-steps", type=int, default=500)
+    parser.add_argument("--checkpoint-every-steps", type=int)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Random seed for Python, NumPy, PyTorch, CUDA, and data loading (default: 42).",
+    )
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
     if args.board_size < 2:
         parser.error("--board-size must be at least 2.")
-    if args.epochs < 1:
+    if args.epochs is not None and args.epochs < 1:
         parser.error("--epochs must be positive.")
     if args.max_hours is not None and (
         not math.isfinite(args.max_hours) or args.max_hours <= 0
@@ -575,12 +909,17 @@ if __name__ == "__main__":
         parser.error("--batch-size must be positive.")
     if args.validation_batches is not None and args.validation_batches < 1:
         parser.error("--validation-batches must be positive.")
-    if args.checkpoint_every_steps < 1:
+    if (
+        args.checkpoint_every_steps is not None
+        and args.checkpoint_every_steps < 1
+    ):
         parser.error("--checkpoint-every-steps must be positive.")
-    if args.warmup_steps < 0:
+    if args.warmup_steps is not None and args.warmup_steps < 0:
         parser.error("--warmup-steps cannot be negative.")
     if args.num_workers is not None and args.num_workers < 0:
         parser.error("--num-workers cannot be negative.")
+    if args.seed is not None and not 0 <= args.seed <= 2**63 - 1:
+        parser.error("--seed must be between 0 and 2**63 - 1.")
 
     train(
         board_size=args.board_size,
@@ -599,5 +938,6 @@ if __name__ == "__main__":
         max_steps=args.max_steps,
         validation_batches=args.validation_batches,
         checkpoint_every_steps=args.checkpoint_every_steps,
+        seed=args.seed,
         resume=args.resume,
     )

@@ -16,6 +16,8 @@ support both 9×9 and 19×19 boards. See [Architecture](./docs/ARCHITECTURE.md).
 - Select 9×9 or 19×19 boards and matching checkpoints.
 - Preprocess SGF corpora, train models, and evaluate move prediction or
   complete-game strength.
+- Run seeded, reproducible training and resume 9×9/19×19 checkpoints; see
+  [Training](./docs/TRAINING.md).
 
 ## Requirements and installation
 

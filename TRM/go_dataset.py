@@ -7,6 +7,29 @@ from pathlib import Path
 DEFAULT_BOARD_SIZE = 9
 
 
+class _EpochRandomSampler(torch.utils.data.Sampler):
+    def __init__(self, data_source, seed):
+        self.data_source = data_source
+        self.seed = seed
+        self.epoch = 0
+        self.start_index = 0
+
+    def set_epoch(self, epoch, start_index=0):
+        self.epoch = epoch
+        self.start_index = start_index
+
+    def __iter__(self):
+        generator = torch.Generator()
+        generator.manual_seed(self.seed + self.epoch)
+        indices = torch.randperm(
+            len(self.data_source), generator=generator
+        ).tolist()
+        return iter(indices[self.start_index :])
+
+    def __len__(self):
+        return max(len(self.data_source) - self.start_index, 0)
+
+
 def default_go_dataset_dir(
     board_size: int,
     base_dir: str | Path | None = None,
@@ -24,7 +47,16 @@ def default_go_dataset_dir(
         if base_dir is not None
         else Path(__file__).resolve().parent
     )
-    return trm_dir / f"{board_size}x{board_size}_go" / dataset_name
+    board_dir = trm_dir / f"{board_size}x{board_size}_go"
+    dataset_dir = board_dir / dataset_name
+    legacy_19x19_dir = board_dir / "go_dataset"
+    if (
+        board_size == 19
+        and not dataset_dir.exists()
+        and legacy_19x19_dir.exists()
+    ):
+        return legacy_19x19_dir
+    return dataset_dir
 
 
 def apply_board_symmetry(x_tensor, y_target, symmetry_idx, board_size=None):
@@ -88,7 +120,9 @@ class GoDataset(Dataset):
     """
     PyTorch Dataset for loading Go state-move pairs from NPZ or NPY files.
     """
-    def __init__(self, dataset_path, augment=False, board_size=None):
+    def __init__(
+        self, dataset_path, augment=False, board_size=None, augment_seed=None
+    ):
         """
         Args:
             dataset_path (str): NPZ file or directory containing X.npy and y.npy.
@@ -118,6 +152,11 @@ class GoDataset(Dataset):
             if np.any(y_chunk < 0) or np.any(y_chunk > pass_move):
                 raise ValueError(f"Dataset labels must be in the range 0..{pass_move}.")
         self.augment = augment
+        self.augment_seed = augment_seed
+        self.epoch = 0
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch
 
     def __len__(self):
         return len(self.y)
@@ -127,7 +166,15 @@ class GoDataset(Dataset):
         y_sample = self.y[idx]
 
         if self.augment:
-            symmetry_idx = np.random.randint(0, 8)
+            if self.augment_seed is None:
+                symmetry_idx = np.random.randint(0, 8)
+            else:
+                rng = np.random.default_rng(
+                    np.random.SeedSequence(
+                        [self.augment_seed, self.epoch, int(idx)]
+                    )
+                )
+                symmetry_idx = int(rng.integers(0, 8))
             x_sample, y_sample = apply_board_symmetry(
                 x_sample, y_sample, symmetry_idx, self.board_size
             )
@@ -140,21 +187,45 @@ class GoDataset(Dataset):
 
 
 def create_go_dataloaders(
-    train_npz, val_npz, test_npz=None, batch_size=256, num_workers=4, board_size=None
+    train_npz,
+    val_npz,
+    test_npz=None,
+    batch_size=256,
+    num_workers=4,
+    board_size=None,
+    train_seed=None,
+    train_generator=None,
+    val_generator=None,
+    test_generator=None,
+    start_index=0,
 ):
     """
     Factory function to construct PyTorch DataLoaders for train, val, and test splits.
     """
-    train_dataset = GoDataset(train_npz, augment=True, board_size=board_size)
+    train_dataset = GoDataset(
+        train_npz,
+        augment=True,
+        board_size=board_size,
+        augment_seed=train_seed,
+    )
     val_dataset = GoDataset(val_npz, augment=False, board_size=board_size)
+    train_sampler = (
+        _EpochRandomSampler(train_dataset, train_seed)
+        if train_seed is not None
+        else None
+    )
+    if train_sampler is not None:
+        train_sampler.set_epoch(0, start_index=start_index)
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=train_sampler is None,
+        sampler=train_sampler,
         num_workers=num_workers,
         pin_memory=True,
-        drop_last=True
+        drop_last=True,
+        generator=train_generator,
     )
 
     val_loader = DataLoader(
@@ -163,7 +234,8 @@ def create_go_dataloaders(
         shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
-        drop_last=False
+        drop_last=False,
+        generator=val_generator,
     )
 
     test_loader = None
@@ -175,7 +247,8 @@ def create_go_dataloaders(
             shuffle=False,
             num_workers=num_workers,
             pin_memory=True,
-            drop_last=False
+            drop_last=False,
+            generator=test_generator,
         )
 
     return train_loader, val_loader, test_loader

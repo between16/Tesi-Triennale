@@ -243,6 +243,13 @@ def test_default_dataset_paths_match_board_size_layout(
     )
 
 
+def test_19x19_default_dataset_uses_existing_legacy_directory(tmp_path):
+    legacy_dataset_dir = tmp_path / "19x19_go" / "go_dataset"
+    legacy_dataset_dir.mkdir(parents=True)
+
+    assert default_go_dataset_dir(19, tmp_path) == legacy_dataset_dir
+
+
 def test_default_evaluation_split_prefers_memory_mapped_data(tmp_path, monkeypatch):
     import model_evaluation.go_eval as go_eval
 
