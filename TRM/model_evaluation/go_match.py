@@ -2,7 +2,13 @@
 
 Example:
     python model_evaluation/go_match.py --board-size 9 --katago-model /models/kata.bin \
-        --katago-config /models/gtp.cfg --games 20 --output matches.csv
+        --katago-config /models/gtp.cfg --games 20
+
+By default, the CSV and JSON full report are saved in:
+    model_evaluation/results/<board>x<board>_go/full_reports/
+
+The standalone Markdown summary is saved in:
+    model_evaluation/results/<board>x<board>_go/summaries/
 """
 
 from __future__ import annotations
@@ -324,7 +330,13 @@ def parse_args() -> argparse.Namespace:
         "--report-output",
         type=Path,
         default=None,
-        help="Optional JSON report path; reports are generated automatically by default.",
+        help="Optional JSON full-report path; generated automatically by default.",
+    )
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=None,
+        help="Optional Markdown summary path; generated automatically by default.",
     )
     return parser.parse_args()
 
@@ -465,19 +477,41 @@ def _match_summary(
         for row in completed
         if row["target_score_margin"] != ""
     ]
-    target_color_summary: dict[str, dict[str, int]] = {}
+    target_color_summary: dict[str, dict[str, Any]] = {}
     for color in ("black", "white"):
         color_rows = [row for row in results if row["target_color"] == color]
         completed_color_rows = [
             row for row in color_rows if row["completed"] == "true"
         ]
+        color_gaps = [
+            float(row["target_score_margin"])
+            for row in completed_color_rows
+            if row["target_score_margin"] != ""
+        ]
+        color_wins = sum(
+            row["target_result"] == "win" for row in completed_color_rows
+        )
+        color_draws = sum(
+            row["target_result"] == "draw" for row in completed_color_rows
+        )
+        color_losses = sum(
+            row["target_result"] == "loss" for row in completed_color_rows
+        )
         target_color_summary[color] = {
             "games_played": len(color_rows),
             "completed_games": len(completed_color_rows),
             "incomplete_games": len(color_rows) - len(completed_color_rows),
-            "wins": sum(row["target_result"] == "win" for row in completed_color_rows),
-            "draws": sum(row["target_result"] == "draw" for row in completed_color_rows),
-            "losses": sum(row["target_result"] == "loss" for row in completed_color_rows),
+            "wins": color_wins,
+            "draws": color_draws,
+            "losses": color_losses,
+            "win_rate": (
+                color_wins / len(completed_color_rows)
+                if completed_color_rows else None
+            ),
+            "mean_target_score_margin": (
+                sum(color_gaps) / len(color_gaps) if color_gaps else None
+            ),
+            "scored_games": len(color_gaps),
         }
     return {
         "requested_games": requested_games,
@@ -503,6 +537,15 @@ def _match_summary(
         "mean_target_score_margin": (
             sum(scored) / len(scored) if scored else None
         ),
+        "median_target_score_margin": (
+            float(np.median(scored)) if scored else None
+        ),
+        "mean_absolute_target_score_margin": (
+            sum(abs(value) for value in scored) / len(scored) if scored else None
+        ),
+        "positive_gap_games": sum(value > 0 for value in scored),
+        "negative_gap_games": sum(value < 0 for value in scored),
+        "zero_gap_games": sum(value == 0 for value in scored),
         "scored_games": len(scored),
         "target_passes": sum(int(row["target_pass_count"]) for row in results),
         "target_passes_before_16_stones": sum(
@@ -537,6 +580,7 @@ def _comparison_key(parameters: dict[str, Any], artifact_hashes: dict[str, Any])
             "output",
             "requested_output",
             "report_output",
+            "summary_output",
             "effective_search_candidates",
         }
     }
@@ -618,6 +662,281 @@ def _write_report(
         json.dump(report, file, indent=2, allow_nan=False)
         file.write("\n")
 
+
+
+def _markdown_cell(value: Any) -> str:
+    """Render a value safely inside a Markdown table cell."""
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, bool):
+        rendered = "yes" if value else "no"
+    elif isinstance(value, (dict, list, tuple)):
+        rendered = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    else:
+        rendered = str(value)
+    return rendered.replace("|", r"\|").replace("\r", " ").replace("\n", " ")
+
+
+def _markdown_table(headers: list[str], rows: list[list[Any]]) -> list[str]:
+    lines = [
+        "| " + " | ".join(_markdown_cell(item) for item in headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    lines.extend(
+        "| " + " | ".join(_markdown_cell(item) for item in row) + " |"
+        for row in rows
+    )
+    return lines
+
+
+def _format_number(value: Any, digits: int = 2, suffix: str = "") -> str:
+    if value is None or value == "":
+        return "—"
+    return f"{float(value):,.{digits}f}{suffix}"
+
+
+def _format_percent(value: Any) -> str:
+    if value is None:
+        return "—"
+    return f"{float(value) * 100:.1f}%"
+
+
+def _format_gap(value: Any) -> str:
+    if value is None or value == "":
+        return "—"
+    return f"{float(value):+.1f} pt"
+
+
+def _write_summary_report(
+    summary_path: Path,
+    *,
+    status: str,
+    error: str | None,
+    started_at: datetime,
+    elapsed_seconds: float,
+    invocation: str,
+    parameters: dict[str, Any],
+    engine_name: str,
+    engine_version: str,
+    results: list[dict[str, Any]],
+    csv_path: Path,
+    report_path: Path,
+) -> None:
+    """Write a standalone, human-readable summary of the KataGo match."""
+    requested_games = int(parameters.get("games", len(results)))
+    summary = _match_summary(results, requested_games)
+    board_size = parameters.get("board_size", "?")
+    search_mode = parameters.get("search", "unknown")
+    finished_at = datetime.now(timezone.utc)
+    status_labels = {"completed": "COMPLETATO", "failed": "FALLITO"}
+
+    lines = [
+        f"# Riepilogo test TRM vs KataGo — {board_size}x{board_size}",
+        "",
+        f"- **Stato:** {status_labels.get(status, status.upper())}",
+        f"- **Inizio (UTC):** {started_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"- **Fine (UTC):** {finished_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"- **Durata:** {elapsed_seconds / 60:.1f} minuti ({elapsed_seconds:.1f} secondi)",
+        f"- **Avversario:** {engine_name} {engine_version}",
+        f"- **Modalità TRM:** {search_mode}",
+        "",
+        "## Parametri del test",
+        "",
+        "Comando eseguito:",
+        "```bash",
+        invocation,
+        "```",
+        "",
+        "La tabella riporta gli argomenti CLI (compresi i valori di default) e i parametri effettivi risolti dallo script.",
+        "",
+    ]
+
+    parameter_rows: list[list[Any]] = []
+    cli_keys = list(parameters.keys())
+    for key in cli_keys:
+        if key in {
+            "requested_output",
+            "komi",
+            "effective_gtp_rules",
+            "effective_max_moves",
+            "effective_human_profile",
+            "effective_device",
+            "effective_search_candidates",
+            "effective_search_depth",
+        }:
+            continue
+        parameter_rows.append([f"--{key.replace('_', '-')}", parameters[key]])
+    lines.extend(_markdown_table(["Argomento CLI", "Valore"], parameter_rows))
+    lines.extend(
+        [
+            "",
+            "### Parametri effettivi e file generati",
+            "",
+        ]
+    )
+    effective_rows = [
+        ["Checkpoint TRM", parameters.get("checkpoint")],
+        ["Device effettivo", parameters.get("effective_device")],
+        ["Komi", parameters.get("komi")],
+        ["Limite mosse effettivo", parameters.get("effective_max_moves")],
+        ["Regole GTP effettive", parameters.get("effective_gtp_rules")],
+        ["Profilo HumanSL effettivo", parameters.get("effective_human_profile")],
+        ["Candidati Negamax effettivi", parameters.get("effective_search_candidates")],
+        ["Profondità Negamax effettiva", parameters.get("effective_search_depth")],
+        ["CSV partite", _portable_path(csv_path)],
+        ["Full report JSON", _portable_path(report_path)],
+        ["Riepilogo Markdown", _portable_path(summary_path)],
+    ]
+    lines.extend(_markdown_table(["Parametro", "Valore"], effective_rows))
+
+    lines.extend(["", "## Risultati complessivi", ""])
+    completed = summary["completed_games"]
+    win_interval = summary["win_rate_95ci_wilson"]
+    interval_text = (
+        f"{win_interval[0] * 100:.1f}%–{win_interval[1] * 100:.1f}%"
+        if win_interval is not None else "—"
+    )
+    termination_text = (
+        ", ".join(
+            f"{reason}: {count}"
+            for reason, count in summary["termination_counts"].items()
+        )
+        or "—"
+    )
+    aggregate_rows = [
+        ["Partite richieste", summary["requested_games"]],
+        ["Partite registrate", summary["games_recorded"]],
+        ["Partite completate", completed],
+        ["Partite incomplete", summary["incomplete_games"]],
+        ["Partite non iniziate", summary["not_started_games"]],
+        ["Vittorie TRM", summary["wins"]],
+        ["Pareggi", summary["draws"]],
+        ["Sconfitte TRM (vittorie KataGo)", summary["losses"]],
+        ["Win rate TRM", _format_percent(summary["win_rate"])],
+        ["Score rate TRM (vittoria=1, pareggio=0.5)", _format_percent(summary["score_rate"])],
+        ["Intervallo 95% win rate (Wilson)", interval_text],
+        ["Gap medio TRM", _format_gap(summary["mean_target_score_margin"])],
+        ["Gap mediano TRM", _format_gap(summary["median_target_score_margin"])],
+        ["Gap medio assoluto", _format_number(summary["mean_absolute_target_score_margin"], 1, " pt")],
+        ["Partite con punteggio numerico", summary["scored_games"]],
+        ["Gap a favore TRM / a favore KataGo / pari", (
+            f"{summary['positive_gap_games']} / {summary['negative_gap_games']} / {summary['zero_gap_games']}"
+        )],
+        ["Mosse medie per partita registrata", _format_number(summary["mean_moves"], 1)],
+        ["PASS giocati dal TRM", summary["target_passes"]],
+        ["PASS prima di 16 pietre", summary["target_passes_before_16_stones"]],
+        ["Decisioni con penalità PASS attiva", summary["pass_penalty_decisions"]],
+        ["Terminazioni", termination_text],
+    ]
+    lines.extend(_markdown_table(["Indicatore", "Risultato"], aggregate_rows))
+    lines.extend(
+        [
+            "",
+            "*Il gap è calcolato dal punto di vista del TRM: un valore positivo indica un vantaggio del TRM; un valore negativo indica un vantaggio di KataGo. Il gap è disponibile solo per le partite terminate con un punteggio numerico.*",
+            "",
+            "## Risultati per colore del TRM",
+            "",
+        ]
+    )
+    color_rows = []
+    for color, label in (("black", "Nero"), ("white", "Bianco")):
+        color_summary = summary["target_color_results"][color]
+        color_rows.append(
+            [
+                label,
+                color_summary["games_played"],
+                color_summary["completed_games"],
+                f"{color_summary['wins']}-{color_summary['draws']}-{color_summary['losses']}",
+                _format_percent(color_summary["win_rate"]),
+                _format_gap(color_summary["mean_target_score_margin"]),
+            ]
+        )
+    lines.extend(
+        _markdown_table(
+            ["Colore TRM", "Giocate", "Completate", "V-P-S", "Win rate", "Gap medio"],
+            color_rows,
+        )
+    )
+
+    search = summary["search"]
+    lines.extend(
+        [
+            "",
+            "## Statistiche di ricerca",
+            "",
+        ]
+    )
+    search_rows = [
+        ["Nodi esplorati", search["nodes"]],
+        ["Foglie valutate", search["leaves"]],
+        ["Cutoff", search["cutoffs"]],
+        ["Chiamate alla policy", search["policy_calls"]],
+        ["Tempo totale ricerca", f"{search['elapsed_seconds']:.2f} s"],
+    ]
+    lines.extend(_markdown_table(["Indicatore", "Totale"], search_rows))
+    lines.append("")
+    lines.append("*Le statistiche di ricerca sono specifiche del Negamax; con `--search policy` restano a zero.*")
+
+    lines.extend(["", "## Risultato di ogni partita", ""])
+    game_rows: list[list[Any]] = []
+    result_labels = {
+        "win": "Vittoria",
+        "draw": "Pareggio",
+        "loss": "Sconfitta",
+        "incomplete": "Incompleta",
+    }
+    color_labels = {"black": "Nero", "white": "Bianco"}
+    winner_labels = {"black": "Nero", "white": "Bianco", "draw": "Pareggio"}
+    termination_labels = {
+        "two_passes": "Due pass consecutivi",
+        "move_limit": "Limite mosse",
+        "katago_resign": "Resa KataGo",
+    }
+    for row in results:
+        black_score = row["black_score"]
+        white_score = row["white_score"]
+        score_text = (
+            f"{black_score}–{white_score}"
+            if black_score != "" and white_score != ""
+            else "—"
+        )
+        game_rows.append(
+            [
+                row["game"],
+                color_labels.get(row["target_color"], row["target_color"]),
+                result_labels.get(row["target_result"], row["target_result"]),
+                winner_labels.get(row["winner"], row["winner"] or "—"),
+                termination_labels.get(row["termination"], row["termination"]),
+                row["moves"],
+                score_text,
+                _format_gap(row["target_score_margin"]),
+            ]
+        )
+    if game_rows:
+        lines.extend(
+            _markdown_table(
+                ["#", "Colore TRM", "Esito TRM", "Vincitore", "Terminazione", "Mosse", "Score B–W", "Gap TRM"],
+                game_rows,
+            )
+        )
+    else:
+        lines.append("Nessuna partita è stata completata o registrata.")
+
+    if error:
+        lines.extend(["", "## Errore", "", "```text", error, "```"])
+    lines.extend(
+        [
+            "",
+            "## Altri file",
+            "",
+            f"- CSV dettagliato: `{_portable_path(csv_path)}`",
+            f"- Full report JSON: `{_portable_path(report_path)}`",
+            "",
+        ]
+    )
+    with summary_path.open("x", encoding="utf-8") as file:
+        file.write("\n".join(lines))
+        file.write("\n")
 
 def make_agent(
     policy_agent: TRMAgent,
@@ -823,24 +1142,44 @@ def main() -> None:
             "or set both to positive values."
         )
     komi, gtp_rules = load_board_rules(args.rules, args.board_size)
+    results_root = SCRIPT_DIR / "results" / f"{args.board_size}x{args.board_size}_go"
+    full_reports_dir = results_root / "full_reports"
+    summaries_dir = results_root / "summaries"
+    full_reports_dir.mkdir(parents=True, exist_ok=True)
+    summaries_dir.mkdir(parents=True, exist_ok=True)
+
     requested_output = args.output or (
-        SCRIPT_DIR
-        / "results"
-        / f"{args.board_size}x{args.board_size}_go"
+        full_reports_dir
         / f"matches-{args.search}-{args.board_size}x{args.board_size}.csv"
     )
     output = _unique_path(requested_output)
     output.parent.mkdir(parents=True, exist_ok=True)
+
     if args.report_output is not None and args.report_output.exists():
-        raise FileExistsError(f"Report already exists and will not be overwritten: {args.report_output}")
+        raise FileExistsError(
+            f"Full report already exists and will not be overwritten: {args.report_output}"
+        )
     report_path = (
         _unique_path(args.report_output)
         if args.report_output is not None
-        else _unique_path(output.with_suffix(".report.json"))
+        else _unique_path(full_reports_dir / f"{output.stem}.report.json")
     )
-    if report_path.resolve() == output.resolve():
-        raise ValueError("--report-output and --output must point to different files.")
+
+    if args.summary_output is not None and args.summary_output.exists():
+        raise FileExistsError(
+            f"Summary already exists and will not be overwritten: {args.summary_output}"
+        )
+    summary_path = (
+        _unique_path(args.summary_output)
+        if args.summary_output is not None
+        else _unique_path(summaries_dir / f"{output.stem}.summary.md")
+    )
+
+    output_paths = [output.resolve(), report_path.resolve(), summary_path.resolve()]
+    if len(set(output_paths)) != len(output_paths):
+        raise ValueError("CSV, full report and summary must use three different file paths.")
     report_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
 
     device = args.device
     if device == "auto":
@@ -935,6 +1274,7 @@ def main() -> None:
             "requested_output": _portable_path(requested_output),
             "output": _portable_path(output),
             "report_output": _portable_path(report_path),
+            "summary_output": _portable_path(summary_path),
             "komi": komi,
             "effective_gtp_rules": gtp_rules,
             "effective_max_moves": args.max_moves or 4 * args.board_size**2,
@@ -1025,28 +1365,47 @@ def main() -> None:
             client.close()
         finally:
             try:
-                _write_report(
-                    report_path,
-                    status=status,
-                    error=error,
-                    started_at=started_at,
-                    elapsed_seconds=time.perf_counter() - started_clock,
-                    invocation=_portable_invocation([sys.executable, *sys.argv]),
-                    parameters=parameters,
-                    engine_command=[_portable_argument(argument) for argument in command],
-                    engine_name=engine_name,
-                    engine_version=engine_version,
-                    artifacts=artifacts,
-                    results=results,
-                    csv_path=output,
-                    source_revision=source_revision,
-                    source_dirty=source_dirty,
-                )
+                elapsed_seconds = time.perf_counter() - started_clock
+                invocation = _portable_invocation([sys.executable, *sys.argv])
+                try:
+                    _write_report(
+                        report_path,
+                        status=status,
+                        error=error,
+                        started_at=started_at,
+                        elapsed_seconds=elapsed_seconds,
+                        invocation=invocation,
+                        parameters=parameters,
+                        engine_command=[_portable_argument(argument) for argument in command],
+                        engine_name=engine_name,
+                        engine_version=engine_version,
+                        artifacts=artifacts,
+                        results=results,
+                        csv_path=output,
+                        source_revision=source_revision,
+                        source_dirty=source_dirty,
+                    )
+                finally:
+                    _write_summary_report(
+                        summary_path,
+                        status=status,
+                        error=error,
+                        started_at=started_at,
+                        elapsed_seconds=elapsed_seconds,
+                        invocation=invocation,
+                        parameters=parameters,
+                        engine_name=engine_name,
+                        engine_version=engine_version,
+                        results=results,
+                        csv_path=output,
+                        report_path=report_path,
+                    )
             finally:
                 if cudnn_directory is not None:
                     cudnn_directory.cleanup()
         print(f"Match results: {output}")
         print(f"Match report: {report_path}")
+        print(f"Match summary: {summary_path}")
 
 
 if __name__ == "__main__":

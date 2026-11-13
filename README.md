@@ -43,10 +43,24 @@ cd TRM
 python3 app.py --board-size 9
 ```
 
+```bash
+cd TRM
+python app.py --board-size 9 --search negamax \
+  --search-depth 2 \
+  --search-candidates 5
+```
+
 For 19×19:
 
 ```bash
 python3 app.py --board-size 19
+```
+
+```bash
+cd TRM
+python app.py --board-size 19 --search negamax \
+  --search-depth 2 \
+  --search-candidates 3
 ```
 
 ## Tests

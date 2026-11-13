@@ -1,0 +1,78 @@
+# List of commands to test angainst katago
+
+## 9x9 with negamax:
+```bash
+python3 model_evaluation/go_match.py \
+  --board-size 9 \
+  --katago model_evaluation/katago-local/engine/squashfs-root/usr/bin/katago \
+  --katago-config model_evaluation/katago-local/engine/default_gtp.cfg \
+  --katago-model model_evaluation/katago-local/downloads/kata9x9-b18c384nbt-20231025.bin.gz \
+  --katago-human-model model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz \
+  --human-profile rank_20k \
+  --games 100 \
+  --max-visits 40 \
+  --seed 42 \
+  --pass-logit-penalty 3.5 \
+  --pass-penalty-before-stones 16 \
+  --search negamax \
+  --search-depth 2 \
+  --search-candidates 5 \
+  --output model_evaluation/results/9x9_go/full_reports/negamax-d2-c5-rank20k-40v-100g.csv
+```
+
+## 9x9 without negamax:
+```bash
+python3 model_evaluation/go_match.py \
+  --board-size 9 \
+  --katago model_evaluation/katago-local/engine/squashfs-root/usr/bin/katago \
+  --katago-config model_evaluation/katago-local/engine/default_gtp.cfg \
+  --katago-model model_evaluation/katago-local/downloads/kata9x9-b18c384nbt-20231025.bin.gz \
+  --katago-human-model model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz \
+  --human-profile rank_20k \
+  --games 100 \
+  --max-visits 40 \
+  --seed 42 \
+  --pass-logit-penalty 3.5 \
+  --pass-penalty-before-stones 16 \
+  --search policy \
+  --output model_evaluation/results/9x9_go/full_reports/policy-rank20k-40v-100g.csv
+```
+
+
+## 19x19 with negamax:
+```bash
+python3 model_evaluation/go_match.py \
+  --board-size 19 \
+  --katago model_evaluation/katago-local/engine/squashfs-root/usr/bin/katago \
+  --katago-config model_evaluation/katago-local/engine/default_gtp.cfg \
+  --katago-model model_evaluation/katago-local/downloads/kata1-tf3-b11c768-s12382M-d6533M.bin.gz \
+  --katago-human-model model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz \
+  --human-profile rank_20k \
+  --games 100 \
+  --max-visits 40 \
+  --seed 42 \
+  --pass-logit-penalty 3.5 \
+  --pass-penalty-before-stones 16 \
+  --search negamax \
+  --search-depth 2 \
+  --search-candidates 3 \
+  --output model_evaluation/results/19x19_go/full_reports/negamax-d2-c3-rank20k-40v-100g.csv
+```
+
+## 19x19 without negamax:
+```bash
+python3 model_evaluation/go_match.py \
+  --board-size 19 \
+  --katago model_evaluation/katago-local/engine/squashfs-root/usr/bin/katago \
+  --katago-config model_evaluation/katago-local/engine/default_gtp.cfg \
+  --katago-model model_evaluation/katago-local/downloads/kata1-tf3-b11c768-s12382M-d6533M.bin.gz \
+  --katago-human-model model_evaluation/katago-local/downloads/b18c384nbt-humanv0.bin.gz \
+  --human-profile rank_20k \
+  --games 100 \
+  --max-visits 40 \
+  --seed 42 \
+  --pass-logit-penalty 3.5 \
+  --pass-penalty-before-stones 16 \
+  --search policy \
+  --output model_evaluation/results/19x19_go/full_reports/policy-rank20k-40v-100g.csv
+```
