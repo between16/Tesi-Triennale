@@ -24,6 +24,7 @@ class SearchStats:
     cutoffs: int = 0
     policy_calls: int = 0
     score: float | None = None
+    elapsed_seconds: float = 0.0
 
 
 class NegamaxAgent:
