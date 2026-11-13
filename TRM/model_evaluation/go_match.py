@@ -9,13 +9,20 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime, timezone
+import hashlib
 import json
 import math
+import os
 import queue
+import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
+import time
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +31,7 @@ import torch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TRM_DIR = SCRIPT_DIR.parent
+REPO_ROOT = TRM_DIR.parent
 if str(TRM_DIR) not in sys.path:
     sys.path.insert(0, str(TRM_DIR))
 
@@ -33,6 +41,7 @@ from agents import (
     TRMAgent,
 )
 from game_env import GoGameEnv
+from negamax import NegamaxAgent
 
 DEFAULT_RULES_PATH = SCRIPT_DIR / "config" / "rules.json"
 DEFAULT_CHECKPOINTS = {
@@ -52,6 +61,14 @@ MATCH_FIELDS = [
     "opponent_profile",
     "human_temperature_mode",
     "opponent_type",
+    "search_mode",
+    "search_depth",
+    "search_candidates",
+    "search_nodes",
+    "search_leaves",
+    "search_cutoffs",
+    "search_policy_calls",
+    "search_time_seconds",
     "pass_logit_penalty",
     "pass_penalty_before_stones",
     "rules_file",
@@ -67,6 +84,7 @@ MATCH_FIELDS = [
     "black_score",
     "white_score",
     "margin",
+    "target_score_margin",
     "seed",
 ]
 
@@ -154,7 +172,12 @@ def gtp_to_action(move: str, board_size: int) -> int:
 class GTPClient:
     """Small synchronous GTP client with response timeouts and error checking."""
 
-    def __init__(self, command: list[str], timeout: float) -> None:
+    def __init__(
+        self,
+        command: list[str],
+        timeout: float,
+        environment: dict[str, str] | None = None,
+    ) -> None:
         self.timeout = timeout
         self.process = subprocess.Popen(
             command,
@@ -163,6 +186,7 @@ class GTPClient:
             stderr=None,
             text=True,
             bufsize=1,
+            env=environment,
         )
         if self.process.stdin is None or self.process.stdout is None:
             raise RuntimeError("Could not open KataGo's GTP input/output pipes.")
@@ -254,6 +278,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--games", type=int, default=20)
     parser.add_argument("--max-moves", type=int, default=None)
     parser.add_argument(
+        "--search",
+        choices=("policy", "negamax"),
+        default="policy",
+        help="Target move selection: direct TRM policy or TRM-guided Negamax.",
+    )
+    parser.add_argument(
+        "--search-depth",
+        type=int,
+        default=2,
+        help="Negamax depth in plies (default: 2; ignored by --search policy).",
+    )
+    parser.add_argument(
+        "--search-candidates",
+        type=int,
+        default=None,
+        help=(
+            "Policy-ranked board moves per node (defaults to 5 on 9x9 and "
+            "3 on 19x19; ignored by --search policy)."
+        ),
+    )
+    parser.add_argument(
         "--max-visits",
         type=int,
         default=128,
@@ -275,6 +320,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument(
+        "--report-output",
+        type=Path,
+        default=None,
+        help="Optional JSON report path; reports are generated automatically by default.",
+    )
     return parser.parse_args()
 
 
@@ -297,6 +348,292 @@ def configure_katago(
         raise RuntimeError(f"KataGo komi mismatch: expected {komi}, received {actual_komi}.")
 
 
+def _file_metadata(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {
+        "path": _portable_path(path),
+        "size_bytes": path.stat().st_size,
+        "sha256": digest.hexdigest(),
+    }
+
+
+def _portable_path(path: Path | str) -> str:
+    """Represent repository files relative to the repository, never this host."""
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+    try:
+        return candidate.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        return Path(path).name if Path(path).is_absolute() else Path(path).as_posix()
+
+
+def _portable_argument(argument: str) -> str:
+    if Path(argument).is_absolute():
+        return _portable_path(argument)
+    if "=" in argument:
+        key, value = argument.split("=", 1)
+        if Path(value).is_absolute():
+            return f"{key}={_portable_path(value)}"
+    return argument
+
+
+def _portable_invocation(arguments: list[str]) -> str:
+    portable_arguments = [
+        "python3" if index == 0 else _portable_argument(argument)
+        for index, argument in enumerate(arguments)
+    ]
+    return shlex.join(portable_arguments)
+
+
+def _katago_runtime_environment() -> tuple[dict[str, str], tempfile.TemporaryDirectory | None]:
+    environment = os.environ.copy()
+    library_paths: list[str] = []
+    bundled_libraries = (
+        SCRIPT_DIR / "katago-local" / "engine" / "squashfs-root" / "usr" / "lib"
+    )
+    if bundled_libraries.is_dir():
+        library_paths.append(str(bundled_libraries))
+
+    cudnn_wheel = SCRIPT_DIR / "katago-local" / "downloads" / "nvidia_cudnn_cu13-9.28.1.4.whl"
+    temporary_directory = None
+    if cudnn_wheel.is_file():
+        temporary_directory = tempfile.TemporaryDirectory(prefix="katago-cudnn-")
+        with zipfile.ZipFile(cudnn_wheel) as wheel:
+            for name in wheel.namelist():
+                if name.startswith("nvidia/cudnn/lib/") and ".so" in name:
+                    destination = Path(temporary_directory.name, Path(name).name)
+                    with wheel.open(name) as source, destination.open("wb") as target:
+                        shutil.copyfileobj(source, target)
+        library_paths.insert(0, temporary_directory.name)
+
+    existing_library_path = environment.get("LD_LIBRARY_PATH", "")
+    if existing_library_path:
+        library_paths.append(existing_library_path)
+    if library_paths:
+        environment["LD_LIBRARY_PATH"] = ":".join(library_paths)
+    return environment, temporary_directory
+
+
+def _unique_path(path: Path) -> Path:
+    """Keep prior runs intact by adding a UTC timestamp when a path exists."""
+    if not path.exists():
+        return path
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    candidate = path.with_name(f"{path.stem}.run-{timestamp}{path.suffix}")
+    suffix = 1
+    while candidate.exists():
+        candidate = path.with_name(
+            f"{path.stem}.run-{timestamp}-{suffix}{path.suffix}"
+        )
+        suffix += 1
+    return candidate
+
+
+def _wilson_interval(successes: int, total: int) -> list[float] | None:
+    if total == 0:
+        return None
+    z = 1.959963984540054
+    rate = successes / total
+    denominator = 1 + z * z / total
+    centre = (rate + z * z / (2 * total)) / denominator
+    radius = (
+        z
+        * math.sqrt(rate * (1 - rate) / total + z * z / (4 * total * total))
+        / denominator
+    )
+    return [max(0.0, centre - radius), min(1.0, centre + radius)]
+
+
+def _match_summary(
+    results: list[dict[str, Any]],
+    requested_games: int | None = None,
+) -> dict[str, Any]:
+    if requested_games is None:
+        requested_games = len(results)
+    completed = [row for row in results if row["completed"] == "true"]
+    wins = sum(row["target_result"] == "win" for row in completed)
+    draws = sum(row["target_result"] == "draw" for row in completed)
+    losses = sum(row["target_result"] == "loss" for row in completed)
+    scored = [
+        float(row["target_score_margin"])
+        for row in completed
+        if row["target_score_margin"] != ""
+    ]
+    target_color_summary: dict[str, dict[str, int]] = {}
+    for color in ("black", "white"):
+        color_rows = [row for row in results if row["target_color"] == color]
+        completed_color_rows = [
+            row for row in color_rows if row["completed"] == "true"
+        ]
+        target_color_summary[color] = {
+            "games_played": len(color_rows),
+            "completed_games": len(completed_color_rows),
+            "incomplete_games": len(color_rows) - len(completed_color_rows),
+            "wins": sum(row["target_result"] == "win" for row in completed_color_rows),
+            "draws": sum(row["target_result"] == "draw" for row in completed_color_rows),
+            "losses": sum(row["target_result"] == "loss" for row in completed_color_rows),
+        }
+    return {
+        "requested_games": requested_games,
+        "games_recorded": len(results),
+        "not_started_games": max(0, requested_games - len(results)),
+        "completed_games": len(completed),
+        "incomplete_games": len(results) - len(completed),
+        "wins": wins,
+        "draws": draws,
+        "losses": losses,
+        "win_rate": wins / len(completed) if completed else None,
+        "score_rate": (wins + 0.5 * draws) / len(completed) if completed else None,
+        "win_rate_95ci_wilson": _wilson_interval(wins, len(completed)),
+        "target_color_results": target_color_summary,
+        "termination_counts": {
+            reason: sum(row["termination"] == reason for row in results)
+            for reason in sorted({row["termination"] for row in results})
+        },
+        "mean_moves": (
+            sum(int(row["moves"]) for row in results) / len(results)
+            if results else None
+        ),
+        "mean_target_score_margin": (
+            sum(scored) / len(scored) if scored else None
+        ),
+        "scored_games": len(scored),
+        "target_passes": sum(int(row["target_pass_count"]) for row in results),
+        "target_passes_before_16_stones": sum(
+            int(row["target_passes_before_16_stones"]) for row in results
+        ),
+        "pass_penalty_decisions": sum(
+            int(row["pass_penalty_decisions"]) for row in results
+        ),
+        "search": {
+            "nodes": sum(int(row["search_nodes"]) for row in results),
+            "leaves": sum(int(row["search_leaves"]) for row in results),
+            "cutoffs": sum(int(row["search_cutoffs"]) for row in results),
+            "policy_calls": sum(
+                int(row["search_policy_calls"]) for row in results
+            ),
+            "elapsed_seconds": sum(
+                float(row["search_time_seconds"]) for row in results
+            ),
+        },
+    }
+
+
+def _comparison_key(parameters: dict[str, Any], artifact_hashes: dict[str, Any]) -> str:
+    comparable_parameters = {
+        key: value
+        for key, value in parameters.items()
+        if key not in {
+            "search",
+            "search_depth",
+            "search_candidates",
+            "effective_search_depth",
+            "output",
+            "requested_output",
+            "report_output",
+            "effective_search_candidates",
+        }
+    }
+    payload = {
+        "parameters": comparable_parameters,
+        "artifacts": artifact_hashes,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _write_report(
+    report_path: Path,
+    *,
+    status: str,
+    error: str | None,
+    started_at: datetime,
+    elapsed_seconds: float,
+    invocation: str,
+    parameters: dict[str, Any],
+    engine_command: list[str],
+    engine_name: str,
+    engine_version: str,
+    artifacts: dict[str, Any],
+    results: list[dict[str, Any]],
+    csv_path: Path,
+    source_revision: str,
+    source_dirty: bool,
+) -> None:
+    artifact_hashes = {
+        name: metadata["sha256"] if metadata is not None else None
+        for name, metadata in artifacts.items()
+    }
+    report = {
+        "schema_version": 1,
+        "status": status,
+        "error": error,
+        "started_at_utc": started_at.isoformat(),
+        "duration_seconds": elapsed_seconds,
+        "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_revision": source_revision,
+        "source_dirty": source_dirty,
+        "invocation": {
+            "command": invocation,
+            "working_directory": _portable_path(Path.cwd()),
+            "stored_path_base": "repository root",
+            "python": sys.version,
+        },
+        "runtime": {
+            "torch": torch.__version__,
+            "cuda_available": torch.cuda.is_available(),
+            "cuda_version": torch.version.cuda,
+            "device": parameters.get("effective_device"),
+            "gpu": (
+                torch.cuda.get_device_name(0)
+                if torch.cuda.is_available()
+                else None
+            ),
+        },
+        "parameters": parameters,
+        "comparison_key": _comparison_key(parameters, artifact_hashes),
+        "artifacts": artifacts,
+        "engine": {
+            "name": engine_name,
+            "version": engine_version,
+            "command": engine_command,
+        },
+        "results_csv": {
+            "path": _portable_path(csv_path),
+            "sha256": _file_metadata(csv_path)["sha256"] if csv_path.is_file() else None,
+        },
+        "summary": _match_summary(
+            results,
+            int(parameters.get("games", len(results))),
+        ),
+        "games": results,
+    }
+    with report_path.open("x", encoding="utf-8") as file:
+        json.dump(report, file, indent=2, allow_nan=False)
+        file.write("\n")
+
+
+def make_agent(
+    policy_agent: TRMAgent,
+    search: str,
+    search_depth: int,
+    search_candidates: int,
+) -> TRMAgent | NegamaxAgent:
+    if search == "negamax":
+        return NegamaxAgent(
+            policy_agent=policy_agent,
+            depth=search_depth,
+            max_candidates=search_candidates,
+        )
+    return policy_agent
+
+
 def play_one_game(
     game_number: int,
     board_size: int,
@@ -317,6 +654,10 @@ def play_one_game(
 ) -> dict[str, Any]:
     client.command("clear_board")
     env = GoGameEnv(board_size=board_size, komi=komi)
+    policy_agent = agent.policy_agent if isinstance(agent, NegamaxAgent) else agent
+    search_mode = "negamax" if isinstance(agent, NegamaxAgent) else "policy"
+    search_depth = agent.depth if isinstance(agent, NegamaxAgent) else 0
+    search_candidates = agent.max_candidates if isinstance(agent, NegamaxAgent) else 0
     target_winner: str | None = None
     termination = "move_limit"
     completed = False
@@ -324,6 +665,11 @@ def play_one_game(
     target_pass_count = 0
     target_passes_before_16_stones = 0
     pass_penalty_decisions = 0
+    search_nodes = 0
+    search_leaves = 0
+    search_cutoffs = 0
+    search_policy_calls = 0
+    search_time_seconds = 0.0
     pass_action = board_size * board_size
 
     for move_count in range(1, max_moves + 1):
@@ -335,11 +681,19 @@ def play_one_game(
                 for column in range(board_size)
             )
             if (
-                agent.pass_logit_penalty
-                and occupied_stones < agent.pass_penalty_before_stones
+                getattr(policy_agent, "pass_logit_penalty", 0)
+                and occupied_stones
+                < getattr(policy_agent, "pass_penalty_before_stones", 0)
             ):
                 pass_penalty_decisions += 1
             action = agent.get_move(env)
+            if isinstance(agent, NegamaxAgent):
+                stats = agent.last_search_stats
+                search_nodes += stats.nodes
+                search_leaves += stats.leaves
+                search_cutoffs += stats.cutoffs
+                search_policy_calls += stats.policy_calls
+                search_time_seconds += stats.elapsed_seconds
             if action == pass_action:
                 target_pass_count += 1
                 if occupied_stones < 16:
@@ -382,17 +736,27 @@ def play_one_game(
         "game": game_number,
         "board_size": board_size,
         "komi": komi,
-        "target_checkpoint": str(checkpoint),
-        "katago_model": str(katago_model),
-        "katago_config": str(katago_config),
+        "target_checkpoint": _portable_path(checkpoint),
+        "katago_model": _portable_path(katago_model),
+        "katago_config": _portable_path(katago_config),
         "search_max_visits": max_visits,
-        "human_model": "" if human_model is None else str(human_model),
+        "human_model": "" if human_model is None else _portable_path(human_model),
         "opponent_profile": "" if human_profile is None else human_profile,
         "human_temperature_mode": human_temperature_mode or "engine_default",
         "opponent_type": "human_sl" if human_model is not None else "kata1",
-        "pass_logit_penalty": agent.pass_logit_penalty,
-        "pass_penalty_before_stones": agent.pass_penalty_before_stones,
-        "rules_file": str(rules_path),
+        "search_mode": search_mode,
+        "search_depth": search_depth,
+        "search_candidates": search_candidates,
+        "search_nodes": search_nodes,
+        "search_leaves": search_leaves,
+        "search_cutoffs": search_cutoffs,
+        "search_policy_calls": search_policy_calls,
+        "search_time_seconds": search_time_seconds,
+        "pass_logit_penalty": getattr(policy_agent, "pass_logit_penalty", 0),
+        "pass_penalty_before_stones": getattr(
+            policy_agent, "pass_penalty_before_stones", 0
+        ),
+        "rules_file": _portable_path(rules_path),
         "target_color": "black" if target_color == "b" else "white",
         "winner": winner,
         "target_result": target_result,
@@ -405,6 +769,15 @@ def play_one_game(
         "black_score": "" if score is None else score["black"],
         "white_score": "" if score is None else score["white"],
         "margin": "" if score is None else score["margin"],
+        "target_score_margin": (
+            ""
+            if score is None
+            else (
+                score["black"] - score["white"]
+                if target_color == "b"
+                else score["white"] - score["black"]
+            )
+        ),
         "seed": seed,
     }
 
@@ -415,6 +788,10 @@ def main() -> None:
         raise ValueError("--games must be at least 1.")
     if args.max_visits < 1:
         raise ValueError("--max-visits must be at least 1.")
+    if args.search_depth < 1:
+        raise ValueError("--search-depth must be at least 1.")
+    if args.search_candidates is not None and args.search_candidates < 1:
+        raise ValueError("--search-candidates must be at least 1.")
     if args.katago_human_model is not None and not args.katago_human_model.is_file():
         raise FileNotFoundError(f"KataGo HumanSL model not found: {args.katago_human_model}")
     if args.human_profile is not None and args.katago_human_model is None:
@@ -446,13 +823,24 @@ def main() -> None:
             "or set both to positive values."
         )
     komi, gtp_rules = load_board_rules(args.rules, args.board_size)
-    output = args.output or (
+    requested_output = args.output or (
         SCRIPT_DIR
         / "results"
         / f"{args.board_size}x{args.board_size}_go"
-        / "matches.csv"
+        / f"matches-{args.search}-{args.board_size}x{args.board_size}.csv"
     )
+    output = _unique_path(requested_output)
     output.parent.mkdir(parents=True, exist_ok=True)
+    if args.report_output is not None and args.report_output.exists():
+        raise FileExistsError(f"Report already exists and will not be overwritten: {args.report_output}")
+    report_path = (
+        _unique_path(args.report_output)
+        if args.report_output is not None
+        else _unique_path(output.with_suffix(".report.json"))
+    )
+    if report_path.resolve() == output.resolve():
+        raise ValueError("--report-output and --output must point to different files.")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
 
     device = args.device
     if device == "auto":
@@ -473,6 +861,13 @@ def main() -> None:
             f"Checkpoint is {agent.board_size}x{agent.board_size}, "
             f"but --board-size is {args.board_size}."
         )
+    search_candidates = args.search_candidates or (5 if args.board_size == 9 else 3)
+    agent = make_agent(
+        agent,
+        search=args.search,
+        search_depth=args.search_depth,
+        search_candidates=search_candidates,
+    )
 
     command = [
         args.katago,
@@ -484,8 +879,10 @@ def main() -> None:
         "-override-config",
         (
             f"maxVisits={args.max_visits},numSearchThreads=1,"
-            f"allowResignation=false,logDir={SCRIPT_DIR / 'katago-local' / 'logs'},"
-            "delayMoveScale=0,delayMoveMax=0"
+            f"allowResignation=false,"
+            f"logDir={os.path.relpath(SCRIPT_DIR / 'katago-local' / 'logs', Path.cwd())},"
+            f"delayMoveScale=0,delayMoveMax=0,"
+            f"searchRandSeed={args.seed},nnRandSeed={args.seed}"
         ),
     ]
     if args.katago_human_model is not None:
@@ -503,11 +900,88 @@ def main() -> None:
                 "chosenMoveTemperatureOnlyBelowProb=0.01,"
                 "chosenMoveSubtract=0,chosenMovePrune=0"
             )
-    client = GTPClient(command, timeout=args.gtp_timeout)
+    executable_path = (
+        Path(args.katago)
+        if Path(args.katago).is_file()
+        else Path(shutil.which(args.katago) or args.katago)
+    )
+    artifacts = {
+        "target_checkpoint": _file_metadata(checkpoint),
+        "match_runner_source": _file_metadata(Path(__file__)),
+        "negamax_source": _file_metadata(TRM_DIR / "negamax.py"),
+        "agent_source": _file_metadata(TRM_DIR / "agents.py"),
+        "game_environment_source": _file_metadata(TRM_DIR / "game_env.py"),
+        "katago_executable": _file_metadata(executable_path),
+        "katago_config": _file_metadata(args.katago_config),
+        "katago_model": _file_metadata(args.katago_model),
+        "katago_human_model": _file_metadata(args.katago_human_model),
+        "rules": _file_metadata(args.rules),
+    }
+    parameters = {
+        key: (
+            _portable_path(value)
+            if isinstance(value, Path)
+            else _portable_path(value)
+            if key == "katago" and Path(value).is_file()
+            else _portable_argument(value)
+            if isinstance(value, str)
+            else value
+        )
+        for key, value in vars(args).items()
+    }
+    parameters.update(
+        {
+            "checkpoint": _portable_path(checkpoint),
+            "requested_output": _portable_path(requested_output),
+            "output": _portable_path(output),
+            "report_output": _portable_path(report_path),
+            "komi": komi,
+            "effective_gtp_rules": gtp_rules,
+            "effective_max_moves": args.max_moves or 4 * args.board_size**2,
+            "effective_human_profile": human_profile,
+            "effective_device": device,
+            "effective_search_candidates": search_candidates,
+            "effective_search_depth": args.search_depth if args.search == "negamax" else 0,
+        }
+    )
+    source_revision = subprocess.run(
+        ["git", "-C", str(TRM_DIR.parent), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    source_dirty = bool(
+        subprocess.run(
+            ["git", "-C", str(TRM_DIR.parent), "status", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    )
+    engine_environment, cudnn_directory = _katago_runtime_environment()
+    try:
+        client = GTPClient(
+            command,
+            timeout=args.gtp_timeout,
+            environment=engine_environment,
+        )
+    except Exception:
+        if cudnn_directory is not None:
+            cudnn_directory.cleanup()
+        raise
     max_moves = args.max_moves or 4 * args.board_size * args.board_size
+    results: list[dict[str, Any]] = []
+    started_at = datetime.now(timezone.utc)
+    started_clock = time.perf_counter()
+    status = "failed"
+    error: str | None = None
+    engine_name = "unknown"
+    engine_version = "unknown"
     try:
         configure_katago(client, args.board_size, komi, gtp_rules)
-        with output.open("w", newline="", encoding="utf-8") as result_file:
+        engine_name = client.command("name")
+        engine_version = client.command("version")
+        with output.open("x", newline="", encoding="utf-8") as result_file:
             writer = csv.DictWriter(
                 result_file, fieldnames=MATCH_FIELDS, lineterminator="\n"
             )
@@ -532,15 +1006,47 @@ def main() -> None:
                     human_profile,
                     args.human_temperature_mode,
                 )
+                results.append(result)
                 writer.writerow(result)
                 result_file.flush()
                 print(
                     f"Game {game_number}/{args.games}: {result['target_result']} "
                     f"({result['termination']}, {result['moves']} moves)"
                 )
-        print(f"Match results: {output}")
+        status = "completed"
+    except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}"
+        raise
+    except KeyboardInterrupt as exc:
+        error = f"{type(exc).__name__}: match interrupted by user."
+        raise
     finally:
-        client.close()
+        try:
+            client.close()
+        finally:
+            try:
+                _write_report(
+                    report_path,
+                    status=status,
+                    error=error,
+                    started_at=started_at,
+                    elapsed_seconds=time.perf_counter() - started_clock,
+                    invocation=_portable_invocation([sys.executable, *sys.argv]),
+                    parameters=parameters,
+                    engine_command=[_portable_argument(argument) for argument in command],
+                    engine_name=engine_name,
+                    engine_version=engine_version,
+                    artifacts=artifacts,
+                    results=results,
+                    csv_path=output,
+                    source_revision=source_revision,
+                    source_dirty=source_dirty,
+                )
+            finally:
+                if cudnn_directory is not None:
+                    cudnn_directory.cleanup()
+        print(f"Match results: {output}")
+        print(f"Match report: {report_path}")
 
 
 if __name__ == "__main__":

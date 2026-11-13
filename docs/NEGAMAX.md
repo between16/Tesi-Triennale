@@ -72,3 +72,31 @@ omit good moves, and the heuristic is not strong enough to guarantee optimal
 play. A successful search or a legal move does not establish playing strength;
 compare complete games against the policy-only agent under identical
 checkpoints and settings for that purpose.
+
+## Negamax versus KataGo
+
+The complete-game runner supports the same search selector. Run it from
+`TRM/`; keep all opponent and game parameters fixed and change only
+`--search` to compare policy-only play with Negamax:
+
+```bash
+python3 model_evaluation/go_match.py \
+  --board-size 19 \
+  --katago /path/to/katago \
+  --katago-config /path/to/default_gtp.cfg \
+  --katago-model /path/to/kata19x19.bin.gz \
+  --games 100 \
+  --max-visits 40 \
+  --seed 42 \
+  --search negamax \
+  --search-depth 2 \
+  --search-candidates 3 \
+  --output model_evaluation/results/19x19_go/negamax-40v-100g.csv
+```
+
+`--search policy` is the default and remains the baseline. Each run produces a
+CSV with a row per game and a separate JSON report containing the invocation,
+effective parameters, model hashes, color-balanced results, and search
+statistics. The runner preserves prior files by choosing a timestamped path if
+the requested output already exists. See [Evaluation](./EVALUATION.md) for
+complete 9×9 and 19×19 commands and report contents.
