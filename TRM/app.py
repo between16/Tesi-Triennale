@@ -185,7 +185,7 @@ class TinyRecursiveGo:
         search_mode="policy",
         search_depth=2,
         search_candidates=None,
-    ): 
+    ):
         pygame.init()
         pygame.display.set_caption("Tiny Recursive Go")
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
@@ -216,7 +216,11 @@ class TinyRecursiveGo:
             raise ValueError("search_candidates must be at least 1.")
         self.search_mode = search_mode
         self.search_depth = search_depth
-        self.search_candidates = search_candidates or (5 if self.board_size == 9 else 3)
+        self.search_candidates = (
+            search_candidates
+            if search_candidates is not None
+            else (5 if self.board_size == 9 else 3)
+        )
         if expected_board_size is not None and self.board_size != expected_board_size:
             raise ValueError(
                 f"The selected checkpoint is for a {self.board_size}x{self.board_size} "
@@ -671,7 +675,7 @@ class TinyRecursiveGo:
         legal_mask = self.env.get_legal_moves_mask()
         if not bool(legal_mask[move_index].item()):
             self.ai_thinking = False
-            self.set_error(f"TRM returned an illegal move: index {move_index}.")
+            self.set_error(f"AI returned an illegal move: index {move_index}.")
             if self.mode is MODE_AI_VS_AI:
                 self.paused = True
             return
@@ -813,12 +817,12 @@ class TinyRecursiveGo:
             turn_subtitle = "Press Resume or Space"
             turn_color = WARNING
         elif self.ai_thinking:
-            turn_title = f"{self.current_color_name} • TRM thinking"
+            turn_title = f"{self.current_color_name} • AI thinking"
             turn_subtitle = "Calculating next move..."
             turn_color = ACCENT
         else:
             turn_title = f"{self.current_color_name} to move"
-            turn_subtitle = "Human input" if self.human_turn else "TRM will play automatically"
+            turn_subtitle = "Human input" if self.human_turn else "AI will play automatically"
             turn_color = TEXT
 
         self.draw_text(
