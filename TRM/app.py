@@ -9,6 +9,7 @@ import torch
 
 from agents import HumanAgent, TRMAgent
 from game_env import GoGameEnv
+from negamax import NegamaxAgent
 
 
 # -----------------------------------------------------------------------------
@@ -177,7 +178,14 @@ class TinyRecursiveGo:
     This class owns UI state, timing, rendering, and human input only.
     """
 
-    def __init__(self, checkpoint_path, expected_board_size=None):
+    def __init__(
+        self,
+        checkpoint_path,
+        expected_board_size=None,
+        search_mode="policy",
+        search_depth=2,
+        search_candidates=None,
+    ):
         pygame.init()
         pygame.display.set_caption("Tiny Recursive Go")
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
@@ -200,6 +208,19 @@ class TinyRecursiveGo:
         )
         config_dict = checkpoint["config_dict"]
         self.board_size = config_dict.get("board_size", DEFAULT_BOARD_SIZE)
+        if search_mode not in ("policy", "negamax"):
+            raise ValueError("search_mode must be 'policy' or 'negamax'.")
+        if search_depth < 1:
+            raise ValueError("search_depth must be at least 1.")
+        if search_candidates is not None and search_candidates < 1:
+            raise ValueError("search_candidates must be at least 1.")
+        self.search_mode = search_mode
+        self.search_depth = search_depth
+        self.search_candidates = (
+            search_candidates
+            if search_candidates is not None
+            else (5 if self.board_size == 9 else 3)
+        )
         if expected_board_size is not None and self.board_size != expected_board_size:
             raise ValueError(
                 f"The selected checkpoint is for a {self.board_size}x{self.board_size} "
@@ -355,7 +376,14 @@ class TinyRecursiveGo:
     # ------------------------------------------------------------------
 
     def make_trm_agent(self):
-        return TRMAgent(checkpoint_path=str(self.checkpoint_path))
+        policy_agent = TRMAgent(checkpoint_path=str(self.checkpoint_path))
+        if self.search_mode == "negamax":
+            return NegamaxAgent(
+                policy_agent=policy_agent,
+                depth=self.search_depth,
+                max_candidates=self.search_candidates,
+            )
+        return policy_agent
 
     def build_agents_for_mode(self):
         if self.mode is MODE_HUMAN_BLACK:
@@ -647,7 +675,7 @@ class TinyRecursiveGo:
         legal_mask = self.env.get_legal_moves_mask()
         if not bool(legal_mask[move_index].item()):
             self.ai_thinking = False
-            self.set_error(f"TRM returned an illegal move: index {move_index}.")
+            self.set_error(f"AI returned an illegal move: index {move_index}.")
             if self.mode is MODE_AI_VS_AI:
                 self.paused = True
             return
@@ -752,7 +780,7 @@ class TinyRecursiveGo:
             self.font_title,
         )
         self.draw_text(
-            f"TRM  •  {self.board_size}×{self.board_size}",
+            f"{'TRM + Negamax' if self.search_mode == 'negamax' else 'TRM'}  •  {self.board_size}×{self.board_size}",
             self.panel_subtitle_rect.topleft,
             self.font_small,
             TEXT_MUTED,
@@ -789,12 +817,12 @@ class TinyRecursiveGo:
             turn_subtitle = "Press Resume or Space"
             turn_color = WARNING
         elif self.ai_thinking:
-            turn_title = f"{self.current_color_name} • TRM thinking"
+            turn_title = f"{self.current_color_name} • AI thinking"
             turn_subtitle = "Calculating next move..."
             turn_color = ACCENT
         else:
             turn_title = f"{self.current_color_name} to move"
-            turn_subtitle = "Human input" if self.human_turn else "TRM will play automatically"
+            turn_subtitle = "Human input" if self.human_turn else "AI will play automatically"
             turn_color = TEXT
 
         self.draw_text(
@@ -975,6 +1003,24 @@ def parse_args():
         help="Path to a TRM checkpoint (overrides the standard path selected by --board-size).",
     )
     parser.add_argument(
+        "--search",
+        choices=("policy", "negamax"),
+        default="policy",
+        help="Move selection: direct TRM policy or TRM-guided Negamax.",
+    )
+    parser.add_argument(
+        "--search-depth",
+        type=int,
+        default=2,
+        help="Negamax search depth in plies (default: 2).",
+    )
+    parser.add_argument(
+        "--search-candidates",
+        type=int,
+        default=None,
+        help="Maximum policy-ranked moves per node (default: 5 for 9x9, 3 for 19x19).",
+    )
+    parser.add_argument(
         "--board-size",
         type=int,
         choices=(9, 19),
@@ -1000,6 +1046,9 @@ def main():
         app = TinyRecursiveGo(
             checkpoint_path,
             expected_board_size=args.board_size,
+            search_mode=args.search,
+            search_depth=args.search_depth,
+            search_candidates=args.search_candidates,
         )
         app.run()
     except FileNotFoundError as exc:
