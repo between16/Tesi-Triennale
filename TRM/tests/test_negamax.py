@@ -82,6 +82,19 @@ def test_tactical_atari_liberty_is_included_even_outside_policy_top_k():
     assert bool(env.get_legal_moves_mask()[saving_move])
 
 
+def test_pass_is_available_after_opponent_has_passed():
+    env = GoGameEnv(board_size=5)
+    env.step(env.pass_index)
+    assert env.consecutive_passes == 1
+
+    policy = UniformPolicy(preferred_move=0)
+    agent = NegamaxAgent(policy, depth=1, max_candidates=1)
+
+    candidates, _ = agent._ordered_candidates(env)
+
+    assert env.pass_index in candidates
+
+
 def test_clone_environment_is_independent():
     env = GoGameEnv(board_size=5)
     child = NegamaxAgent._clone_environment(env)
