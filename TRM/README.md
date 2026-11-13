@@ -56,4 +56,6 @@ The baseline policy-only agent remains the default. Search options are:
 This is a deliberately bounded, experimental search. Its heuristic is not a
 learned value function, and restricting candidate moves means it does not
 provide an optimal-play guarantee. Compare it against `--search policy` using
-the same checkpoints and game settings.
+the same checkpoints and game settings. See the
+[Negamax documentation](../docs/NEGAMAX.md) for search behavior, tests, and
+limitations.

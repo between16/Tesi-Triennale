@@ -82,6 +82,36 @@ def test_tactical_atari_liberty_is_included_even_outside_policy_top_k():
     assert bool(env.get_legal_moves_mask()[saving_move])
 
 
+@pytest.mark.parametrize(
+    "stones",
+    [
+        [
+            ("b", 2, 2),
+            ("w", 1, 2),
+            ("w", 2, 1),
+            ("w", 3, 2),
+        ],
+        [
+            ("w", 2, 2),
+            ("b", 1, 2),
+            ("b", 2, 1),
+            ("b", 3, 2),
+        ],
+    ],
+    ids=("save-own-group", "capture-opponent-group"),
+)
+def test_search_selects_tactical_atari_response(stones):
+    env = GoGameEnv(board_size=5)
+    _set_board(env, stones)
+    agent = NegamaxAgent(
+        UniformPolicy(preferred_move=0),
+        depth=1,
+        max_candidates=1,
+    )
+
+    assert agent.get_move(env) == 2 * env.board_size + 3
+
+
 def test_pass_is_available_after_opponent_has_passed():
     env = GoGameEnv(board_size=5)
     env.step(env.pass_index)

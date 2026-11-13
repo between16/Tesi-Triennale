@@ -68,3 +68,5 @@ python3 -m pytest
   match protocols.
 - [Experiments](./docs/EXPERIMENTS.md): move selection, PASS adjustment, and
   recorded results.
+- [Policy-guided Negamax](./docs/NEGAMAX.md): GUI commands, search behavior,
+  tests, and limitations.
