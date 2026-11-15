@@ -22,3 +22,6 @@ TRM/19x19_go/go_dataset/
 
 # Local model-evaluation artifacts and KataGo binaries, runtimes, and weights.
 TRM/model_evaluation/katago-local/
+
+# Notes for thesis 
+TESI/Argomenti/

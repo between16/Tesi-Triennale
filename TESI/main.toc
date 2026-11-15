@@ -1,7 +1,11 @@
-\contentsline {section}{\numberline {1}Introduzione}{1}{}%
-\contentsline {section}{\numberline {2}Background}{1}{}%
-\contentsline {section}{\numberline {3}Architettura}{1}{}%
-\contentsline {section}{\numberline {4}Implementazione}{1}{}%
-\contentsline {section}{\numberline {5}Risultati}{1}{}%
-\contentsline {section}{\numberline {6}Conclusioni}{1}{}%
-\contentsline {section}{\numberline {7}Ringraziamenti}{1}{}%
+\contentsline {section}{\numberline {1}Introduzione}{3}{}%
+\contentsline {subsection}{\numberline {1.1}Contesto}{3}{}%
+\contentsline {subsection}{\numberline {1.2}Obiettivo della tesi}{3}{}%
+\contentsline {section}{\numberline {2}Background}{4}{}%
+\contentsline {section}{\numberline {3}Architettura}{4}{}%
+\contentsline {section}{\numberline {4}Implementazione}{4}{}%
+\contentsline {subsection}{\numberline {4.1}Selezione stocastica delle mosse}{4}{}%
+\contentsline {section}{\numberline {5}Risultati}{4}{}%
+\contentsline {section}{\numberline {6}Conclusioni}{4}{}%
+\contentsline {section}{\numberline {7}bibliografia}{4}{}%
+\contentsline {section}{\numberline {8}Ringraziamenti}{4}{}%
