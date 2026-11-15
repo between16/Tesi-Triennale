@@ -280,7 +280,13 @@ def train(
     seed=None,
     resume=False,
 ):
-    """Train the Go TRM with supervised next-move prediction."""
+    """Train the Go TRM with supervised next-move prediction.
+
+    When resuming, omitting learning_rate restores the checkpoint's optimizer
+    and scheduler exactly. Supplying learning_rate explicitly preserves
+    model/optimizer state but starts a new cosine-decay phase from
+    that LR over the remaining planned optimizer steps (without warmup).
+    """
     checkpoint_dir = Path(__file__).resolve().parent / "checkpoints"
     if board_size != 9:
         checkpoint_dir /= f"{board_size}x{board_size}_go"
@@ -349,12 +355,19 @@ def train(
         "auto",
         "dataset_format",
     )
-    learning_rate = resume_setting(
-        learning_rate,
-        saved_optimizer_config.get("learning_rate") if checkpoint is not None else None,
-        1e-4,
-        "learning_rate",
+
+    # The LR is the one training setting that can be explicitly overridden
+    # during resume. Supplying the option explicitly starts a fresh
+    # cosine-decay phase; omitting it preserves the exact resume.
+    saved_learning_rate = (
+        saved_optimizer_config.get("learning_rate") if checkpoint is not None else None
     )
+    learning_rate_override = checkpoint is not None and learning_rate is not None
+    if learning_rate is None:
+        learning_rate = (
+            saved_learning_rate if saved_learning_rate is not None else 1e-4
+        )
+
     min_learning_rate = resume_setting(
         min_learning_rate,
         saved_scheduler_config.get("min_learning_rate") if checkpoint is not None else None,
@@ -514,26 +527,52 @@ def train(
         )
     total_training_steps = steps_per_epoch * epochs
     min_learning_rate_ratio = min_learning_rate / learning_rate
-    scheduler_config = saved_scheduler_config
-    saved_scheduler_steps = scheduler_config.get("total_steps")
-    saved_scheduler_warmup = scheduler_config.get("effective_warmup_steps")
-    if checkpoint is not None and saved_scheduler_steps is not None:
-        scheduler_total_steps = saved_scheduler_steps
-        effective_warmup_steps = saved_scheduler_warmup
-    elif (
-        checkpoint is not None
-        and checkpoint["optimizer_state_dict"]["param_groups"][0]["lr"]
-        <= min_learning_rate
-    ):
-        scheduler_total_steps = max(checkpoint.get("global_step", 1), 1)
-        effective_warmup_steps = min(
-            warmup_steps, max(scheduler_total_steps - 1, 0)
+
+    # Normally preserve the original scheduler horizon. When --learning-rate
+    # is explicitly supplied on resume, rebase cosine decay from that value
+    # to min_learning_rate across the remaining planned optimizer steps.
+    if learning_rate_override:
+        schedule_start_epoch = checkpoint.get("resume_epoch", checkpoint["epoch"])
+        schedule_start_step = checkpoint.get("step", 0)
+        if schedule_start_epoch > epochs:
+            raise ValueError(
+                f"Checkpoint is already complete through epoch {schedule_start_epoch - 1}, "
+                f"but the requested total is {epochs}. Increase --epochs to continue."
+            )
+        remaining_training_steps = (
+            (epochs - schedule_start_epoch + 1) * steps_per_epoch
+            - schedule_start_step
         )
+        if remaining_training_steps < 1:
+            raise ValueError(
+                "There are no planned optimizer steps remaining for the LR override. "
+                "Increase --epochs to continue training."
+            )
+        scheduler_total_steps = remaining_training_steps
+        effective_warmup_steps = 0
+        scheduler_warmup_steps = 0
     else:
-        scheduler_total_steps = total_training_steps
-        effective_warmup_steps = min(
-            warmup_steps, max(scheduler_total_steps - 1, 0)
-        )
+        scheduler_config = saved_scheduler_config
+        saved_scheduler_steps = scheduler_config.get("total_steps")
+        saved_scheduler_warmup = scheduler_config.get("effective_warmup_steps")
+        if checkpoint is not None and saved_scheduler_steps is not None:
+            scheduler_total_steps = saved_scheduler_steps
+            effective_warmup_steps = saved_scheduler_warmup
+        elif (
+            checkpoint is not None
+            and checkpoint["optimizer_state_dict"]["param_groups"][0]["lr"]
+            <= min_learning_rate
+        ):
+            scheduler_total_steps = max(checkpoint.get("global_step", 1), 1)
+            effective_warmup_steps = min(
+                warmup_steps, max(scheduler_total_steps - 1, 0)
+            )
+        else:
+            scheduler_total_steps = total_training_steps
+            effective_warmup_steps = min(
+                warmup_steps, max(scheduler_total_steps - 1, 0)
+            )
+        scheduler_warmup_steps = warmup_steps
 
     training_config = {
         "seed": seed,
@@ -554,11 +593,12 @@ def train(
             "type": SCHEDULER_TYPE,
             "learning_rate": learning_rate,
             "min_learning_rate": min_learning_rate,
-            "warmup_steps": warmup_steps,
+            "warmup_steps": scheduler_warmup_steps,
             "effective_warmup_steps": effective_warmup_steps,
             "total_steps": scheduler_total_steps,
             "min_learning_rate_ratio": min_learning_rate_ratio,
             "step_interval": "optimizer_step",
+            "rebased_on_resume": learning_rate_override,
         },
         "max_hours": max_hours,
         "max_steps": max_steps,
@@ -574,6 +614,8 @@ def train(
         betas=(beta1, beta2),
         weight_decay=weight_decay,
     )
+    # Build the ordinary scheduler before loading the checkpoint. This order
+    # is intentional: it preserves the exact optimizer LR on a normal resume.
     scheduler = build_warmup_cosine_scheduler(
         optimizer=optimizer,
         total_steps=scheduler_total_steps,
@@ -591,7 +633,12 @@ def train(
     print(f"Optimizer: AdamW (betas={beta1}, {beta2})")
     print(f"Learning rate: {learning_rate:.2e} -> {min_learning_rate:.2e}")
     print(f"Warm-up steps: {effective_warmup_steps:,}")
-    print(f"Weight decay: {weight_decay:.2e}")
+    if learning_rate_override:
+        print(
+            "LR override on resume: starting a new cosine-decay phase "
+            f"over {scheduler_total_steps:,} remaining optimizer steps; "
+            "warm-up disabled."
+        )
     if validation_batches is None:
         print("Validation: full validation split")
     else:
@@ -605,7 +652,23 @@ def train(
     if checkpoint is not None:
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        if learning_rate_override:
+            # Preserve AdamW's accumulated moments, but explicitly change the
+            # current and base LR. Rebuild the scheduler so it cannot overwrite
+            # this value with the old schedule on its next step.
+            for parameter_group in optimizer.param_groups:
+                parameter_group["lr"] = learning_rate
+                parameter_group["initial_lr"] = learning_rate
+            scheduler = build_warmup_cosine_scheduler(
+                optimizer=optimizer,
+                total_steps=scheduler_total_steps,
+                warmup_steps=0,
+                min_learning_rate_ratio=min_learning_rate_ratio,
+            )
+        else:
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
         best_val_loss = checkpoint.get("best_val_loss", best_val_loss)
         start_epoch = checkpoint.get("resume_epoch", checkpoint["epoch"])
         resume_step = checkpoint.get("step", 0)
@@ -622,6 +685,11 @@ def train(
             f"Resuming at epoch {start_epoch}, batch {resume_step + 1}; "
             f"global optimizer step {global_step:,}."
         )
+        if learning_rate_override:
+            print(
+                f"New LR at resume: {optimizer.param_groups[0]['lr']:.2e}; "
+                f"minimum LR: {min_learning_rate:.2e}."
+            )
 
     if start_epoch > epochs:
         raise ValueError(
@@ -873,7 +941,15 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--num-workers", type=int)
     parser.add_argument("--epochs", type=int)
-    parser.add_argument("--learning-rate", type=float)
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        help=(
+            "Base learning rate. When explicitly supplied on resume, starts "
+            "a new cosine-decay phase from that LR over the "
+            "remaining planned steps; omit it for an exact resume."
+        ),
+    )
     parser.add_argument("--min-learning-rate", type=float)
     parser.add_argument("--warmup-steps", type=int)
     parser.add_argument("--weight-decay", type=float)
