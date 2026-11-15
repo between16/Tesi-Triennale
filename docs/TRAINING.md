@@ -40,7 +40,7 @@ continues through epoch 50:
 python3 train.py --board-size 9 --epochs 50 --resume
 ```
 
-For 19×19, use `--board-size 19 --epochs 50 --resume`; the matching
+For 19×19, use `--board-size 19 --epochs 10 --resume`; the matching
 `checkpoints/19x19_go/latest_model.pt` is used. If the run used a custom
 dataset directory, it is restored from the checkpoint when `--dataset-dir` is
 omitted. A changed dataset, board size, or optimizer/scheduler settings is

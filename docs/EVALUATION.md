@@ -9,11 +9,12 @@ They measure different properties and should not be conflated.
 From `TRM/`, evaluate the matching test split:
 
 ```bash
-python3 model_evaluation/go_eval.py --checkpoint checkpoints/best_model.pt \
+python3 model_evaluation/go_eval.py \
+  --checkpoint checkpoints/best_model.pt \
   --test-data 9x9_go/go_dataset_go9/test
 python3 model_evaluation/go_eval.py \
   --checkpoint checkpoints/19x19_go/best_model.pt \
-  --test-data 19x19_go/go_dataset_professional_10k/test
+  --test-data 19x19_go/go_dataset/test
 ```
 
 The test path may be an NPY split directory or an NPZ archive. If omitted,
