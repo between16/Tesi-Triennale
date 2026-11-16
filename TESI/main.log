@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  16 NOV 2026 09:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  16 NOV 2026 10:18
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -97,12 +97,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 \tf@toc=\write3
 \openout3 = `main.toc'.
 
- [2] (./Chapters/0_intro.tex
-Overfull \hbox (50.70746pt too wide) in paragraph at lines 21--22
-\OT1/cmr/m/n/12 com-piti dif-fer-enti. Questo ap-proc-cio per-me-tte di inda-gare la flessibilit^^Ra dell'architettura
- []
-
-[3{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [4]) (./Chapters/1_backgrorund.tex [5]) (./Chapters/2_architettura.tex) (./Chapters/3_implementazione.tex) (./Chapters/4_risultati.tex) (./Chapters/5_conclusioni.tex) (./Chapters/bibliografia.tex) (./Chapters/ringraziamenti.tex) [6] (./main.aux)
+ [2] (./Chapters/0_intro.tex [3{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [4]) (./Chapters/1_backgrorund.tex [5]) (./Chapters/2_architettura.tex) (./Chapters/3_implementazione.tex) (./Chapters/4_risultati.tex) (./Chapters/5_conclusioni.tex) (./Chapters/bibliografia.tex) (./Chapters/ringraziamenti.tex) [6] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -117,7 +112,7 @@ Here is how much of TeX's memory you used:
  1141 hyphenation exceptions out of 8191
  57i,6n,65p,611b,201s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on main.pdf (6 pages, 82545 bytes).
+Output written on main.pdf (6 pages, 82535 bytes).
 PDF statistics:
  59 PDF objects out of 1000 (max. 8388607)
  36 compressed objects within 1 object stream
