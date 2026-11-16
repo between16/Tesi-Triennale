@@ -1,14 +1,53 @@
 \section{Introduzione}
+
 \subsection{Contesto}
-Il gioco del Go rappresenta un intressante ambito dia applicazione per lo studio e lo sviluppo di sistemi di intelligenza artificiale.
 
-Nonostante la semplicità delle sue regole, il gioco presenta una complessità strategica particolarmente elvata, dovuta all'ampiezza dello spazio delle possibili configurazioni e alla difficoltà di valutare la conseguenza delle singole mosse.
+Il gioco del Go rappresenta un interessante ambito di applicazione per lo studio e lo sviluppo di sistemi di intelligenza artificiale.
 
-Le sue caratteristiche rendono il gioco del go  quindi un ottimo banco di prova in cui cimentarsi per la realizzazzione di sistemi basati su tecniche di apprendimento atumatico e reti neurali. 
-L'evoluzione di questi metodi ha permesso di realizzare agenti sempre più sofisticati, capaci di apprendere strategie di gioco a partire dai dati e di selezionare le mosse più efficaci.
-Per quanto riguarda il go, il culmine lo si è raggiunti a marzo del 2016, quando AlpaGo di Google DeepMind ha realizzato qualcosa fino a quel momento ritenuto impossibile, battendo il campione del mondo Lee Se-dol.
+Nonostante la semplicità delle sue regole, il gioco presenta una complessità strategica particolarmente elevata, dovuta all'ampiezza dello spazio delle possibili configurazioni e alla difficoltà di valutare le conseguenze delle singole mosse.
+
+Queste caratteristiche rendono il Go un interessante banco di prova per lo sviluppo di sistemi basati su tecniche di apprendimento automatico e reti neurali.
+
+Un ulteriore elemento che contribuisce alla complessità del gioco è rappresentato dalla sua natura dinamica e competitiva. A ogni turno, infatti, il giocatore deve selezionare una mossa tenendo conto non soltanto della configurazione corrente della scacchiera, ma anche delle possibili risposte dell'avversario e delle conseguenze che queste possono produrre nelle fasi successive della partita.
+
+Il numero di azioni disponibili è inoltre particolarmente elevato: su una scacchiera standard di dimensioni 19×19 sono presenti 361 possibili intersezioni nelle quali collocare una pietra, a cui si aggiunge la possibilità di passare il turno. Questo comporta uno spazio di ricerca molto ampio, rendendo particolarmente complessa la valutazione delle mosse e delle relative conseguenze.
+
+Negli ultimi anni, l'evoluzione dei metodi di apprendimento automatico ha permesso di realizzare agenti sempre più sofisticati, capaci di apprendere strategie di gioco a partire dai dati e di selezionare le mosse più efficaci.
+
+Un risultato particolarmente significativo in questo ambito è stato raggiunto nel marzo 2016, quando AlphaGo, un algoritmo sviluppato da Google DeepMind che combinava apprendimento supervisionato (supervised learning) e apprendimento per rinforzo (reinforcement learning), ha ottenuto un risultato fino ad allora ritenuto impossibile, sconfiggendo il campione mondiale Lee Sedol.
+
+I risultati ottenuti da sistemi specializzati dimostrano le potenzialità delle tecniche di apprendimento automatico applicate al gioco del Go. Tuttavia, l'impiego di modelli progettati specificamente per un determinato dominio pone una questione differente rispetto all'utilizzo di architetture più generali.
+
+In quest'ultimo caso, l'interesse non risiede esclusivamente nella capacità di risolvere il problema considerato, ma anche nella possibilità di riutilizzare una struttura esistente, adattandone le componenti necessarie per affrontare compiti differenti. Questo approccio permette di indagare la flessibilità dell'architettura e i suoi limiti al di fuori del contesto per il quale è stata originariamente concepita.
 
 \subsection{Obiettivo della tesi}
-L'obiettivo della tesi è dunque quello di andare a verificare se un modello di rete neurale ricorsiva come Tiny Recursive Model (TRM) è in grado di andare a risolvere un problema complesso come quello presentato dal gioco del go.
 
-Tiny Recursive Model è stato progettato per risolvere problemi a singolo agente, deterministici e in ambienti statici, come sudoku e labirinti, ma l'obiettivo è stato quello di vedere se si adattasse non solo a risolvere un problema computazionalmente più complesso, ma che va anche ad offrire un tipo di sfida completamente diverso siccome rappresenta si un problme sempre deterministico, ma con un ambiente variaibile e multi agente. 
+Tiny Recursive Model (TRM) è un modello di rete neurale caratterizzato da un'architettura ricorsiva basata su transformer, progettato per risolvere problemi deterministici, statici e a singolo agente, quali sudoku e labirinti. La sua architettura si basa sull'utilizzo di un numero contenuto di parametri e sull'applicazione iterativa dei medesimi blocchi di rete, consentendo di elaborare progressivamente le informazioni e affinare le predizioni.
+
+L'obiettivo della tesi è adattare Tiny Recursive Model al gioco del Go, verificando la capacità dell'architettura di affrontare una tipologia di problema sostanzialmente diversa da quelle per cui è stata originariamente progettata. Si tratta, infatti, di un problema anch'esso deterministico, ma caratterizzato da una complessità computazionale significativamente maggiore, nonché da un ambiente variabile e multi-agente.
+
+L'adattamento ha richiesto interventi su diverse componenti del modello, mantenendo come elemento centrale, e per quanto possibile intatto, la struttura ricorsiva originale. In particolare, è stato necessario modificare la rappresentazione dello stato del gioco, affinché il modello potesse elaborare la configurazione della scacchiera, e introdurre una componente di output specifica per la previsione delle mosse, attraverso la quale vengono assegnate probabilità alle possibili azioni.
+
+È stata inoltre sviluppata la logica necessaria per interpretare le predizioni del modello e selezionare una mossa valida, tenendo conto delle regole del gioco. Il processo di apprendimento è stato invece basato sull'utilizzo di partite registrate in formato SGF, dalle quali ricavare gli esempi necessari all'addestramento.
+
+Oltre alla realizzazione dell'implementazione, il lavoro prevede una fase di valutazione sperimentale volta ad analizzare il comportamento del modello nelle diverse configurazioni considerate.
+
+In particolare, vengono prese in esame due dimensioni della scacchiera, 9×9 e 19×19, al fine di valutare le prestazioni del modello in contesti caratterizzati da differenti livelli di complessità. Viene inoltre analizzato l'impatto dell'utilizzo dell'algoritmo Negamax, impiegato come componente strategica a supporto del processo di selezione delle mosse, confrontando le configurazioni che ne prevedono l'impiego con quelle che non lo utilizzano.
+
+Infine, le prestazioni dell'agente vengono valutate attraverso confronti con KataGo, un motore di gioco per il Go utilizzato come riferimento nella fase sperimentale. Tale confronto permette di ottenere un'indicazione del livello di gioco raggiunto dal modello e di analizzare i limiti dell'approccio adottato.
+
+\subsection{Struttura della tesi}
+
+La tesi è organizzata in sei capitoli, ciascuno dedicato a uno specifico aspetto del progetto.
+
+Il primo capitolo introduce il problema affrontato, ne descrive il contesto e presenta gli obiettivi del lavoro.
+
+Il secondo capitolo è dedicato al background teorico e tecnologico. Vengono approfonditi lo stato dell'arte, le tecnologie utilizzate e i componenti preesistenti sui quali si basa il progetto, fornendo le conoscenze necessarie alla comprensione delle modifiche successivamente introdotte.
+
+Il terzo capitolo descrive l'architettura del sistema sviluppato, illustrandone le principali componenti, le modifiche apportate rispetto alla struttura originale e le motivazioni alla base delle scelte progettuali.
+
+Il quarto capitolo approfondisce gli aspetti implementativi, analizzando le soluzioni adottate a livello di codice e le principali scelte tecniche che hanno caratterizzato lo sviluppo del sistema.
+
+Il quinto capitolo è dedicato alla valutazione sperimentale. Vengono presentate le metriche utilizzate, le modalità di confronto tra le diverse configurazioni implementate e i risultati ottenuti.
+
+Infine, il sesto capitolo presenta le conclusioni del lavoro, evidenziando i risultati raggiunti, i principali limiti riscontrati e alcuni possibili sviluppi futuri.
