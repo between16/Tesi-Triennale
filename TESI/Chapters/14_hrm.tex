@@ -1,0 +1,38 @@
+\subsection{Hierarchical Reasoning Model (HRM)}
+
+Il Hierarchical Reasoning Model (HRM) è un'architettura di rete neurale introdotta da Wang et al. \cite{hrm}, progettata per affrontare problemi che richiedono processi di ragionamento articolati e una maggiore profondità computazionale.
+
+Il modello nasce dall'osservazione che le architetture tradizionali, pur essendo efficaci in numerosi ambiti, possono incontrare difficoltà nell'affrontare problemi che richiedono sequenze di elaborazione complesse. L'idea alla base di HRM è quella di superare alcuni di questi limiti attraverso un'architettura ricorrente e gerarchica, nella quale differenti moduli collaborano per elaborare progressivamente le informazioni.
+
+\paragraph{Architettura gerarchica}
+
+La struttura di HRM è composta principalmente da due moduli ricorrenti, caratterizzati da differenti livelli di astrazione e frequenze di aggiornamento:
+
+\begin{itemize}
+    \item \textbf{High-Level Module (H-module):} si occupa delle elaborazioni di livello superiore, mantenendo una rappresentazione più astratta del problema e fornendo indicazioni al modulo low-level.
+    \item \textbf{Low-Level Module (L-module):} esegue elaborazioni più frequenti e dettagliate, aggiornando progressivamente la propria rappresentazione sulla base delle informazioni ricevute dall'input e dal modulo high-level.
+\end{itemize}
+
+I due moduli sono interconnessi e collaborano durante il processo di elaborazione. Il modulo low-level aggiorna il proprio stato interno per più iterazioni consecutive, mentre il modulo high-level interviene con una frequenza inferiore, utilizzando il risultato delle elaborazioni effettuate dal primo.
+
+\paragraph{Ricorsione e aggiornamento degli stati latenti}
+
+Un elemento centrale dell'architettura è rappresentato dall'utilizzo di stati latenti (hidden states), ovvero rappresentazioni interne che vengono aggiornate iterativamente durante l'elaborazione.
+
+A ogni iterazione, il modulo low-level riceve il proprio stato precedente, lo stato corrente del modulo high-level e la rappresentazione dell'input. Dopo un determinato numero di aggiornamenti del modulo low-level, il modulo high-level utilizza il risultato ottenuto per aggiornare a sua volta il proprio stato.
+
+Questo processo genera una struttura di elaborazione gerarchica, nella quale le operazioni più dettagliate contribuiscono progressivamente alla revisione della rappresentazione di livello superiore. Il ciclo può essere ripetuto più volte, aumentando la profondità computazionale del modello senza dover necessariamente introdurre ulteriori livelli distinti nella rete.
+
+Il risultato finale viene ricavato dallo stato latente del modulo high-level, attraverso una componente di output che produce la predizione.
+
+\paragraph{Supervisione e processo di training}
+
+Il processo di addestramento di HRM presenta alcune caratteristiche specifiche, pensate per gestire l'elaborazione ricorsiva senza dover propagare i gradienti attraverso l'intera sequenza di aggiornamenti degli stati interni.
+
+Il modello utilizza un'approssimazione del gradiente a singolo passaggio (one-step gradient approximation), che consente di ridurre il costo computazionale e la memoria necessari rispetto alla tradizionale backpropagation through time.
+
+Viene inoltre adottato un meccanismo di supervisione profonda (deep supervision), attraverso il quale la predizione viene valutata e il modello aggiornato più volte durante il processo di elaborazione, anziché considerare esclusivamente il risultato finale.
+
+Infine, HRM integra un meccanismo di calcolo adattivo (Adaptive Computation Time, ACT), basato su Q-learning, che permette al modello di decidere se interrompere l'elaborazione o proseguire con ulteriori iterazioni, in funzione della complessità del problema e della qualità della predizione.
+
+Nel complesso, HRM introduce un approccio al ragionamento basato sull'elaborazione ricorsiva di rappresentazioni latenti, combinando moduli che operano a differenti livelli di astrazione e frequenze di aggiornamento. Questa impostazione costituisce il punto di partenza per successive architetture che riprendono e semplificano il concetto di ragionamento ricorsivo.

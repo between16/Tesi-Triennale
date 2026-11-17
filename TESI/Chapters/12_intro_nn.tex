@@ -1,0 +1,51 @@
+\subsection{Fondamenti delle reti neurali}
+
+Le reti neurali artificiali (Artificial Neural Networks, ANN) sono modelli computazionali ispirati, in maniera semplificata, al funzionamento delle reti di neuroni biologici. Appartengono alla famiglia dei modelli di apprendimento automatico (machine learning) e permettono di apprendere relazioni e schemi presenti nei dati, al fine di effettuare previsioni o classificazioni.
+
+Una rete neurale è costituita da un insieme di unità computazionali, chiamate neuroni artificiali, organizzate in livelli (layer) e collegate tra loro attraverso connessioni caratterizzate da parametri numerici, denominati pesi (weights). L'elaborazione delle informazioni avviene attraverso la propagazione dei dati da un livello al successivo, trasformando progressivamente la rappresentazione dell'input.
+
+\paragraph{Neuroni e struttura della rete}
+
+Il neurone artificiale rappresenta l'unità fondamentale di una rete neurale. Ogni neurone riceve uno o più valori in ingresso, a ciascuno dei quali viene associato un peso, e calcola una combinazione lineare degli stessi, a cui viene generalmente aggiunto un termine indipendente chiamato bias.
+
+Il risultato viene successivamente elaborato attraverso una funzione di attivazione, che introduce una trasformazione non lineare e determina il valore restituito dal neurone.
+
+In forma semplificata, il funzionamento di un neurone può essere rappresentato dalla seguente espressione:
+
+\[
+    y = f\left(\sum_{i=1}^{n} w_i x_i + b\right)
+\]
+
+dove \(x_i\) rappresenta ciascun valore in ingresso, \(w_i\) il relativo peso, \(b\) il bias e \(f\) la funzione di attivazione. Il valore \(y\) costituisce l'uscita del neurone.
+
+I neuroni vengono organizzati in livelli con funzioni differenti. Generalmente si distinguono:
+
+\begin{itemize}
+    \item \textbf{Input layer:} riceve i dati in ingresso e li rende disponibili alla rete.
+    \item \textbf{Hidden layers:} elaborano le informazioni attraverso le trasformazioni effettuate dai neuroni e dalle relative connessioni.
+    \item \textbf{Output layer:} produce il risultato finale della rete, che può rappresentare una classificazione, una previsione o un altro tipo di informazione.
+\end{itemize}
+
+Il numero di livelli e di neuroni, insieme alla modalità con cui sono collegati, contribuisce a definire l'architettura della rete. Le funzioni di attivazione, invece, permettono di introdurre non linearità nel processo di elaborazione. Tra le più utilizzate si trovano ReLU (Rectified Linear Unit), sigmoid e tanh.
+
+\paragraph{Forward propagation e backpropagation}
+
+L'elaborazione dei dati all'interno di una rete neurale avviene attraverso un processo denominato forward propagation. Durante questa fase, i dati vengono forniti al livello di ingresso e propagati attraverso i livelli successivi, fino a raggiungere quello di uscita. Ogni livello applica le trasformazioni definite dai propri pesi, bias e funzioni di attivazione, producendo una predizione.
+
+Durante l'addestramento, la predizione ottenuta viene confrontata con il risultato atteso attraverso una funzione di perdita (loss function), che misura la differenza tra i due valori. L'obiettivo è minimizzare tale errore, migliorando progressivamente la capacità della rete di produrre risultati corretti.
+
+Per aggiornare i parametri viene utilizzato un procedimento denominato backpropagation. Questo consente di calcolare il contributo dei singoli pesi e bias all'errore complessivo, propagando l'informazione relativa al gradiente dalla parte finale della rete verso i livelli precedenti.
+
+I gradienti così calcolati vengono utilizzati da un algoritmo di ottimizzazione, come la discesa del gradiente (gradient descent), per aggiornare i parametri della rete e ridurre il valore della funzione di perdita.
+
+Il processo viene ripetuto su numerosi esempi, consentendo alla rete di adattare progressivamente i propri parametri ai dati utilizzati durante l'addestramento.
+
+\paragraph{Training e inferenza}
+
+È importante distinguere due fasi fondamentali nell'utilizzo di una rete neurale: training e inferenza.
+
+La fase di training, o addestramento, consiste nell'apprendimento dei parametri del modello attraverso l'elaborazione di un insieme di dati. Durante questa fase, la rete esegue la forward propagation, calcola la funzione di perdita e utilizza la backpropagation per determinare i gradienti necessari all'aggiornamento dei parametri.
+
+Una volta completato l'addestramento, i parametri appresi vengono salvati e possono essere utilizzati nella fase di inferenza. In questa fase, il modello riceve nuovi dati in ingresso e produce una predizione utilizzando i parametri già appresi, senza modificarli.
+
+La distinzione tra queste due fasi è fondamentale: durante il training il modello apprende dai dati modificando progressivamente i propri parametri, mentre durante l'inferenza si limita a utilizzare quanto appreso per elaborare nuovi input e generare risultati.
