@@ -11,7 +11,7 @@ Il cambiamento principale consiste nell'eliminazione della struttura gerarchica 
 
 L'idea alla base del modello è che, anziché aumentare la profondità della rete introducendo ulteriori livelli e parametri, sia possibile riutilizzare gli stessi componenti attraverso più iterazioni. In questo modo, il modello può elaborare progressivamente le informazioni, mantenendo una rappresentazione interna del ragionamento e aggiornando la propria predizione.
 
-\paragraph{Contesto applicativo e risultati}
+\subsubsection{Contesto applicativo e risultati}
 
 TRM è stato sviluppato e valutato su diverse tipologie di problemi, caratterizzate dalla necessità di individuare soluzioni attraverso l'elaborazione di configurazioni strutturate. Gli esperimenti presentati nel paper considerano principalmente tre ambiti: la risoluzione di Sudoku, la ricerca di percorsi all'interno di labirinti e i benchmark ARC-AGI.
 
@@ -23,7 +23,7 @@ I risultati ottenuti mostrano come un modello relativamente piccolo possa raggiu
 
 Questi risultati superano quelli ottenuti da HRM sugli stessi benchmark, pur utilizzando un numero significativamente inferiore di parametri. Il lavoro evidenzia quindi il potenziale delle architetture ricorsive compatte nell'affrontare problemi complessi, senza fare necessariamente affidamento su modelli di grandi dimensioni \cite{trm}.
 
-\paragraph{Implementazione tecnica}
+\subsubsection{Implementazione tecnica}
 
 L'implementazione originale di TRM è stata realizzata in Python, utilizzando PyTorch come framework principale per la definizione delle architetture neurali, la gestione dei tensori e l'esecuzione delle operazioni di addestramento e inferenza.
 
@@ -33,7 +33,7 @@ L'architettura implementata comprende componenti tipiche delle moderne reti neur
 
 Il codice sorgente e le configurazioni utilizzate per gli esperimenti sono stati resi disponibili dagli autori in un repository pubblico, consentendo di analizzare e riprodurre l'implementazione descritta nel paper \cite{trmcode}.
 
-\paragraph{Differenze rispetto a HRM}
+\subsubsection{Differenze rispetto a HRM}
 
 La principale differenza tra TRM e HRM riguarda la struttura utilizzata per realizzare il processo ricorsivo.
 
@@ -50,7 +50,7 @@ Un'altra differenza riguarda il processo di addestramento. HRM utilizza un'appro
 
 Nel complesso, TRM mantiene il principio del ragionamento ricorsivo introdotto da HRM, ma ne semplifica la struttura, riducendo il numero di reti e introducendo un processo di aggiornamento più diretto.
 
-\paragraph{Architettura generale}
+\subsubsection{Architettura generale}
 
 L'architettura di TRM è composta da pochi elementi fondamentali: una componente di embedding dell'input, una rete neurale ricorsiva, uno stato latente, una rappresentazione della predizione e alcune componenti di output.
 
@@ -81,7 +81,7 @@ Al termine dell'elaborazione, la rappresentazione \(y\) viene convertita in una 
 
 Come illustrato in Figura~\ref{fig:trm_architecture}, la stessa rete viene riutilizzata nei diversi passaggi, consentendo di aggiornare progressivamente entrambe le rappresentazioni.
 
-\paragraph{Ricorsione e aggiornamento degli stati latenti}
+\subsubsection{Ricorsione e aggiornamento degli stati latenti}
 
 La ricorsione rappresenta l'elemento centrale dell'architettura TRM. A differenza delle reti neurali tradizionali, nelle quali l'elaborazione avviene principalmente attraverso una successione di livelli distinti, TRM riutilizza ripetutamente la stessa rete per aggiornare le proprie rappresentazioni interne.
 
@@ -93,7 +93,7 @@ Il ciclo completo può essere ripetuto per un numero \(T\) di volte. In questo m
 
 Un aspetto importante è che la ricorsione non consiste nella semplice ripetizione di una predizione: a ogni passaggio vengono aggiornate entrambe le rappresentazioni, permettendo al modello di utilizzare le informazioni precedentemente elaborate per migliorare il risultato.
 
-\paragraph{Deep supervision}
+\subsubsection{Deep supervision}
 
 Un ulteriore elemento fondamentale di TRM è rappresentato dalla deep supervision, un meccanismo che permette di supervisionare il modello attraverso più passaggi successivi.
 
@@ -109,7 +109,7 @@ Il paper introduce inoltre una distinzione tra i cicli ricorsivi eseguiti all'in
 
 Questa scelta consente di migliorare gli stati interni attraverso più cicli ricorsivi, limitando al contempo il costo della propagazione del gradiente. A differenza di HRM, il gradiente viene comunque calcolato attraverso l'intero ultimo ciclo ricorsivo, senza ricorrere all'approssimazione a singolo passaggio basata sul punto fisso.
 
-\paragraph{Adaptive Computation Time e criteri di arresto}
+\subsubsection{Adaptive Computation Time e criteri di arresto}
 
 Il modello introduce anche un meccanismo di calcolo adattivo, denominato Adaptive Computation Time (ACT), che permette di interrompere anticipatamente il processo di supervisione durante l'addestramento.
 
@@ -125,7 +125,7 @@ Rispetto alla soluzione adottata in HRM, TRM semplifica il meccanismo di arresto
 
 È importante sottolineare che, nell'implementazione originale, ACT viene utilizzato durante il training per ridurre il numero di passaggi di supervisione necessari per ciascun esempio. Durante la valutazione, invece, vengono eseguiti tutti i passaggi previsti, senza applicare l'interruzione anticipata.
 
-\paragraph{Considerazioni sull'architettura}
+\subsubsection{Considerazioni sull'architettura}
 
 TRM propone quindi un approccio al ragionamento basato sulla ripetizione di una rete di piccole dimensioni, che aggiorna progressivamente una rappresentazione interna e una predizione corrente.
 

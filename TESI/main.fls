@@ -167,6 +167,14 @@ INPUT ./img/trm_paper.png
 INPUT ./Chapters/2_architettura.tex
 INPUT ./Chapters/2_architettura.tex
 INPUT Chapters/2_architettura.tex
+INPUT ./Chapters/21_architettura_generale.tex
+INPUT ./Chapters/21_architettura_generale.tex
+INPUT Chapters/21_architettura_generale.tex
+INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
+INPUT ./Chapters/23_adattamento_trm.tex
+INPUT ./Chapters/23_adattamento_trm.tex
+INPUT Chapters/23_adattamento_trm.tex
+INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
 INPUT ./Chapters/3_implementazione.tex
 INPUT ./Chapters/3_implementazione.tex
 INPUT Chapters/3_implementazione.tex
@@ -179,8 +187,6 @@ INPUT Chapters/5_conclusioni.tex
 INPUT ./Chapters/bibliografia.tex
 INPUT ./Chapters/bibliografia.tex
 INPUT Chapters/bibliografia.tex
-INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmti12.tfm
-INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
 INPUT ./Chapters/ringraziamenti.tex
 INPUT ./Chapters/ringraziamenti.tex
 INPUT Chapters/ringraziamenti.tex

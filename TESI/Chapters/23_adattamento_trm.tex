@@ -1,0 +1,94 @@
+\subsection{Adattamento della TRM al gioco del Go}
+
+Per adattare la Tiny Recursive Model al gioco del Go è stato necessario intervenire sulle modalità con cui le informazioni vengono rappresentate e fornite al nucleo ricorsivo. A differenza dei problemi per i quali è stata originariamente sviluppata, il Go presenta uno stato di gioco dinamico, nel quale la disposizione delle pietre cambia progressivamente in seguito alle mosse dei due giocatori.
+
+L'adattamento ha quindi richiesto la progettazione di una rappresentazione in ingresso capace di descrivere lo stato della partita, di un encoder in grado di estrarre le caratteristiche spaziali della scacchiera e di una trasformazione che convertisse tali informazioni nella sequenza di token utilizzata dalla TRM.
+
+\subsubsection{Rappresentazione dello stato del gioco}
+
+La prima modifica riguarda la rappresentazione dello stato del gioco fornita in ingresso al modello. Una semplice rappresentazione della scacchiera corrente permette di descrivere la disposizione delle pietre, ma non contiene informazioni esplicite sulle configurazioni precedenti.
+
+Nel Go, tuttavia, l'evoluzione della scacchiera è importante per interpretare correttamente la situazione corrente. Per questo motivo, si è scelto di utilizzare una rappresentazione composta da sette canali, organizzati come mappe bidimensionali della stessa dimensione della scacchiera.
+
+I primi sei canali descrivono la posizione delle pietre nei tre stati più recenti della partita, distinguendo in ciascuno di essi le pietre del giocatore corrente da quelle dell'avversario. Il settimo canale identifica invece il colore del giocatore che deve effettuare la mossa.
+
+La struttura dell'input è riassunta nella Tabella~\ref{tab:go_input_channels}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{c|l}
+        \textbf{Canale} & \textbf{Informazione rappresentata}          \\
+        \hline
+        0               & Pietre del giocatore corrente al tempo $T$   \\
+        1               & Pietre dell'avversario al tempo $T$          \\
+        2               & Pietre del giocatore corrente al tempo $T-1$ \\
+        3               & Pietre dell'avversario al tempo $T-1$        \\
+        4               & Pietre del giocatore corrente al tempo $T-2$ \\
+        5               & Pietre dell'avversario al tempo $T-2$        \\
+        6               & Indicatore del colore del giocatore corrente
+    \end{tabular}
+    \caption{Canali utilizzati per rappresentare lo stato del gioco.}
+    \label{tab:go_input_channels}
+\end{table}
+
+L'utilizzo di tre configurazioni temporali consente alla rete di ricevere informazioni non soltanto sulla disposizione attuale delle pietre, ma anche sulla sua evoluzione recente. In questo modo, il modello può disporre di un contesto temporale più ampio rispetto a quello ottenibile considerando esclusivamente la scacchiera corrente.
+
+La distinzione tra giocatore corrente e avversario permette inoltre di utilizzare una rappresentazione coerente rispetto al punto di vista del giocatore che deve effettuare la mossa. Questa scelta rende la codifica indipendente dal colore effettivo delle pietre: le informazioni vengono infatti organizzate in base al ruolo dei due giocatori nella posizione considerata.
+
+Infine, l'utilizzo di un canale separato per ciascuna caratteristica consente di mantenere distinte le diverse informazioni fornite al modello, rendendole disponibili come mappe spaziali indipendenti durante la successiva fase di elaborazione.
+
+\subsubsection{Encoder convoluzionale}
+
+Una volta definita la rappresentazione dello stato del gioco, è necessario trasformare le informazioni in ingresso in una rappresentazione adatta al nucleo ricorsivo della TRM.
+
+A questo scopo è stato introdotto un encoder convoluzionale, denominato \texttt{GoEncoder}, che elabora il tensore iniziale attraverso una convoluzione bidimensionale. La scelta di utilizzare una convoluzione, anziché una trasformazione lineare, è legata alla natura spaziale del Go.
+
+La disposizione delle pietre sulla scacchiera presenta infatti relazioni locali particolarmente significative. Adiacenze, libertà e configurazioni tattiche dipendono dalla posizione relativa delle intersezioni e dalle informazioni presenti nelle celle circostanti. Una convoluzione permette di elaborare direttamente queste relazioni, applicando filtri che considerano simultaneamente le informazioni provenienti da regioni locali della scacchiera.
+
+Inoltre, i pesi dei filtri convoluzionali vengono condivisi tra le diverse posizioni. Questo consente di applicare gli stessi criteri di estrazione delle caratteristiche in ogni regione del goban, indipendentemente dalla posizione in cui si trovano le configurazioni considerate.
+
+L'encoder utilizza una convoluzione 2D con kernel di dimensione $3 \times 3$ e padding pari a 1. Il kernel permette di considerare, per ciascuna posizione, anche le intersezioni immediatamente circostanti, mentre il padding mantiene invariate le dimensioni spaziali della scacchiera dopo l'operazione.
+
+Alla convoluzione seguono un livello di Batch Normalization e una funzione di attivazione ReLU. La Batch Normalization contribuisce a rendere più stabile la distribuzione delle attivazioni durante l'addestramento, mentre ReLU introduce una non linearità necessaria per consentire alla rete di apprendere rappresentazioni più articolate.
+
+Il numero di canali in uscita dalla convoluzione è fissato a 256, in modo da ottenere una rappresentazione con la stessa dimensione nascosta utilizzata dal nucleo della TRM. Il passaggio complessivo può essere rappresentato come segue:
+
+\[
+    [B, 7, N, N]
+    \longrightarrow
+    [B, 256, N, N]
+\]
+
+dove $B$ indica la dimensione del batch e $N$ la dimensione della scacchiera, pari a 9 oppure 19.
+
+La scelta di mantenere invariate le dimensioni spaziali consente di conservare una corrispondenza tra le posizioni della scacchiera originale e quelle della rappresentazione ottenuta dall'encoder.
+
+Ogni intersezione dispone quindi di un vettore di 256 caratteristiche, che costituisce la base per la successiva trasformazione in sequenza.
+
+\subsubsection{Codifica posizionale e trasformazione in sequenza}
+
+Il nucleo della TRM elabora le informazioni attraverso una rappresentazione sequenziale.
+È quindi necessario convertire l'output bidimensionale dell'encoder in una sequenza di token, mantenendo al tempo stesso l'informazione relativa alla posizione delle intersezioni sulla scacchiera.
+
+A partire dal tensore prodotto dalla convoluzione, le due dimensioni spaziali vengono appiattite in un'unica dimensione. Il tensore viene successivamente trasposto per ottenere una sequenza nella quale ciascun elemento rappresenta una singola intersezione del goban.
+
+La trasformazione può essere descritta come:
+
+\[
+    [B, 256, N, N]
+    \longrightarrow
+    [B, N^2, 256]
+\]
+
+Il risultato è una sequenza composta da $N^2$ token, ciascuno caratterizzato da un vettore di dimensione 256. In questo modo, ogni posizione della scacchiera viene associata a una rappresentazione che raccoglie le caratteristiche estratte dall'encoder.
+
+La trasformazione in sequenza comporta tuttavia la perdita della disposizione bidimensionale esplicita delle intersezioni. Per permettere al modello di distinguere le diverse posizioni, viene quindi aggiunto un embedding posizionale appreso, rappresentato da una matrice di parametri addestrabili con dimensione $N^2 \times 256$.
+
+L'embedding viene sommato alla rappresentazione di ciascun token, introducendo informazioni sulla sua posizione originale all'interno della scacchiera. Questa scelta permette al nucleo della TRM di distinguere intersezioni che, pur presentando caratteristiche simili, occupano posizioni differenti.
+
+È importante distinguere questa codifica posizionale assoluta dagli eventuali Rotary Positional Embeddings (RoPE) utilizzati all'interno del meccanismo di attenzione.
+Nel progetto, l'embedding assoluto viene aggiunto direttamente dall'encoder, mentre l'utilizzo di RoPE è opzionale e controllato separatamente dalla configurazione del modello.
+
+Pertanto, l'impostazione \texttt{pos\_encodings="none"} disabilita l'impiego di RoPE, ma non elimina l'embedding posizionale appreso dall'encoder.
+
+Al termine di questa fase, la rappresentazione della scacchiera è stata convertita in una sequenza di token compatibile con il nucleo ricorsivo della TRM, mantenendo sia le caratteristiche estratte dalle configurazioni locali sia le informazioni relative alla posizione delle singole intersezioni.

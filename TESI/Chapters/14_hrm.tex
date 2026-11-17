@@ -4,7 +4,7 @@ Il Hierarchical Reasoning Model (HRM) è un'architettura di rete neurale introdo
 
 Il modello nasce dall'osservazione che le architetture tradizionali, pur essendo efficaci in numerosi ambiti, possono incontrare difficoltà nell'affrontare problemi che richiedono sequenze di elaborazione complesse. L'idea alla base di HRM è quella di superare alcuni di questi limiti attraverso un'architettura ricorrente e gerarchica, nella quale differenti moduli collaborano per elaborare progressivamente le informazioni.
 
-\paragraph{Architettura gerarchica}
+\subsubsection{Architettura gerarchica}
 
 La struttura di HRM è composta principalmente da due moduli ricorrenti, caratterizzati da differenti livelli di astrazione e frequenze di aggiornamento:
 
@@ -15,7 +15,7 @@ La struttura di HRM è composta principalmente da due moduli ricorrenti, caratte
 
 I due moduli sono interconnessi e collaborano durante il processo di elaborazione. Il modulo low-level aggiorna il proprio stato interno per più iterazioni consecutive, mentre il modulo high-level interviene con una frequenza inferiore, utilizzando il risultato delle elaborazioni effettuate dal primo.
 
-\paragraph{Ricorsione e aggiornamento degli stati latenti}
+\subsubsection{Ricorsione e aggiornamento degli stati latenti}
 
 Un elemento centrale dell'architettura è rappresentato dall'utilizzo di stati latenti (hidden states), ovvero rappresentazioni interne che vengono aggiornate iterativamente durante l'elaborazione.
 
@@ -25,7 +25,7 @@ Questo processo genera una struttura di elaborazione gerarchica, nella quale le 
 
 Il risultato finale viene ricavato dallo stato latente del modulo high-level, attraverso una componente di output che produce la predizione.
 
-\paragraph{Supervisione e processo di training}
+\subsubsection{Supervisione e processo di training}
 
 Il processo di addestramento di HRM presenta alcune caratteristiche specifiche, pensate per gestire l'elaborazione ricorsiva senza dover propagare i gradienti attraverso l'intera sequenza di aggiornamenti degli stati interni.
 

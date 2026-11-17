@@ -2,7 +2,7 @@
 
 I Transformer sono architetture di reti neurali introdotte nel 2017 da Vaswani et al. \cite{transformer}, inizialmente sviluppate per attività di elaborazione del linguaggio naturale. La loro caratteristica principale è l'utilizzo di meccanismi di attenzione (attention), che permettono al modello di elaborare le relazioni tra le diverse parti dell'input, senza ricorrere necessariamente a elaborazioni sequenziali come avviene nelle reti neurali ricorrenti.
 
-\paragraph{Meccanismo di attenzione}
+\subsubsection{Meccanismo di attenzione}
 
 Il meccanismo di attenzione consente alla rete di attribuire un'importanza differente alle informazioni ricevute in ingresso, in funzione della loro rilevanza rispetto all'elaborazione corrente. In questo modo, il modello può concentrarsi sulle informazioni più significative e mettere in relazione elementi anche distanti tra loro.
 
@@ -10,13 +10,13 @@ Una particolare forma di attenzione è la self-attention, nella quale ogni eleme
 
 Nei Transformer, la self-attention viene generalmente implementata attraverso il meccanismo di Multi-Head Attention. Quest'ultimo utilizza più meccanismi di attenzione in parallelo, ciascuno dei quali può apprendere differenti relazioni tra gli elementi dell'input. I risultati vengono successivamente combinati, ottenendo una rappresentazione più ricca delle informazioni disponibili.
 
-\paragraph{Informazioni posizionali}
+\subsubsection{Informazioni posizionali}
 
 Poiché il meccanismo di self-attention non elabora intrinsecamente gli elementi in un ordine specifico, è necessario fornire al modello informazioni relative alla loro posizione. A questo scopo vengono utilizzate rappresentazioni posizionali (positional encoding), che vengono combinate con le rappresentazioni degli elementi in ingresso.
 
 In questo modo, la rete può distinguere non soltanto il contenuto delle informazioni, ma anche la loro posizione all'interno dell'input.
 
-\paragraph{Struttura generale}
+\subsubsection{Struttura generale}
 
 Nella sua formulazione originale, il Transformer presenta un'architettura composta da due componenti principali: encoder e decoder. L'encoder elabora la sequenza in ingresso attraverso una successione di blocchi contenenti meccanismi di self-attention e reti feed-forward. Il decoder utilizza invece le rappresentazioni prodotte dall'encoder per generare una sequenza in uscita, impiegando ulteriori meccanismi di attenzione.
 

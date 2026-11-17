@@ -1,0 +1,17 @@
+\subsection{Obiettivi progettuali e architettura generale}
+
+L'obiettivo del progetto è stato adattare l'architettura Tiny Recursive Model (TRM) al gioco del Go, realizzando un sistema in grado di prevedere le mosse a partire dallo stato della partita e di utilizzare tali previsioni per giocare autonomamente. Il lavoro non si è limitato all'adattamento del modello neurale, ma ha richiesto la progettazione di un insieme di componenti che ne consentissero l'integrazione in un ambiente di gioco completo.
+
+La TRM costituisce il nucleo neurale del sistema. L'obiettivo è stato mantenerne il meccanismo di ragionamento ricorsivo, intervenendo sulle componenti necessarie per adattarlo al nuovo dominio: la rappresentazione dello stato della scacchiera in ingresso e la produzione delle previsioni in uscita. In particolare, il modello deve associare a ciascuna possibile intersezione del goban un punteggio, considerando anche l'azione di passaggio (\textit{PASS}) tra le mosse disponibili.
+
+Dal punto di vista architetturale, si è scelto di separare la componente neurale dalla gestione delle regole del gioco. La prima si occupa di elaborare le informazioni relative alla partita e stimare le mosse più promettenti; la seconda gestisce lo stato della scacchiera, verifica la legalità delle mosse e applica le conseguenti modifiche alla partita. Questa separazione consente di mantenere distinti il processo di previsione del modello e il funzionamento dell'ambiente di gioco.
+
+Un ulteriore obiettivo è stato supportare entrambe le dimensioni di scacchiera considerate nel progetto, 9×9 e 19×19. Il sistema è stato quindi organizzato in modo da poter utilizzare configurazioni del modello e relativi pesi addestrati per ciascuna dimensione, mantenendo una struttura software condivisa.
+
+Per rendere il sistema concretamente utilizzabile, il modello è stato integrato all'interno di agenti in grado di interagire con l'ambiente di gioco. Questi permettono sia di affrontare una partita contro un giocatore umano, sia di eseguire partite tra agenti autonomi.
+
+È stata inoltre sviluppata un'interfaccia grafica per visualizzare la scacchiera e interagire con il sistema.
+
+Infine, l'architettura prevede la possibilità di estendere la selezione delle mosse attraverso algoritmi di ricerca. In particolare, è stata introdotta un'opzione basata su Negamax, che utilizza le previsioni della TRM per orientare l'esplorazione delle mosse e delle possibili risposte dell'avversario. In questo modo è possibile confrontare la selezione diretta basata sulle previsioni del modello con una strategia che integra anche una fase di ricerca.
+
+Nel complesso, il sistema è stato organizzato in componenti distinte ma integrate: rappresentazione dello stato di gioco, modello neurale, ambiente di gioco, agenti e interfaccia grafica. Questa organizzazione costituisce la base per l'adattamento della TRM al Go e per la successiva valutazione delle diverse strategie di selezione delle mosse.

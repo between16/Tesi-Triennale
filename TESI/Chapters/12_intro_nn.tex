@@ -4,7 +4,7 @@ Le reti neurali artificiali (Artificial Neural Networks, ANN) sono modelli compu
 
 Una rete neurale è costituita da un insieme di unità computazionali, chiamate neuroni artificiali, organizzate in livelli (layer) e collegate tra loro attraverso connessioni caratterizzate da parametri numerici, denominati pesi (weights). L'elaborazione delle informazioni avviene attraverso la propagazione dei dati da un livello al successivo, trasformando progressivamente la rappresentazione dell'input.
 
-\paragraph{Neuroni e struttura della rete}
+\subsubsection{Neuroni e struttura della rete}
 
 Il neurone artificiale rappresenta l'unità fondamentale di una rete neurale. Ogni neurone riceve uno o più valori in ingresso, a ciascuno dei quali viene associato un peso, e calcola una combinazione lineare degli stessi, a cui viene generalmente aggiunto un termine indipendente chiamato bias.
 
@@ -28,7 +28,7 @@ I neuroni vengono organizzati in livelli con funzioni differenti. Generalmente s
 
 Il numero di livelli e di neuroni, insieme alla modalità con cui sono collegati, contribuisce a definire l'architettura della rete. Le funzioni di attivazione, invece, permettono di introdurre non linearità nel processo di elaborazione. Tra le più utilizzate si trovano ReLU (Rectified Linear Unit), sigmoid e tanh.
 
-\paragraph{Forward propagation e backpropagation}
+\subsubsection{Forward propagation e backpropagation}
 
 L'elaborazione dei dati all'interno di una rete neurale avviene attraverso un processo denominato forward propagation. Durante questa fase, i dati vengono forniti al livello di ingresso e propagati attraverso i livelli successivi, fino a raggiungere quello di uscita. Ogni livello applica le trasformazioni definite dai propri pesi, bias e funzioni di attivazione, producendo una predizione.
 
@@ -40,7 +40,7 @@ I gradienti così calcolati vengono utilizzati da un algoritmo di ottimizzazione
 
 Il processo viene ripetuto su numerosi esempi, consentendo alla rete di adattare progressivamente i propri parametri ai dati utilizzati durante l'addestramento.
 
-\paragraph{Training e inferenza}
+\subsubsection{Training e inferenza}
 
 È importante distinguere due fasi fondamentali nell'utilizzo di una rete neurale: training e inferenza.
 
