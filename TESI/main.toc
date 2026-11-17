@@ -8,5 +8,5 @@
 \contentsline {subsection}{\numberline {4.1}Selezione stocastica delle mosse}{6}{}%
 \contentsline {section}{\numberline {5}Risultati}{6}{}%
 \contentsline {section}{\numberline {6}Conclusioni}{6}{}%
-\contentsline {section}{\numberline {7}bibliografia}{6}{}%
+\contentsline {section}{\numberline {7}Bibliografia}{6}{}%
 \contentsline {section}{\numberline {8}Ringraziamenti}{6}{}%
