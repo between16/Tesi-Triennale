@@ -1,0 +1,92 @@
+\subsection{Nucleo ricorsivo della rete}
+
+Una volta ottenuta la sequenza di token dall'encoder, questa viene elaborata dal nucleo ricorsivo della TRM, che costituisce la componente centrale del modello. In questa fase non è stato modificato il principio generale di funzionamento dell'architettura originale, già descritto nel capitolo precedente. L'intervento si è concentrato principalmente sull'integrazione delle rappresentazioni prodotte dall'encoder e sulla configurazione dei blocchi utilizzati durante il processo ricorsivo.
+
+Il nucleo mantiene due rappresentazioni latenti, aggiornate iterativamente attraverso un blocco di ragionamento condiviso. La configurazione adottata è stata definita tenendo conto della struttura spaziale del Go e della necessità di contenere il costo computazionale delle elaborazioni ricorsive.
+
+\subsubsection{Rappresentazioni latenti}
+
+Il nucleo ricorsivo mantiene due stati interni, indicati con $z_H$ e $z_L$. Entrambi rappresentano le informazioni elaborate dal modello e sono organizzati come sequenze di token, in modo da conservare una rappresentazione distinta per ciascuna intersezione della scacchiera.
+
+Considerando una dimensione nascosta pari a 256, ciascuno dei due stati presenta quindi una dimensione:
+
+\[
+    [B, N^2, 256]
+\]
+
+dove $B$ indica la dimensione del batch e $N$ la dimensione del goban.
+
+I due stati svolgono ruoli complementari nel processo di ragionamento. Durante ogni iterazione, $z_L$ viene aggiornato utilizzando come informazioni di riferimento lo stato $z_H$ e la rappresentazione prodotta dall'encoder. Successivamente, il nuovo stato $z_L$ viene utilizzato per aggiornare $z_H$. Si crea così un processo iterativo nel quale le due rappresentazioni si influenzano reciprocamente.
+
+Un aspetto importante dell'adattamento al Go riguarda l'integrazione delle informazioni provenienti dall'encoder durante l'intero processo ricorsivo. La rappresentazione iniziale della scacchiera non viene infatti utilizzata soltanto per inizializzare il modello, ma viene iniettata a ogni aggiornamento di $z_L$, sommata allo stato $z_H$:
+
+\[
+    z_L \leftarrow f(z_L, z_H + x)
+\]
+
+dove $x$ rappresenta la sequenza di embedding prodotta dal \texttt{GoEncoder} e $f$ indica l'elaborazione effettuata dal blocco di ragionamento.
+
+Questa scelta permette di mantenere disponibili le informazioni relative alla posizione corrente durante le iterazioni, evitando che il processo ricorsivo dipenda esclusivamente dagli stati latenti già elaborati. Al termine del processo, lo stato $z_H$ viene restituito come rappresentazione finale delle intersezioni e utilizzato dalla successiva componente del modello per la previsione delle mosse.
+
+\subsubsection{Blocco di ragionamento}
+
+L'aggiornamento degli stati latenti viene effettuato attraverso un blocco di ragionamento basato su self-attention e su una componente feed-forward. Il blocco è costruito in modo da poter essere riutilizzato più volte durante il processo ricorsivo, condividendo i propri parametri tra le diverse applicazioni.
+
+La configurazione adottata è riassunta nella Tabella~\ref{tab:reasoning_block_config}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|l}
+        \textbf{Componente}   & \textbf{Configurazione} \\
+        \hline
+        Self-attention        & 4 teste                 \\
+        Dimensione nascosta   & 256                     \\
+        Dimensione per testa  & 64                      \\
+        Feed-forward          & SwiGLU                  \\
+        Fattore di espansione & 2                       \\
+        Normalizzazione       & RMSNorm                 \\
+        Attenzione causale    & Disabilitata
+    \end{tabular}
+    \caption{Configurazione del blocco di ragionamento.}
+    \label{tab:reasoning_block_config}
+\end{table}
+
+Il meccanismo di self-attention utilizza quattro teste, ciascuna con una dimensione di 64, per elaborare le relazioni tra le diverse posizioni della scacchiera. Questa configurazione consente al modello di considerare contemporaneamente informazioni provenienti da intersezioni differenti, combinandole attraverso più sottospazi di rappresentazione.
+
+L'attenzione causale è disabilitata. A differenza di quanto avviene nell'elaborazione di sequenze testuali, infatti, la sequenza di token utilizzata dal modello rappresenta uno stato completo della scacchiera. Non è quindi necessario imporre un ordinamento causale tra le intersezioni: ogni posizione può contribuire all'elaborazione delle altre.
+
+Dopo il meccanismo di attenzione, il blocco applica una componente feed-forward basata su SwiGLU, con un fattore di espansione pari a 2. Questa componente permette di elaborare ulteriormente le rappresentazioni ottenute dall'attenzione, introducendo una trasformazione non lineare.
+
+Le operazioni di attenzione e feed-forward sono entrambe accompagnate da connessioni residuali e normalizzazione RMSNorm. In particolare, la normalizzazione viene applicata al risultato della somma tra la rappresentazione in ingresso e quella prodotta da ciascuna componente. Questo contribuisce a mantenere stabili le rappresentazioni durante le successive applicazioni ricorsive del blocco.
+
+\subsubsection{Parametrizzazione e processo ricorsivo}
+
+Il comportamento del nucleo ricorsivo è determinato da alcuni parametri che stabiliscono il numero di iterazioni e la struttura dei blocchi utilizzati. Nel progetto è stata adottata la seguente configurazione:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|l}
+        \textbf{Parametro}  & \textbf{Valore} \\
+        \hline
+        \texttt{H\_cycles}  & 2               \\
+        \texttt{L\_cycles}  & 2               \\
+        \texttt{L\_layers}  & 1               \\
+        \texttt{H\_layers}  & Non utilizzato  \\
+        Dimensione nascosta & 256             \\
+        Numero di teste     & 4
+    \end{tabular}
+    \caption{Parametri utilizzati per configurare il nucleo ricorsivo.}
+    \label{tab:recursive_core_config}
+\end{table}
+
+Una scelta implementativa rilevante riguarda la condivisione dei parametri tra gli aggiornamenti dei due stati latenti. Nel codice viene infatti istanziato un unico modulo, denominato \texttt{L\_level}, composto dal numero di blocchi indicato da \texttt{L\_layers}. Lo stesso modulo viene utilizzato sia per aggiornare $z_L$ sia per aggiornare $z_H$, anziché creare due componenti distinte con parametri indipendenti.
+
+Con la configurazione adottata, ogni ciclo $H$ comprende due aggiornamenti consecutivi di $z_L$, determinati da \texttt{L\_cycles}, seguiti da un aggiornamento di $z_H$. Il processo viene ripetuto per il numero di cicli stabilito da \texttt{H\_cycles}.
+
+La gestione del calcolo del gradiente segue inoltre una modalità specifica. Nel caso di due cicli $H$, il primo viene eseguito senza mantenere il grafo computazionale necessario alla backpropagation, mentre il secondo e ultimo ciclo viene eseguito con il calcolo del gradiente attivo. In questo modo, il modello può effettuare più aggiornamenti ricorsivi, limitando al contempo il costo in memoria associato alla propagazione del gradiente attraverso tutte le iterazioni.
+
+La configurazione adottata prevede quindi complessivamente quattro aggiornamenti di $z_L$ e due aggiornamenti di $z_H$: due aggiornamenti di $z_L$ e uno di $z_H$ per ciascun ciclo $H$. Soltanto gli aggiornamenti appartenenti al ciclo finale contribuiscono al grafo computazionale utilizzato durante l'addestramento.
+
+Infine, è importante precisare che in questa implementazione non viene utilizzato un meccanismo di arresto adattivo basato su una Q-head, come quello previsto dalla versione originale della TRM. Il numero di iterazioni è determinato direttamente dai parametri di configurazione e non viene modificato dinamicamente in funzione del contenuto dello stato. Il parametro \texttt{halt\_max\_steps}, impostato a 1, limita a una singola esecuzione il ciclo esterno del modello, mentre la profondità del processo ricorsivo interno è stabilita da \texttt{H\_cycles} e \texttt{L\_cycles}.
+
+Al termine dell'elaborazione, il nucleo restituisce lo stato $z_H$, che contiene la rappresentazione aggiornata delle intersezioni della scacchiera. Tale rappresentazione costituisce l'ingresso della policy head, descritta nella sezione successiva, incaricata di produrre i punteggi associati alle possibili mosse.

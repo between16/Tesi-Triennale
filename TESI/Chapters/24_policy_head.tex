@@ -1,0 +1,49 @@
+\subsection{Generazione delle mosse: Policy Head}
+
+Una volta completata l'elaborazione ricorsiva, il modello dispone di una rappresentazione latente aggiornata per ciascuna intersezione della scacchiera. Per trasformare queste informazioni in previsioni sulle possibili azioni è stata introdotta una componente dedicata, denominata \texttt{GoPolicyHead}.
+
+Il suo compito è associare un punteggio a ciascuna mossa possibile, producendo un vettore di valori non normalizzati, detti \textit{logits}. A differenza della rappresentazione interna del nucleo ricorsivo, l'output della policy head è quindi direttamente collegato allo spazio delle azioni del gioco.
+
+La componente è organizzata in due rami distinti: il primo produce un punteggio per ciascuna intersezione del goban, mentre il secondo stima il punteggio associato all'azione di passaggio (\textit{PASS}).
+
+\subsubsection{Previsione delle mosse sul tabellone}
+
+Il primo ramo della policy head elabora separatamente la rappresentazione latente associata a ciascuna intersezione. A questo scopo viene utilizzato un MLP composto da due livelli lineari, con dimensioni 256, 128 e 1, e una funzione di attivazione ReLU tra i due livelli.
+
+La stessa rete viene applicata a tutti i token della sequenza, utilizzando quindi un insieme condiviso di parametri per tutte le posizioni della scacchiera. Questa scelta consente di mantenere uniforme il processo di previsione delle mosse, evitando di introdurre una rete distinta per ogni intersezione.
+
+Ogni rappresentazione viene così trasformata in un singolo valore, ottenendo complessivamente $N^2$ logits, uno per ciascuna posizione del goban:
+
+\[
+    [B, N^2, 256]
+    \longrightarrow
+    [B, N^2, 1]
+    \longrightarrow
+    [B, N^2]
+\]
+
+In questo modo, a ogni intersezione viene associato un punteggio che rappresenta la preferenza del modello per la mossa corrispondente.
+
+\subsubsection{Previsione dell'azione PASS}
+
+Il secondo ramo è dedicato alla previsione dell'azione PASS. Questa scelta richiede un trattamento differente rispetto alle altre mosse, poiché il passaggio non corrisponde a una specifica intersezione della scacchiera, ma rappresenta una decisione relativa alla situazione complessiva della partita.
+
+Per ottenere una rappresentazione globale dello stato, viene applicata un'operazione di \textit{mean pooling} lungo la dimensione della sequenza. In pratica, le rappresentazioni latenti di tutte le intersezioni vengono aggregate calcolandone la media, ottenendo un unico vettore di dimensione 256 per ciascun elemento del batch.
+
+Il vettore risultante viene elaborato da un secondo MLP, anch'esso composto da due livelli lineari con dimensioni 256, 128 e 1, e attivazione ReLU intermedia. L'uscita di questa rete costituisce il logit associato all'azione PASS.
+
+L'utilizzo di una rappresentazione aggregata permette quindi di stimare questa azione considerando le informazioni provenienti dall'intero goban, anziché da una singola posizione.
+
+\subsubsection{Composizione dell'output}
+
+I punteggi prodotti dai due rami vengono concatenati in un unico vettore. L'output complessivo della policy head presenta quindi dimensione:
+
+\[
+    [B, N^2 + 1]
+\]
+
+I primi $N^2$ valori corrispondono alle mosse sulle intersezioni del tabellone, mentre l'ultimo valore rappresenta l'azione PASS.
+
+È importante precisare che questi valori sono logits e non costituiscono direttamente una distribuzione di probabilità. La loro normalizzazione viene effettuata nelle successive fasi di selezione della mossa, tenendo conto anche della legalità delle azioni disponibili.
+
+Infine, il modello non dispone di una \textit{value head}: la sua funzione è stimare una policy, ossia associare punteggi alle possibili azioni, e non valutare direttamente il valore di una posizione o la probabilità di vittoria di un giocatore. La valutazione delle mosse è pertanto affidata alla distribuzione prodotta dalla policy e, nelle configurazioni che lo prevedono, alle successive procedure di ricerca.

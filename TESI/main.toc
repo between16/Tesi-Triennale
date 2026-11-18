@@ -33,9 +33,24 @@
 \contentsline {subsubsection}{\numberline {3.2.1}Rappresentazione dello stato del gioco}{23}{subsubsection.3.2.1}%
 \contentsline {subsubsection}{\numberline {3.2.2}Encoder convoluzionale}{24}{subsubsection.3.2.2}%
 \contentsline {subsubsection}{\numberline {3.2.3}Codifica posizionale e trasformazione in sequenza}{25}{subsubsection.3.2.3}%
-\contentsline {section}{\numberline {4}Implementazione}{26}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Selezione stocastica delle mosse}{26}{subsection.4.1}%
-\contentsline {section}{\numberline {5}Risultati}{27}{section.5}%
-\contentsline {section}{\numberline {6}Conclusioni}{27}{section.6}%
-\contentsline {section}{\numberline {7}Bibliografia}{28}{section.7}%
-\contentsline {section}{\numberline {8}Ringraziamenti}{28}{section.8}%
+\contentsline {subsection}{\numberline {3.3}Nucleo ricorsivo della rete}{26}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Rappresentazioni latenti}{27}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Blocco di ragionamento}{28}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}Parametrizzazione e processo ricorsivo}{29}{subsubsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.4}Generazione delle mosse: Policy Head}{30}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Previsione delle mosse sul tabellone}{30}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Previsione dell'azione PASS}{31}{subsubsection.3.4.2}%
+\contentsline {subsubsection}{\numberline {3.4.3}Composizione dell'output}{31}{subsubsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.5}Integrazione con ambiente di gioco e agente}{32}{subsection.3.5}%
+\contentsline {subsubsection}{\numberline {3.5.1}Ambiente di gioco}{32}{subsubsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.2}Agente e selezione delle mosse}{33}{subsubsection.3.5.2}%
+\contentsline {subsubsection}{\numberline {3.5.3}Interfaccia grafica}{34}{subsubsection.3.5.3}%
+\contentsline {subsubsection}{\numberline {3.5.4}Estensione della selezione delle mosse tramite Negamax}{34}{subsubsection.3.5.4}%
+\contentsline {subsection}{\numberline {3.6}Supporto alle dimensioni 9x9 e 19x19}{35}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}Riepilogo delle scelte architetturali}{36}{subsection.3.7}%
+\contentsline {section}{\numberline {4}Implementazione}{38}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Selezione stocastica delle mosse}{38}{subsection.4.1}%
+\contentsline {section}{\numberline {5}Risultati}{38}{section.5}%
+\contentsline {section}{\numberline {6}Conclusioni}{38}{section.6}%
+\contentsline {section}{\numberline {7}Bibliografia}{39}{section.7}%
+\contentsline {section}{\numberline {8}Ringraziamenti}{39}{section.8}%

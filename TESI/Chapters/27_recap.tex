@@ -1,0 +1,63 @@
+\subsection{Riepilogo delle scelte architetturali}
+
+Le principali decisioni progettuali adottate durante lo sviluppo sono riepilogate nella Tabella~\ref{tab:architectural_choices}. Per ciascuna scelta vengono indicati il razionale alla base della soluzione adottata e alcune possibili alternative.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{p{0.25\textwidth}|p{0.38\textwidth}|p{0.27\textwidth}}
+        \textbf{Scelta}                                                                                    & \textbf{Motivazione} & \textbf{Alternative} \\
+        \hline
+        Input a 7 canali                                                                                   &
+        Rappresentazione dello stato corrente e della storia recente della partita.                        &
+        Utilizzo del solo stato corrente.                                                                                                                \\
+        \hline
+        Encoder convoluzionale                                                                             &
+        Estrazione di caratteristiche locali preservando la struttura spaziale del goban.                  &
+        Encoder basato su MLP o layer lineari.                                                                                                           \\
+        \hline
+        Kernel $3\times3$                                                                                  &
+        Considerazione delle intersezioni adiacenti durante l'estrazione delle caratteristiche.            &
+        Kernel di dimensioni differenti.                                                                                                                 \\
+        \hline
+        Positional embedding appreso                                                                       &
+        Conservazione dell'informazione relativa alla posizione di ciascuna intersezione.                  &
+        RoPE o assenza di codifica posizionale.                                                                                                          \\
+        \hline
+        Self-attention non causale                                                                         &
+        Possibilità di elaborare le relazioni tra tutte le intersezioni della scacchiera.                  &
+        Attenzione causale.                                                                                                                              \\
+        \hline
+        Due stati latenti                                                                                  &
+        Mantenimento delle due rappresentazioni interne utilizzate nel processo ricorsivo.                 &
+        Utilizzo di un singolo stato latente.                                                                                                            \\
+        \hline
+        Blocco ricorsivo condiviso                                                                         &
+        Riutilizzo degli stessi parametri nei diversi aggiornamenti degli stati latenti.                   &
+        Moduli distinti per ciascun aggiornamento.                                                                                                       \\
+        \hline
+        Numero fisso di cicli                                                                              &
+        Definizione esplicita della profondità del processo ricorsivo e del relativo costo computazionale. &
+        Numero di cicli adattivo tramite ACT.                                                                                                            \\
+        \hline
+        Policy Head separata                                                                               &
+        Specializzazione della rete nella produzione di punteggi associati alle possibili mosse.           &
+        Produzione dell'output direttamente dal nucleo ricorsivo.                                                                                        \\
+        \hline
+        Output PASS dedicato                                                                               &
+        Rappresentazione esplicita dell'azione di passaggio, non associata a un'intersezione.              &
+        Gestione separata dall'output della rete.                                                                                                        \\
+        \hline
+        Verifica esterna della legalità                                                                    &
+        Separazione tra previsione delle mosse e applicazione delle regole del gioco.                      &
+        Integrazione della legalità nella componente neurale.                                                                                            \\
+        \hline
+        Negamax opzionale                                                                                  &
+        Possibilità di integrare una fase di ricerca senza modificare l'architettura o i pesi della TRM.   &
+        Selezione diretta della mossa tramite la policy.                                                                                                 \\
+    \end{tabular}
+    \caption{Riepilogo delle principali scelte progettuali e delle relative alternative.}
+    \label{tab:architectural_choices}
+\end{table}
+
+Le soluzioni riportate riflettono le esigenze specifiche del dominio del Go e gli obiettivi del progetto. Le motivazioni indicate rappresentano il razionale alla base delle decisioni progettuali e non implicano che le alternative siano state tutte implementate o confrontate sperimentalmente. La valutazione dell'efficacia delle diverse configurazioni viene affrontata nel capitolo dedicato agli esperimenti.

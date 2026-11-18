@@ -1,0 +1,26 @@
+\subsection{Supporto alle dimensioni 9x9 e 19x19}
+
+Un ulteriore obiettivo progettuale è stato realizzare un'architettura utilizzabile con entrambe le dimensioni di scacchiera considerate nel progetto: 9$\times$9 e 19$\times$19. Per ottenere questo risultato, la struttura del modello è stata parametrizzata rispetto alla dimensione del goban, evitando di dover mantenere due implementazioni architetturali distinte.
+
+La classe \texttt{GoTRMModel} è infatti condivisa tra le due configurazioni e utilizza la dimensione della scacchiera per determinare le dimensioni delle componenti che dipendono dal numero di intersezioni. In particolare, tale parametro determina la lunghezza della sequenza elaborata dal nucleo ricorsivo, la dimensione dell'embedding posizionale e il numero di azioni rappresentate dalla policy head.
+
+Le principali differenze tra le due configurazioni sono riassunte nella Tabella~\ref{tab:board_size_comparison}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|c|c}
+        \textbf{Caratteristica}   & \textbf{Go 9$\times$9} & \textbf{Go 19$\times$19} \\
+        \hline
+        Intersezioni              & 81                     & 361                      \\
+        Canali in ingresso        & 7                      & 7                        \\
+        Token elaborati dalla TRM & 81                     & 361                      \\
+        Logits prodotti           & 82                     & 362                      \\
+        Dimensione nascosta       & 256                    & 256
+    \end{tabular}
+    \caption{Confronto tra le configurazioni utilizzate per le due dimensioni di scacchiera.}
+    \label{tab:board_size_comparison}
+\end{table}
+
+Nonostante la struttura architetturale sia condivisa, le due configurazioni utilizzano checkpoint distinti, ottenuti attraverso processi di addestramento separati. Non si tratta quindi di un unico modello addestrato contemporaneamente su entrambe le dimensioni, ma di due modelli basati sulla stessa implementazione e configurati in funzione del rispettivo goban.
+
+Questa organizzazione consente di riutilizzare le stesse componenti software e lo stesso processo di elaborazione, mantenendo al contempo parametri e pesi specifici per ciascuna dimensione di scacchiera.
