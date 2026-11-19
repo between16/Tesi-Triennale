@@ -1,0 +1,128 @@
+\subsection{Preparazione del dataset}
+
+Prima della fase di addestramento, le partite disponibili in formato SGF vengono elaborate per ottenere un dataset di esempi supervisionati. Ogni esempio è costituito dalla rappresentazione dello stato della scacchiera in un determinato momento della partita e dalla mossa effettuata successivamente dal giocatore di turno. Il processo è implementato principalmente nei moduli \texttt{go\_preprocessing.py} e \texttt{go\_dataset.py}.
+
+La pipeline di preparazione può essere riassunta nelle seguenti fasi:
+
+\begin{center}
+    \textbf{Partite in formato SGF}
+
+    $\downarrow$
+
+    \textbf{Parsing ed estrazione delle mosse}
+
+    $\downarrow$
+
+    \textbf{Estrazione delle feature e delle mosse target}
+
+    $\downarrow$
+
+    \textbf{Suddivisione in training, validation e test}
+
+    $\downarrow$
+
+    \textbf{Salvataggio dei dataset in formato NPY}
+
+    $\downarrow$
+
+    \textbf{Caricamento e data augmentation durante il training}
+\end{center}
+
+\subsubsection{Lettura delle partite ed estrazione degli esempi}
+
+Le partite vengono lette attraverso la libreria \texttt{sgfmill}, utilizzata per effettuare il parsing dei file SGF e ricostruire la sequenza delle mosse. Durante questa fase viene verificata la dimensione della scacchiera, in modo da escludere le partite non compatibili con la configurazione da elaborare.
+
+Per ciascuna partita, il programma ricostruisce progressivamente lo stato del goban applicando le mosse registrate nel file. Prima di applicare ogni mossa, viene memorizzata la configurazione corrente della scacchiera e il colore del giocatore di turno. Queste informazioni costituiscono rispettivamente l'input del modello e l'etichetta associata all'esempio.
+
+La mossa target viene rappresentata mediante un indice intero: le mosse sulle intersezioni assumono valori compresi tra \(0\) e \(N^2-1\), mentre l'azione \textit{PASS} è rappresentata dall'indice \(N^2\), dove \(N\) indica la dimensione della scacchiera.
+
+Durante la ricostruzione vengono inoltre individuate eventuali mosse illegali. Se una mossa non può essere applicata, l'esempio corrispondente viene rimosso e la partita viene segnalata come non valida per il successivo monitoraggio della fase di preprocessing.
+
+Un'ulteriore gestione riguarda la conclusione delle partite. Nel Go, due mosse \textit{PASS} consecutive determinano la fine della partita; tuttavia, alcuni file SGF possono non riportare esplicitamente entrambe le mosse finali. Per le partite con un risultato finale esplicitamente registrato e compatibile con un esito basato sul punteggio, il preprocessing ricostruisce gli eventuali \textit{PASS} mancanti. Questa operazione consente di includere anche esempi relativi alla fase conclusiva della partita, senza introdurre mosse artificiali nei casi di abbandono o conclusione per tempo.
+
+\subsubsection{Estrazione delle feature}
+
+La funzione \texttt{extract\_features()} converte lo stato della partita in un tensore numerico di dimensione \(7 \times N \times N\), compatibile con l'encoder descritto nel capitolo precedente.
+
+Per ogni posizione vengono considerate le configurazioni della scacchiera relative a tre istanti temporali: quello corrente (\(T\)) e i due precedenti (\(T-1\) e \(T-2\)). Per ciascuno di questi stati vengono utilizzati due canali distinti, che indicano le pietre del giocatore di turno e quelle dell'avversario. Il settimo canale identifica invece il colore del giocatore corrente.
+
+La struttura risultante è riassunta nella Tabella~\ref{tab:dataset_features}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{c|p{10cm}}
+        \textbf{Canale} & \textbf{Informazione rappresentata}            \\
+        \hline
+        0               & Pietre del giocatore corrente al tempo \(T\)   \\
+        1               & Pietre dell'avversario al tempo \(T\)          \\
+        2               & Pietre del giocatore corrente al tempo \(T-1\) \\
+        3               & Pietre dell'avversario al tempo \(T-1\)        \\
+        4               & Pietre del giocatore corrente al tempo \(T-2\) \\
+        5               & Pietre dell'avversario al tempo \(T-2\)        \\
+        6               & Indicatore del colore del giocatore corrente   \\
+    \end{tabular}
+    \caption{Organizzazione dei sette canali utilizzati per rappresentare lo stato del Go.}
+    \label{tab:dataset_features}
+\end{table}
+
+I primi sei canali sono rappresentati mediante mappe binarie: il valore di ciascuna intersezione è pari a 1 se è occupata da una pietra del colore considerato, altrimenti è pari a 0. Il settimo canale assume invece valore costante su tutta la scacchiera: 1 per il giocatore nero e 0 per quello bianco.
+
+Questa rappresentazione permette di descrivere non soltanto la configurazione corrente, ma anche una breve sequenza degli stati precedenti. Inoltre, organizzando i primi sei canali rispetto al giocatore di turno, si mantiene una prospettiva coerente tra le posizioni in cui gioca il nero e quelle in cui gioca il bianco.
+
+Il frammento seguente mostra il principio alla base della costruzione dei canali:
+
+\begin{verbatim}
+player_channel = history_idx * 2
+opponent_channel = history_idx * 2 + 1
+
+tensor[player_channel] = board_array == current_color
+tensor[opponent_channel] = board_array == opposite_color(current_color)
+\end{verbatim}
+
+La funzione restituisce quindi un tensore di tipo \texttt{float32}, mentre la mossa target viene memorizzata separatamente come indice intero. Per una scacchiera di dimensione \(N\), ogni esempio è pertanto composto da un input di forma \([7,N,N]\) e da un'etichetta scalare.
+
+\subsubsection{Suddivisione del dataset}
+
+Una volta individuate le partite disponibili, queste vengono suddivise in tre insiemi distinti: training, validation e test. La suddivisione avviene a livello di partita e non di singola posizione, utilizzando una proporzione rispettivamente pari all'80\%, 10\% e 10\%.
+
+Questa scelta è importante per evitare contaminazioni tra gli insiemi. Poiché una singola partita può generare numerosi esempi, suddividere casualmente le posizioni potrebbe portare configurazioni provenienti dalla stessa partita sia nel training sia nella validation o nel test. In questo caso, il modello potrebbe incontrare durante l'addestramento posizioni molto simili a quelle utilizzate successivamente per la valutazione, rendendo meno significativa la stima della sua capacità di generalizzazione.
+
+Separando invece le partite prima di estrarne gli esempi, tutte le posizioni appartenenti a una stessa partita vengono assegnate allo stesso insieme. La suddivisione viene effettuata in maniera riproducibile utilizzando un generatore casuale inizializzato con seed pari a 42.
+
+Per il dataset 19$\times$19, considerata la dimensione dell'archivio originale, è inoltre possibile limitare il numero di partite elaborate. Nella configurazione utilizzata per il progetto vengono selezionate al massimo 10.000 partite, prima di procedere alla suddivisione nei tre insiemi. La selezione viene effettuata in modo deterministico, così da poter riprodurre la composizione del dataset.
+
+\subsubsection{Data augmentation mediante simmetrie D4}
+
+Per aumentare la varietà degli esempi utilizzati durante l'addestramento, è stata introdotta una tecnica di \textit{data augmentation} basata sulle otto simmetrie del gruppo diedrale \(D_4\), che descrive le trasformazioni di un quadrato ottenute mediante rotazioni e riflessioni.
+
+Nel caso del Go, queste trasformazioni permettono di ottenere configurazioni equivalenti dal punto di vista delle regole del gioco, modificando l'orientamento della scacchiera senza alterare le relazioni tra le intersezioni. Le otto trasformazioni comprendono quattro rotazioni di \(0^\circ\), \(90^\circ\), \(180^\circ\) e \(270^\circ\), e le rispettive riflessioni.
+
+La trasformazione viene applicata sia al tensore delle feature sia alla mossa target. Quest'ultima deve infatti essere rimappata nella nuova posizione della scacchiera, affinché rimanga coerente con lo stato trasformato. L'azione \textit{PASS}, non essendo associata a una specifica intersezione, rimane invariata.
+
+L'implementazione è contenuta nella funzione \texttt{apply\_board\_symmetry()} del modulo \texttt{go\_dataset.py}. La trasformazione non viene applicata preventivamente a tutti gli esempi, ma viene estratta casualmente durante il caricamento dei campioni destinati al training. In particolare, per ogni esempio viene selezionata una delle otto simmetrie disponibili.
+
+La data augmentation è attiva esclusivamente per il training, mentre gli insiemi di validation e test mantengono la rappresentazione originale. In questo modo, la valutazione viene effettuata sempre sugli stessi dati, senza introdurre variazioni casuali nelle metriche ottenute.
+
+\subsubsection{Salvataggio e caricamento dei dataset}
+
+Una volta completata l'estrazione degli esempi e la suddivisione delle partite, i dati vengono salvati su disco in formato NumPy.
+Il progetto supporta due modalità di memorizzazione: il formato compresso \texttt{NPZ} e il formato \texttt{NPY}, quest'ultimo utilizzato nelle configurazioni principali per gestire dataset di dimensioni elevate.
+
+Nel formato NPY, ciascun insieme viene memorizzato in una directory contenente due file distinti:
+\begin{itemize}
+    \item \texttt{X.npy}, contenente i tensori delle feature in formato \texttt{float32};
+    \item \texttt{y.npy}, contenente gli indici delle mosse target in formato \texttt{int64}.
+\end{itemize}
+
+La separazione tra input ed etichette consente di accedere indipendentemente alle due strutture. Inoltre, per evitare di caricare interamente in memoria dataset particolarmente grandi, il caricamento avviene utilizzando il meccanismo di \textit{memory mapping} di NumPy:
+
+\begin{verbatim}
+self.X = np.load("X.npy", mmap_mode="r")
+self.y = np.load("y.npy", mmap_mode="r")
+\end{verbatim}
+
+Questa modalità permette di accedere ai dati direttamente dai file, caricando in memoria soltanto le porzioni necessarie durante l'elaborazione dei batch. Il vantaggio è particolarmente rilevante per il dataset 19$\times$19, che contiene un numero elevato di esempi e richiede una quantità significativa di memoria.
+
+Durante l'addestramento, il modulo \texttt{go\_dataset.py} utilizza la classe \texttt{GoDataset} per accedere agli esempi e i \textit{DataLoader} di PyTorch per organizzare il caricamento in batch. Il dataset di training applica inoltre la data augmentation descritta in precedenza, mentre validation e test vengono caricati senza trasformazioni.
+
+La pipeline produce quindi, per ciascuna dimensione di scacchiera, tre insiemi distinti e pronti per l'addestramento e la valutazione. La struttura dei singoli esempi rimane invariata tra le due configurazioni, mentre cambiano le dimensioni spaziali dei tensori e il numero complessivo di posizioni disponibili.

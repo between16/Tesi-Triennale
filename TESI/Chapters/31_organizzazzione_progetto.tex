@@ -1,0 +1,38 @@
+\subsection{Organizzazione del progetto}
+
+Il progetto è stato organizzato in moduli Python distinti, ciascuno responsabile di una specifica parte del sistema. Questa suddivisione consente di separare la gestione delle regole del gioco, l'elaborazione neurale, la selezione delle mosse e l'interazione con l'utente, facilitando lo sviluppo e la manutenzione delle singole componenti.
+
+Il codice relativo al modello è raccolto nella cartella \texttt{models/}, mentre i moduli dedicati all'ambiente di gioco, agli agenti e all'interfaccia grafica si trovano nella cartella principale del progetto \texttt{TRM/}. Sono inoltre presenti script e strumenti dedicati alla preparazione dei dataset, all'addestramento e alla valutazione dei modelli.
+
+La Tabella~\ref{tab:project_modules} riassume le responsabilità dei principali moduli Python utilizzati nell'implementazione.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{5.0cm}|p{8cm}}
+        \textbf{Modulo}                     & \textbf{Responsabilità}                                                                                                            \\
+        \hline
+        \texttt{game\_env.py}               & Gestione dello stato della partita, applicazione delle regole del Go, verifica della legalità delle mosse e calcolo del punteggio. \\
+        \texttt{models/go\_encoder.py}      & Trasformazione dello stato della scacchiera in una sequenza di rappresentazioni vettoriali utilizzabili dalla TRM.                 \\
+        \texttt{models/go\_trm.py}          & Implementazione del nucleo ricorsivo della rete e aggiornamento delle rappresentazioni latenti.                                    \\
+        \texttt{models/go\_model.py}        & Assemblaggio delle componenti del modello, integrando il nucleo TRM e la Policy Head.                                              \\
+        \texttt{models/go\_policy\_head.py} & Conversione delle rappresentazioni prodotte dalla TRM nei logits associati alle mosse sulla scacchiera e all'azione PASS.          \\
+        \texttt{agents.py}                  & Caricamento dei checkpoint, esecuzione del modello in inferenza, applicazione dei vincoli di legalità e selezione della mossa.     \\
+        \texttt{negamax.py}                 & Implementazione della ricerca Negamax con potatura alpha-beta, utilizzando la policy della TRM per ordinare le mosse candidate.    \\
+        \texttt{app.py}                     & Realizzazione dell'interfaccia grafica tramite Pygame e gestione delle partite tra giocatore umano e agenti automatici.            \\
+    \end{tabular}
+    \caption{Principali moduli Python e relative responsabilità.}
+    \label{tab:project_modules}
+\end{table}
+
+Il modulo \texttt{game\_env.py} costituisce il riferimento per la gestione delle regole del gioco. È responsabile della rappresentazione della scacchiera, dell'applicazione delle mosse e del controllo della loro legalità. In questo modo, sia gli agenti automatici sia l'interfaccia grafica possono interagire con la partita attraverso un'unica implementazione dell'ambiente, senza dover replicare la logica delle regole.
+
+Le componenti del modello neurale sono invece raccolte nella cartella \texttt{models/}. Il modulo \texttt{go\_encoder.py} prepara la rappresentazione dello stato del gioco, mentre \texttt{go\_trm.py} implementa il processo di ragionamento ricorsivo. Il modulo \texttt{go\_policy\_head.py} elabora le rappresentazioni ottenute per produrre i punteggi associati alle azioni disponibili. Queste componenti vengono integrate da \texttt{go\_model.py}, che definisce il modello completo utilizzato nelle fasi di addestramento e inferenza.
+
+Il modulo \texttt{agents.py} si occupa di utilizzare il modello addestrato durante una partita. In particolare, carica i pesi salvati nel checkpoint, prepara gli input a partire dallo stato dell'ambiente e gestisce la selezione delle mosse, tenendo conto delle azioni legali. All'interno dello stesso modulo è inoltre definito l'agente umano, utilizzato per consentire l'interazione tramite interfaccia grafica.
+
+La ricerca opzionale delle mosse è implementata separatamente in \texttt{negamax.py}.
+Questa scelta permette di affiancare alla selezione diretta basata sulla policy una strategia di ricerca, senza modificare il modello neurale o il relativo processo di addestramento.
+
+Il modulo \texttt{app.py}, infine, integra le diverse componenti e fornisce l'interfaccia grafica attraverso cui è possibile configurare e avviare le partite.
+
+La separazione tra questi moduli permette quindi di mantenere indipendenti le principali responsabilità del sistema, favorendo il riutilizzo delle componenti e consentendo di modificare o valutare una parte dell'implementazione senza dover intervenire necessariamente sulle altre.

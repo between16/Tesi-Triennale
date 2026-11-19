@@ -1,0 +1,128 @@
+\subsection{Processo di addestramento}
+
+L'addestramento del modello avviene mediante apprendimento supervisionato, utilizzando le posizioni e le mosse estratte dalle partite SGF durante la fase di preparazione del dataset. Per ciascun esempio, il modello riceve la rappresentazione dello stato corrente della scacchiera e deve prevedere la mossa successivamente eseguita nella partita originale.
+
+L'obiettivo è quindi apprendere una \textit{policy}, ossia una distribuzione di preferenza sulle possibili azioni, attraverso il confronto tra le predizioni della rete e le mosse presenti nel dataset.
+
+La procedura è implementata nel file \texttt{train.py} e utilizza PyTorch per la gestione del modello, il calcolo della funzione di perdita e l'aggiornamento dei parametri.
+
+\subsubsection{Apprendimento supervisionato e funzione di perdita}
+
+Durante l'addestramento, ogni batch contiene un insieme di rappresentazioni della scacchiera e le corrispondenti mosse target. Le mosse sono codificate come indici interi: un valore compreso tra \(0\) e \(N^2-1\) identifica un'intersezione della scacchiera, mentre il valore \(N^2\) rappresenta l'azione \textit{PASS}.
+
+Il modello restituisce, per ogni esempio, un vettore di \(N^2+1\) logits, uno per ciascuna azione possibile. Questi valori vengono confrontati con le mosse target mediante la funzione \texttt{CrossEntropyLoss} di PyTorch:
+
+\begin{lstlisting}[language=Python, caption={Definizione della funzione di perdita}, label={lst:training_loss}]
+criterion = nn.CrossEntropyLoss()
+
+logits = model(x_batch)
+loss = criterion(logits, y_batch)
+\end{lstlisting}
+
+La Cross Entropy Loss misura la discrepanza tra le predizioni del modello e le classi corrette. In particolare, penalizza le predizioni che assegnano una probabilità ridotta alla mossa effettivamente presente nel dataset.
+
+La funzione opera direttamente sui logits, applicando internamente la normalizzazione necessaria al calcolo della perdita. Non è quindi necessario applicare esplicitamente una softmax prima di passarle le predizioni.
+
+\subsubsection{Ottimizzazione dei parametri e learning rate}
+
+L'aggiornamento dei pesi della rete è affidato all'ottimizzatore \texttt{AdamW}, che combina il metodo Adam con una gestione separata del decadimento dei pesi (\textit{weight decay}).
+
+La configurazione utilizzata prevede un learning rate iniziale pari a \(10^{-4}\), un weight decay pari a \(10^{-4}\) e i coefficienti \(\beta_1=0.9\) e \(\beta_2=0.95\).
+
+Il processo di ottimizzazione viene eseguito attraverso le operazioni standard di PyTorch:
+
+\begin{lstlisting}[language=Python, caption={Aggiornamento dei parametri durante il training}, label={lst:training_step}]
+optimizer.zero_grad(set_to_none=True)
+
+logits = model(x_batch)
+loss = criterion(logits, y_batch)
+
+loss.backward()
+optimizer.step()
+scheduler.step()
+\end{lstlisting}
+
+A ogni iterazione vengono inizialmente azzerati i gradienti accumulati, quindi viene eseguito il passaggio in avanti del modello e calcolata la funzione di perdita. La chiamata a \texttt{backward()} calcola i gradienti rispetto ai parametri apprendibili, mentre \texttt{optimizer.step()} aggiorna i pesi della rete.
+
+Dopo ogni aggiornamento dei parametri viene eseguito anche lo scheduler del learning rate.
+
+La variazione del learning rate segue una strategia composta da due fasi: un periodo iniziale di \textit{warmup}, seguito da un decadimento secondo una funzione coseno (\textit{cosine decay}).
+
+Durante il warmup, il learning rate aumenta progressivamente fino al valore iniziale previsto. Questa fase consente di evitare aggiornamenti troppo ampi nelle prime iterazioni dell'addestramento. Successivamente, il learning rate diminuisce gradualmente secondo una curva coseno, fino a raggiungere un valore minimo configurato.
+
+Nel progetto, lo scheduler è implementato mediante \texttt{LambdaLR} e viene aggiornato a ogni passo dell'ottimizzatore, anziché una sola volta per epoca. La configurazione predefinita prevede 2000 passi di warmup, un learning rate iniziale di \(10^{-4}\) e un valore minimo di \(10^{-5}\).
+
+\subsubsection{Validazione e selezione del modello}
+
+Al termine di ogni epoca, il modello viene valutato sul validation set, che non viene utilizzato per aggiornare i parametri della rete. Questa fase permette di monitorare la capacità del modello di generalizzare a posizioni non utilizzate durante l'addestramento.
+
+La valutazione viene eseguita disabilitando il calcolo dei gradienti e misurando tre metriche principali:
+
+\begin{itemize}
+    \item \textbf{Validation Loss}: valore medio della Cross Entropy Loss sugli esempi di validazione.
+    \item \textbf{Top-1 Accuracy}: percentuale di esempi per i quali la mossa target corrisponde alla predizione con il logit più alto.
+    \item \textbf{Top-3 Accuracy}: percentuale di esempi per i quali la mossa target compare tra le tre azioni con i logits più elevati.
+\end{itemize}
+
+La selezione del modello migliore si basa sulla Validation Loss. Quando il valore ottenuto è inferiore al minimo registrato nelle epoche precedenti, i pesi correnti vengono salvati come nuovo modello migliore.
+
+Questa scelta permette di selezionare il checkpoint in base alla qualità complessiva delle predizioni, anziché considerare esclusivamente la percentuale di mosse corrette al primo posto.
+
+\subsubsection{Salvataggio dei checkpoint}
+
+Durante l'addestramento vengono gestiti due checkpoint distinti, con finalità differenti:
+
+\begin{itemize}
+    \item \texttt{best\_model.pt}: contiene i pesi del modello che ha ottenuto la migliore Validation Loss, insieme alla configurazione necessaria per ricostruire l'architettura. Include inoltre alcune informazioni relative all'addestramento e alle metriche di validazione. È il checkpoint destinato principalmente al caricamento del modello durante l'inferenza.
+
+    \item \texttt{latest\_model.pt}: contiene lo stato completo dell'addestramento, comprendendo i pesi del modello, lo stato dell'ottimizzatore, quello dello scheduler, l'epoca e il passo raggiunti, la configurazione e gli stati dei generatori casuali. Viene utilizzato per riprendere un addestramento interrotto.
+\end{itemize}
+
+Il checkpoint \texttt{latest\_model.pt} viene aggiornato periodicamente, ogni 500 passi di ottimizzazione nella configurazione predefinita, e al termine di ogni epoca. Il checkpoint \texttt{best\_model.pt} viene invece aggiornato soltanto quando la Validation Loss migliora rispetto al valore migliore precedentemente registrato.
+
+Il salvataggio viene effettuato inizialmente su un file temporaneo, che viene successivamente rinominato nella destinazione definitiva. Questa procedura riduce il rischio di lasciare un checkpoint incompleto in caso di interruzione durante la scrittura.
+
+\subsubsection{Ripresa dell'addestramento}
+
+Per consentire la ripresa di un addestramento interrotto viene implementato il parametro \texttt{--resume}, che permette di ripartire dallo stato registrato in \texttt{latest\_model.pt}.
+
+A differenza del semplice caricamento dei pesi, questa procedura ripristina anche lo stato dell'ottimizzatore e dello scheduler. In questo modo vengono conservate le informazioni accumulate durante le iterazioni precedenti, evitando di iniziare nuovamente l'ottimizzazione da una condizione iniziale.
+
+Vengono inoltre ripristinati il numero di epoca, il passo raggiunto all'interno dell'epoca e gli stati dei generatori casuali utilizzati da Python, NumPy e PyTorch. Quest'ultimo aspetto consente di mantenere la continuità del processo, anche rispetto all'ordine dei campioni e alle operazioni casuali impiegate durante il training.
+
+La configurazione predefinita di \texttt{--resume} ripristina anche il learning rate e lo scheduler dal checkpoint, consentendo di proseguire il piano di ottimizzazione originale. È tuttavia possibile specificare esplicitamente un nuovo learning rate: in questo caso viene mantenuto lo stato accumulato dall'ottimizzatore, ma viene avviata una nuova fase di cosine decay a partire dal valore indicato, senza ripetere il warmup.
+
+Il meccanismo di ripresa permette quindi sia di continuare un addestramento interrotto mantenendo la configurazione precedente, sia di modificare esplicitamente il learning rate quando si desidera adattare la fase finale dell'ottimizzazione.
+
+\paragraph{Sintesi del ciclo di addestramento}
+
+Il processo complessivo può essere riassunto attraverso il seguente pseudocodice:
+
+\begin{lstlisting}[language=Python, caption={Schema semplificato del processo di addestramento}, label={lst:training_loop}]
+for epoch in range(start_epoch, epochs + 1):
+
+    model.train()
+
+    for x_batch, y_batch in train_loader:
+
+        optimizer.zero_grad()
+        logits = model(x_batch)
+        loss = criterion(logits, y_batch)
+
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        if checkpoint_interval:
+            save_latest_checkpoint()
+
+    val_loss, val_top1, val_top3 = evaluate(model, val_loader)
+
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        save_best_checkpoint()
+
+    save_latest_checkpoint()
+\end{lstlisting}
+
+Al termine del processo, il file \texttt{best\_model.pt} contiene la versione del modello selezionata sulla base delle prestazioni ottenute sul validation set. I relativi pesi vengono successivamente utilizzati per le prove di inferenza e per la valutazione delle prestazioni nel gioco del Go.
