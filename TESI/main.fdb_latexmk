@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1795079931.30706 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795079932.03972 0
+["pdflatex"] 1795105788.15769 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795105789.14057 0
   "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795079453.68005 686 349e8add0ee54249b7897f3e23be9131 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -122,15 +122,18 @@
   "Chapters/36_implementazione_negamax.tex" 1795079754.87628 7462 09ad0f1bdddc99fea372ad8662f04fc4 ""
   "Chapters/37_gui.tex" 1795079897.3478 6546 2a9a052023bde47b4498d24c3cb80203 ""
   "Chapters/3_implementazione.tex" 1795079929.82665 330 22a9ee8c96582c9cf932df2f7079eb3b ""
-  "Chapters/4_risultati.tex" 1793645754.14454 64 a49092b9ac012f4c650337ebc2fea5af ""
+  "Chapters/41_valutazione_risultati.tex" 1795105778.19181 16377 2e81212c0a752a99393f608f5e24e106 ""
+  "Chapters/4_risultati.tex" 1795105787.05976 74 9ba18894cdfa61f29223da453461fb96 ""
   "Chapters/5_conclusioni.tex" 1794676165.76214 291 121f3a82b8b6d59a37254c54393e035f ""
   "Chapters/bibliografia.tex" 1794912604.87056 1109 f82e50f3eadb19c2756d6d3a9e1a752d ""
   "Chapters/ringraziamenti.tex" 1792087903.08784 24 1031e18ec664c854022454f9782a7a30 ""
+  "img/test_accuracy_topk.png" 1795105700.30082 61715 5b39eaeeda256ae282e0af4cac8094bc ""
   "img/trm_paper.png" 1794907355.50098 117567 dbd4b252d29b9bc2a382e0c8b56e2e7e ""
-  "main.aux" 1795079931.97257 19465 88cf73090d9a86a06ca5b21399d7b0ef "pdflatex"
-  "main.out" 1795079931.97519 19370 eecfb5b904ba6efd51f22662dae2b800 "pdflatex"
+  "img/win_rate_katago.png" 1795105716.76953 63050 e1ec8fe5f0ad3d5c58b7f85c5a156986 ""
+  "main.aux" 1795105789.06765 22831 9966fe930cb20c856ec18fe5839c742c "pdflatex"
+  "main.out" 1795105789.06955 21495 5520f822f12a13c750e7f8c15c3e9585 "pdflatex"
   "main.tex" 1795079453.68005 686 349e8add0ee54249b7897f3e23be9131 ""
-  "main.toc" 1795079931.97543 9384 9d02aef5613a6ddcab19821202254b17 "pdflatex"
+  "main.toc" 1795105789.06986 10401 612fbe79ded04d8d505af17ea0f4de6c "pdflatex"
   (generated)
   "main.aux"
   "main.log"
