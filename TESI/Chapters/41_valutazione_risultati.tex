@@ -30,20 +30,20 @@ In entrambe le configurazioni l'accuratezza cresce passando da Top-1 a Top-5: la
 
 Per valutare gli agenti in condizioni di gioco, sono state eseguite 100 partite per ciascuna delle quattro configurazioni, alternando il colore del TRM: 50 partite con il Nero e 50 con il Bianco. KataGo è stato configurato con il profilo HumanSL \texttt{rank\_20k} e un limite di 40 visite. Il confronto non rappresenta quindi una sfida contro KataGo alla massima forza.
 
-I parametri comuni sono riportati nella Tabella~\ref{tab:katago_config}. Per Negamax è stata utilizzata profondità 2, con al massimo 5 candidate per il 9$\times$9 e 3 per il 19$\times$19. Il komi era pari a 7,5; la penalità sul logit \textit{PASS} era 3,5 fino a 16 pietre occupate.
+I parametri comuni comprendevano seed 42, komi 7,5, penalità sul logit \textit{PASS} pari a 3,5 fino a 16 pietre occupate e 40 visite massime per KataGo. È stato utilizzato il profilo HumanSL \texttt{rank\_20k}; il modello KataGo era \texttt{kata9x9-b18c384nbt-20231025} sul 9$\times$9 e \texttt{kata1-tf3-b11c768-s12382M-d6533M} sul 19$\times$19. Per Negamax è stata utilizzata profondità 2, con al massimo 5 candidate per il 9$\times$9 e 3 per il 19$\times$19.
 
 \begin{table}[htbp]
     \centering
     \caption{Risultati delle partite contro KataGo. Il gap è calcolato come punteggio TRM meno punteggio KataGo.}
     \label{tab:katago_results}
-    \begin{tabular}{llrrrr}
+    \begin{tabular}{llrrrrr}
         \hline
-        \textbf{Scacchiera} & \textbf{Strategia} & \textbf{Vittorie} & \textbf{Sconfitte} & \textbf{Win rate} & \textbf{Gap medio} \\
+        \textbf{Scacchiera} & \textbf{Strategia} & \textbf{Vittorie} & \textbf{Sconfitte} & \textbf{Win rate} & \textbf{Gap medio} & \textbf{Gap mediano} \\
         \hline
-        9$\times$9 & Policy & 26 & 74 & 26\% & -13,4 \\
-        9$\times$9 & Negamax & 58 & 42 & 58\% & -24,8 \\
-        19$\times$19 & Policy & 48 & 52 & 48\% & -1,3 \\
-        19$\times$19 & Negamax & 65 & 35 & 65\% & -62,8 \\
+        9$\times$9 & Policy & 26 & 74 & 26\% & -13,4 & -11,5 \\
+        9$\times$9 & Negamax & 58 & 42 & 58\% & -24,8 & +1,5 \\
+        19$\times$19 & Policy & 48 & 52 & 48\% & -1,3 & -0,5 \\
+        19$\times$19 & Negamax & 65 & 35 & 65\% & -62,8 & +3,5 \\
         \hline
     \end{tabular}
 \end{table}
