@@ -1,82 +1,10 @@
+
 \section{Architettura}
 
-\subsection{Obiettivi e organizzazione generale}
-
-Il progetto adatta la Tiny Recursive Model (TRM) al gioco del Go, con l'obiettivo di produrre una policy che associ un punteggio alle mosse disponibili a partire dallo stato della partita. Il sistema comprende il modello neurale, un ambiente responsabile delle regole, agenti che collegano modello e ambiente e un'interfaccia grafica per l'esecuzione delle partite.
-
-La componente neurale e quella di gioco sono state mantenute separate. La rete elabora la posizione e stima le mosse; l'ambiente gestisce la scacchiera, verifica la legalità e applica le azioni. Questa organizzazione permette di riutilizzare la stessa policy con differenti strategie decisionali. Il sistema supporta goban $9\times9$ e $19\times19$, con checkpoint distinti e una struttura software comune.
-
-È stata inoltre implementata una modalità opzionale basata su Negamax. Essa utilizza la policy TRM per ordinare le mosse candidate e guida una ricerca a profondità limitata, consentendo di confrontare la selezione diretta con una strategia che considera anche le possibili risposte dell'avversario.
-
-\subsection{Rappresentazione dello stato e encoder}
-
-Lo stato viene rappresentato mediante un tensore di sette canali, ciascuno di dimensione $N\times N$. I primi sei descrivono le pietre nei tre stati più recenti, distinguendo il giocatore corrente dall'avversario; il settimo identifica il colore del giocatore di turno.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Canali utilizzati per rappresentare lo stato del Go.}
-    \label{tab:go_input_channels}
-    \begin{tabular}{cl}
-        \hline
-        \textbf{Canale} & \textbf{Informazione} \\
-        \hline
-        0--1 & Giocatore corrente e avversario al tempo $T$ \\
-        2--3 & Giocatore corrente e avversario al tempo $T-1$ \\
-        4--5 & Giocatore corrente e avversario al tempo $T-2$ \\
-        6 & Colore del giocatore corrente \\
-        \hline
-    \end{tabular}
-\end{table}
-
-I primi sei canali sono mappe binarie; il settimo assume valore costante, pari a 1 per il Nero e 0 per il Bianco. La codifica rispetto al giocatore di turno mantiene un punto di vista coerente nei due colori, mentre i due stati precedenti forniscono informazioni sull'evoluzione recente della scacchiera.
-
-Il modulo \texttt{GoEncoder} applica una convoluzione 2D con kernel $3\times3$, padding 1 e 256 canali, seguita da Batch Normalization e ReLU. La convoluzione estrae caratteristiche locali e mantiene invariate le dimensioni spaziali. Il tensore passa quindi da $[B,7,N,N]$ a $[B,256,N,N]$.
-
-Le dimensioni spaziali vengono appiattite e riordinate per ottenere una sequenza di $N^2$ token, ciascuno di dimensione 256: $[B,N^2,256]$. A ogni token viene sommato un embedding posizionale assoluto apprendibile, che permette di mantenere l'identità dell'intersezione dopo la conversione in sequenza. Tale embedding è distinto dai Rotary Positional Embeddings: la configurazione utilizzata disabilita RoPE, ma non la codifica posizionale dell'encoder.
-
-\subsection{Nucleo ricorsivo}
-
-Il nucleo mantiene due rappresentazioni latenti, $z_H$ e $z_L$, entrambe di forma $[B,N^2,256]$. Gli stati vengono aggiornati alternativamente attraverso un unico modulo condiviso, \texttt{L\_level}. L'aggiornamento di $z_L$ integra il precedente stato $z_L$ con $z_H$ e con gli embedding della scacchiera; il nuovo $z_L$ viene poi utilizzato per aggiornare $z_H$:
-
-\[
-z_L \leftarrow f(z_L,z_H+x), \qquad
-z_H \leftarrow f(z_H,z_L),
-\]
-dove $x$ è l'output dell'encoder.
-
-Il blocco di ragionamento combina self-attention e feed-forward SwiGLU. La configurazione prevede dimensione nascosta 256, quattro teste di attenzione da 64 elementi, fattore di espansione 2 e RMSNorm dopo le connessioni residuali. L'attenzione non è causale, poiché i token rappresentano uno stato completo della scacchiera e non una sequenza temporale ordinata.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Configurazione del nucleo ricorsivo.}
-    \label{tab:recursive_core_config}
-    \begin{tabular}{lc}
-        \hline
-        \textbf{Parametro} & \textbf{Valore} \\
-        \hline
-        Dimensione nascosta & 256 \\
-        Teste di attenzione & 4 \\
-        \texttt{H\_cycles} & 2 \\
-        \texttt{L\_cycles} & 2 \\
-        \texttt{L\_layers} & 1 \\
-        \hline
-    \end{tabular}
-\end{table}
-
-Con due cicli $H$ e due cicli $L$ vengono eseguiti quattro aggiornamenti di $z_L$ e due di $z_H$. Il primo ciclo $H$ è eseguito senza calcolo dei gradienti; il ciclo finale mantiene invece attiva la retropropagazione. Il numero di iterazioni è fisso: non è stato implementato un meccanismo dinamico di arresto anticipato basato su Q-head.
-
-\subsection{Policy Head e spazio delle azioni}
-
-La \textit{Policy Head} converte la rappresentazione finale in $N^2+1$ logits: uno per ogni intersezione e uno per \textit{PASS}. Per le intersezioni viene applicato a ogni token un MLP con dimensioni 256, 128 e 1, con ReLU intermedia. Per \textit{PASS}, i token vengono prima aggregati tramite media lungo la sequenza e il risultato viene elaborato da un secondo MLP.
-
-I valori restituiti sono logits, non probabilità. La distribuzione viene calcolata durante l'inferenza, dopo aver escluso le azioni illegali. Il modello non include una value head: apprende a prevedere le mosse presenti nei dati, ma non stima direttamente il valore di una posizione o la probabilità di vittoria.
-
-\subsection{Ambiente, agenti e ricerca}
-
-L'ambiente costituisce il riferimento unico per la gestione della partita. Verifica la legalità, gestisce catture, divieto di suicidio e positional superko, e termina la partita dopo due PASS consecutivi. Il punteggio segue un criterio ad area in stile Tromp-Taylor, con komi assegnato al Bianco.
-
-L'agente policy costruisce l'input a sette canali, esegue il modello e applica la maschera delle azioni legali. Dopo la softmax seleziona uniformemente a caso tra le azioni con probabilità almeno pari al 98\% della probabilità massima. È inoltre prevista una penalità configurabile sul logit PASS nelle fasi iniziali.
-
-La variante Negamax utilizza la policy per ordinare le mosse candidate, esplora sequenze alternate di mosse e risposte e applica potatura alpha-beta. Le posizioni non terminali sono valutate mediante un'euristica basata sul punteggio ad area e sulla vulnerabilità dei gruppi con poche libertà. L'euristica non è appresa e la ricerca è limitata in profondità e nel numero di candidate per contenere il costo computazionale.
-
-Le due strategie condividono modello e ambiente, ma differiscono nel processo decisionale: la policy seleziona direttamente un'azione, mentre Negamax esplora alcune continuazioni possibili. Ciò permette di confrontare il contributo della ricerca senza modificare la rete neurale.
+\input{Chapters/21_architettura_generale.tex}\
+\input{Chapters/22_adattamento_trm.tex}
+\input{Chapters/23_modello_ricorsivo_trm.tex}
+\input{Chapters/24_policy_head.tex}
+\input{Chapters/25_ambiente_gioco.tex}
+\input{Chapters/26_multidimensionalità.tex}
+\input{Chapters/27_recap.tex}
