@@ -1,9 +1,73 @@
 \section{Implementazione}
 
-\input{Chapters/31_organizzazzione_progetto.tex}
-\input{Chapters/32_dataset.tex}
-\input{Chapters/33_implementazione_modello.tex}
-\input{Chapters/34_addestramento.tex}
-\input{Chapters/35_inferenza_e_selezione_mosse.tex}
-\input{Chapters/36_implementazione_negamax.tex}
-\input{Chapters/37_gui.tex}
+\subsection{Organizzazione del progetto}
+
+Il progetto è suddiviso in moduli con responsabilità specifiche, separando preprocessing, modello, addestramento, inferenza e gestione delle partite.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Principali moduli del progetto.}
+    \label{tab:project_modules}
+    \begin{tabular}{lp{9cm}}
+        \hline
+        \textbf{Modulo} & \textbf{Responsabilità} \\
+        \hline
+        \texttt{game\_env.py} & Stato, regole, legalità e punteggio \\
+        \texttt{go\_preprocessing.py} & Lettura SGF ed estrazione esempi \\
+        \texttt{go\_dataset.py} & Dataset e data augmentation \\
+        \texttt{go\_encoder.py}, \texttt{go\_trm.py} & Encoder e nucleo ricorsivo \\
+        \texttt{go\_policy\_head.py}, \texttt{go\_model.py} & Policy e modello completo \\
+        \texttt{train.py} & Addestramento e checkpoint \\
+        \texttt{agents.py}, \texttt{negamax.py} & Inferenza e ricerca \\
+        \texttt{app.py} & Interfaccia grafica Pygame \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Preparazione dei dati}
+
+Le partite SGF vengono lette tramite \texttt{sgfmill}; il preprocessing filtra i file in base alla dimensione del goban e ricostruisce la sequenza delle mosse. Prima di applicare ogni mossa registra la posizione e il colore del giocatore di turno: la posizione costituisce l'input e la mossa successiva l'etichetta supervisionata. Le mosse sulle intersezioni sono codificate con indici da $0$ a $N^2-1$, mentre \textit{PASS} corrisponde a $N^2$.
+
+Se viene incontrata una mossa illegale, l'esempio associato viene scartato e la ricostruzione della partita viene interrotta. Per partite concluse con un risultato basato sul punteggio, il preprocessing può ricostruire eventuali PASS finali mancanti nel file SGF; tale integrazione non viene applicata alle partite terminate per abbandono o per tempo.
+
+La funzione \texttt{extract\_features()} produce un tensore $[7,N,N]$. Le partite vengono suddivise in training, validation e test con proporzioni 80/10/10 e seed 42. La suddivisione avviene a livello di partita, evitando che posizioni della stessa partita siano distribuite tra insiemi differenti.
+
+Durante il training viene applicata una data augmentation basata sulle otto simmetrie del gruppo $D_4$. La trasformazione viene applicata sia alle feature sia all'indice della mossa target, mentre \textit{PASS} rimane invariato. L'operazione è casuale e limitata al training; validation e test mantengono i dati originali.
+
+I dataset vengono salvati principalmente in formato NPY, con file separati per input (\texttt{X.npy}) ed etichette (\texttt{y.npy}). Il caricamento utilizza il \textit{memory mapping} di NumPy, evitando di caricare interamente in memoria gli array più grandi. \texttt{GoDataset} fornisce gli esempi e i DataLoader PyTorch organizzano i batch.
+
+\subsection{Implementazione del modello}
+
+Il modello completo è realizzato in PyTorch. \texttt{GoTRMModel}, definito in \texttt{go\_model.py}, coordina encoder, nucleo ricorsivo e policy head. L'encoder genera la sequenza di token, il nucleo aggiorna gli stati latenti e la policy head restituisce i logits delle azioni.
+
+Il metodo \texttt{forward()} del nucleo riutilizza lo stesso modulo \texttt{L\_level} per gli aggiornamenti di entrambi gli stati e per le iterazioni successive. I cicli precedenti all'ultimo sono eseguiti in un contesto \texttt{torch.no\_grad()}, mentre l'ultimo mantiene attiva la retropropagazione. Gli stati aggiornati vengono conservati nella struttura \texttt{carry} e separati dal grafo precedente tramite \texttt{detach()}.
+
+La policy head utilizza due percorsi: un MLP applicato a ciascun token per i logits delle intersezioni e un MLP applicato alla media dei token per il logit PASS. La concatenazione produce un vettore di dimensione $N^2+1$. Mascheramento e conversione in probabilità sono invece responsabilità dell'agente.
+
+\subsection{Processo di addestramento}
+
+L'addestramento è supervisionato: per ogni posizione il modello deve assegnare un logit elevato alla mossa registrata nel dataset. La funzione obiettivo è la Cross-Entropy applicata direttamente ai logits. L'ottimizzatore è AdamW, con learning rate iniziale $10^{-4}$, weight decay $10^{-4}$ e parametri $\beta_1=0.9$, $\beta_2=0.95$.
+
+Lo scheduler applica un warm-up di 2.000 passi seguito da un decadimento coseno fino a $10^{-5}$. Al termine di ogni epoca il modello viene valutato sulla validation, monitorando loss e accuratezze Top-1 e Top-3. Il checkpoint migliore viene scelto in base alla validation loss.
+
+\texttt{best\_model.pt} contiene i pesi e la configurazione necessari a ricostruire il modello ed è utilizzato normalmente durante l'inferenza. \texttt{latest\_model.pt} conserva anche gli stati di ottimizzatore e scheduler, epoca, passo e generatori casuali, consentendo di riprendere un'esecuzione interrotta tramite \texttt{--resume}. La ripresa standard ripristina learning rate e scheduler; è disponibile un override esplicito del learning rate che mantiene lo stato dell'ottimizzatore ma riavvia il decadimento coseno dal valore specificato, senza ripetere il warm-up. Non è previsto un early stopping automatico.
+
+\subsection{Inferenza e selezione delle mosse}
+
+Durante l'inferenza \texttt{TRMAgent} carica configurazione e pesi dal checkpoint, ricostruisce \texttt{GoTRMModel} e lo imposta in modalità valutazione. Il dispositivo viene scelto tra CUDA, MPS e CPU in base alla disponibilità. A ogni turno l'agente costruisce il tensore delle sette feature dalla cronologia dell'ambiente ed esegue il modello in \texttt{torch.inference\_mode()}.
+
+L'ambiente fornisce la maschera delle azioni legali. I logits delle azioni non consentite vengono sostituiti con $-\infty$, in modo che la softmax assegni loro probabilità nulla. Può quindi essere applicata una penalità al logit PASS: il valore predefinito è 3,5 quando sono presenti meno di 16 pietre. Questa regolazione agisce soltanto durante l'inferenza e non modifica i pesi appresi.
+
+Dopo la softmax, l'agente considera candidate le azioni legali con probabilità almeno pari a $0.98p_{\max}$, dove $p_{\max}$ è la probabilità massima. Una candidata viene estratta uniformemente a caso. La tolleranza del 2\% è relativa alla probabilità massima, non una differenza assoluta di due punti percentuali. L'ambiente verifica nuovamente la legalità prima di applicare la mossa.
+
+\subsection{Ricerca Negamax}
+
+\texttt{NegamaxAgent} estende l'agente policy senza modificare la rete. A ogni nodo richiede la distribuzione delle mosse, esclude quelle illegali e ordina le candidate in base alla probabilità. Vengono considerate al massimo $K$ mosse, integrando alcune mosse tattiche relative ai gruppi in atari. PASS viene incluso quando è tra le candidate più probabili oppure quando l'avversario ha già passato.
+
+La ricerca alterna le decisioni dei giocatori fino alla profondità configurata e applica la potatura alpha-beta. Ogni ramo opera su una copia dell'ambiente, così da non alterare la partita reale. Le posizioni terminali vengono valutate con il punteggio effettivo; quelle non terminali mediante un'euristica che combina differenza di area e penalità per gruppi con poche libertà. Tale valutazione è definita manualmente e non corrisponde a una value network appresa. La profondità e il numero di candidate limitano il costo computazionale, ma anche le sequenze analizzabili.
+
+\subsection{Ambiente e interfaccia grafica}
+
+\texttt{GoGameEnv} gestisce scacchiera, giocatore corrente, cronologia e PASS consecutivi. L'ambiente verifica il divieto di suicidio e la regola positional superko, che impedisce di ripetere una configurazione già incontrata. Due PASS consecutivi terminano la partita. Il punteggio segue il criterio ad area in stile Tromp-Taylor, includendo pietre e regioni vuote circondate da un solo colore, con komi aggiunto al Bianco.
+
+La GUI, implementata in \texttt{app.py} con Pygame, visualizza scacchiera e informazioni della partita, permette di inserire mosse o PASS e di avviare una nuova partita. Supporta modalità umano contro agente e agente contro agente; per gli agenti automatici è possibile scegliere tra policy diretta e Negamax. Entrambe le dimensioni del goban sono supportate e il checkpoint viene selezionato in funzione della configurazione.
