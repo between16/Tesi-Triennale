@@ -1,241 +1,68 @@
-La valutazione sperimentale ha l'obiettivo di analizzare le prestazioni del modello sviluppato e verificare l'efficacia delle scelte progettuali introdotte durante l'adattamento della Tiny Recursive Model al gioco del Go.
+La valutazione sperimentale è stata condotta su due dimensioni di scacchiera, $9 \times 9$ e $19 \times 19$, considerando sia le prestazioni della policy sui dati di test sia il comportamento degli agenti durante partite complete contro KataGo. Per ciascuna dimensione sono state confrontate la selezione diretta tramite policy e la variante che utilizza la ricerca Negamax guidata dalla stessa policy.
 
-Gli esperimenti sono stati organizzati considerando due dimensioni di scacchiera, $9 \times 9$ e $19 \times 19$, e due differenti modalità di selezione delle mosse: l'utilizzo diretto della policy generata dalla TRM e l'integrazione con una ricerca Negamax.
+\subsection{Valutazione sul dataset di test}
 
-La valutazione si articola in due fasi principali. La prima riguarda l'analisi delle prestazioni del modello sul dataset di test, attraverso metriche quali la Cross-Entropy Loss e l'accuratezza Top-$k$. La seconda consiste nella valutazione pratica degli agenti attraverso partite giocate contro KataGo, con l'obiettivo di confrontare il comportamento delle due modalità di selezione delle mosse.
-
-I risultati vengono infine analizzati mettendo a confronto le diverse configurazioni, considerando sia la qualità delle mosse e gli esiti delle partite, sia il costo computazionale introdotto dalla ricerca.
-
-\subsection{Risultati sul dataset di test}
-
-Al termine dell'addestramento, i checkpoint selezionati sono stati valutati sui rispettivi dataset di test. Questa fase consente di misurare la capacità del modello di individuare la mossa giocata nelle posizioni non utilizzate durante l'addestramento.
-
-Le metriche considerate sono:
-
-\begin{itemize}
-    \item \textbf{Cross-Entropy Loss}: misura la differenza tra la distribuzione di probabilità prodotta dal modello e la mossa corretta presente nel dataset. Valori inferiori indicano una migliore corrispondenza tra le previsioni e le etichette di riferimento.
-    \item \textbf{Top-1 Accuracy}: percentuale di posizioni nelle quali la mossa corretta coincide con quella avente la probabilità più elevata.
-    \item \textbf{Top-3 Accuracy}: percentuale di posizioni nelle quali la mossa corretta compare tra le prime tre mosse previste.
-    \item \textbf{Top-5 Accuracy}: percentuale di posizioni nelle quali la mossa corretta compare tra le prime cinque mosse previste.
-\end{itemize}
-
-\subsubsection{Risultati sul dataset 9x9}
-
-Il modello addestrato sulla scacchiera $9 \times 9$ è stato valutato su un insieme di test composto da 41.380 posizioni. Il checkpoint utilizzato corrisponde all'epoca 50.
-
-I risultati ottenuti sono riportati nella Tabella~\ref{tab:test_9x9}.
+I checkpoint selezionati sono stati valutati sui rispettivi insiemi di test, non utilizzati durante l'addestramento. Sono state considerate la Cross-Entropy Loss e le accuratezze Top-$k$: Top-1 misura la percentuale di posizioni in cui la mossa corretta è la prima previsione, mentre Top-3 e Top-5 verificano se essa compare tra le prime tre o cinque candidate.
 
 \begin{table}[htbp]
     \centering
-    \caption{Metriche del modello sul dataset di test 9x9.}
-    \label{tab:test_9x9}
-    \begin{tabular}{lr}
+    \caption{Metriche sui dataset di test.}
+    \label{tab:test_metrics}
+    \begin{tabular}{lrr}
         \hline
-        \textbf{Metrica}   & \textbf{Risultato} \\
+        \textbf{Metrica} & \textbf{9$\times$9} & \textbf{19$\times$19} \\
         \hline
-        Posizioni di test  & 41.380             \\
-        Cross-Entropy Loss & 1,7505             \\
-        Top-1 Accuracy     & 46,67\%            \\
-        Top-3 Accuracy     & 72,49\%            \\
-        Top-5 Accuracy     & 83,48\%            \\
+        Posizioni & 41.380 & 208.653 \\
+        Epoca checkpoint & 50 & 10 \\
+        Cross-Entropy Loss & 1,7505 & 2,6234 \\
+        Top-1 Accuracy & 46,67\% & 36,20\% \\
+        Top-3 Accuracy & 72,49\% & 56,72\% \\
+        Top-5 Accuracy & 83,48\% & 65,47\% \\
         \hline
     \end{tabular}
 \end{table}
 
-La Top-1 Accuracy indica che il modello individua direttamente la mossa corretta in circa il 46,67\% delle posizioni. Considerando invece le prime cinque previsioni, la percentuale sale all'83,48\%.
+In entrambe le configurazioni l'accuratezza cresce passando da Top-1 a Top-5: la mossa corretta è quindi spesso presente tra le candidate considerate, anche quando non costituisce la previsione principale. I valori del modello 9$\times$9 sono superiori a quelli del 19$\times$19; il confronto va tuttavia interpretato con cautela, poiché i due modelli sono stati addestrati su dataset distinti e con un diverso numero di azioni possibili (82 contro 362).
 
-\subsubsection{Risultati sul dataset 19x19}
+È stata inoltre analizzata la previsione della mossa \textit{PASS}. Nel test 9$\times$9 sono presenti 607 esempi di questa classe, con precisione del 67,45\% e recall del 76,11\%; nel test 19$\times$19 gli esempi sono 683, con precisione dell'80,68\% e recall del 55,64\%. Le metriche mostrano che il riconoscimento di \textit{PASS} presenta caratteristiche diverse nelle due configurazioni e va considerato separatamente dalle prestazioni sulle mosse ordinarie.
 
-Per la scacchiera $19 \times 19$, la valutazione è stata effettuata su un insieme di test composto da 208.653 posizioni. Il checkpoint utilizzato corrisponde all'epoca 10.
+\subsection{Partite contro KataGo}
 
-I risultati sono riportati nella Tabella~\ref{tab:test_19x19}.
+Per valutare gli agenti in condizioni di gioco, sono state eseguite 100 partite per ciascuna delle quattro configurazioni, alternando il colore del TRM: 50 partite con il Nero e 50 con il Bianco. KataGo è stato configurato con il profilo HumanSL \texttt{rank\_20k} e un limite di 40 visite. Il confronto non rappresenta quindi una sfida contro KataGo alla massima forza.
+
+I parametri comuni sono riportati nella Tabella~\ref{tab:katago_config}. Per Negamax è stata utilizzata profondità 2, con al massimo 5 candidate per il 9$\times$9 e 3 per il 19$\times$19. Il komi era pari a 7,5; la penalità sul logit \textit{PASS} era 3,5 fino a 16 pietre occupate.
 
 \begin{table}[htbp]
     \centering
-    \caption{Metriche del modello sul dataset di test 19x19.}
-    \label{tab:test_19x19}
-    \begin{tabular}{lr}
+    \caption{Risultati delle partite contro KataGo. Il gap è calcolato come punteggio TRM meno punteggio KataGo.}
+    \label{tab:katago_results}
+    \begin{tabular}{llrrrr}
         \hline
-        \textbf{Metrica}   & \textbf{Risultato} \\
+        \textbf{Scacchiera} & \textbf{Strategia} & \textbf{Vittorie} & \textbf{Sconfitte} & \textbf{Win rate} & \textbf{Gap medio} \\
         \hline
-        Posizioni di test  & 208.653            \\
-        Cross-Entropy Loss & 2,6234             \\
-        Top-1 Accuracy     & 36,20\%            \\
-        Top-3 Accuracy     & 56,72\%            \\
-        Top-5 Accuracy     & 65,47\%            \\
+        9$\times$9 & Policy & 26 & 74 & 26\% & -13,4 \\
+        9$\times$9 & Negamax & 58 & 42 & 58\% & -24,8 \\
+        19$\times$19 & Policy & 48 & 52 & 48\% & -1,3 \\
+        19$\times$19 & Negamax & 65 & 35 & 65\% & -62,8 \\
         \hline
     \end{tabular}
 \end{table}
 
-Anche in questo caso l'accuratezza aumenta considerando un insieme più ampio di mosse candidate. La Top-5 Accuracy raggiunge il 65,47\%, mentre la Top-1 si attesta al 36,20\%.
+La ricerca Negamax aumenta il win rate in entrambe le dimensioni: dal 26\% al 58\% sul 9$\times$9 e dal 48\% al 65\% sul 19$\times$19. Il miglioramento è quindi rispettivamente di 32 e 17 punti percentuali. Non si sono verificati pareggi nelle partite considerate.
 
-\subsubsection{Confronto tra le due configurazioni}
-
-La Figura~\ref{fig:test_topk_accuracy} mette a confronto le accuratezze Top-$k$ ottenute sulle due dimensioni della scacchiera.
+Il win rate non descrive tuttavia da solo l'andamento dei risultati. I gap medi delle configurazioni Negamax sono negativi, nonostante il numero di vittorie sia superiore a quello delle sconfitte. I corrispondenti gap mediani sono invece +1,5 sul 9$\times$9 e +3,5 sul 19$\times$19: la differenza tra media e mediana indica che alcune sconfitte con margini particolarmente ampi incidono sul valore medio.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\textwidth]{img/test_accuracy_topk.png}
-    \caption{Confronto tra le accuratezze Top-1, Top-3 e Top-5 sui dataset di test.}
-    \label{fig:test_topk_accuracy}
-\end{figure}
-
-I risultati mostrano prestazioni superiori per la configurazione $9 \times 9$ rispetto a quella $19 \times 19$ su tutte le metriche considerate. Questa differenza deve tuttavia essere interpretata tenendo conto delle diverse dimensioni degli spazi di azione: il modello 9x9 deve scegliere tra 82 azioni, mentre quello 19x19 tra 362.
-
-Inoltre, i due modelli sono stati addestrati su dataset distinti, con un diverso numero di esempi e caratteristiche proprie. Le differenze osservate non possono quindi essere attribuite esclusivamente alla dimensione della scacchiera.
-
-Un ulteriore elemento riguarda la previsione della mossa PASS. Nel dataset di test 9x9 sono presenti 607 esempi PASS, mentre nel dataset 19x19 ne sono presenti 683. Le metriche specifiche di questa classe mostrano risultati differenti: sul 9x9 la precisione è pari al 67,45\% e il recall al 76,11\%; sul 19x19 la precisione raggiunge l'80,68\%, mentre il recall è pari al 55,64\%.
-
-Questi valori evidenziano che la capacità di riconoscere correttamente una mossa di PASS non coincide necessariamente con la capacità di individuare le altre mosse. La distinzione è rilevante, poiché la scelta anticipata di PASS può influenzare significativamente lo svolgimento di una partita.
-
-\subsection{Valutazione contro KataGo}
-
-Per valutare il comportamento degli agenti durante una partita completa, sono stati eseguiti esperimenti contro KataGo, utilizzato come avversario di riferimento.
-
-Per ciascuna dimensione della scacchiera sono state confrontate due configurazioni:
-\begin{itemize}
-    \item \textbf{Policy}: l'agente seleziona le mosse direttamente dalla distribuzione di probabilità prodotta dalla TRM, dopo aver escluso le azioni illegali.
-    \item \textbf{Negamax}: la policy della TRM viene utilizzata per ordinare le mosse candidate, sulle quali viene applicata una ricerca Negamax con potatura alpha-beta.
-\end{itemize}
-
-L'obiettivo è verificare se l'introduzione di una ricerca limitata possa migliorare le prestazioni dell'agente rispetto all'utilizzo diretto della policy.
-
-\subsubsection{Configurazione degli esperimenti}
-
-Per ciascuna delle quattro configurazioni sono state giocate 100 partite contro KataGo, alternando il colore assegnato al TRM: 50 partite con il Nero e 50 con il Bianco.
-
-Gli esperimenti sono stati eseguiti utilizzando i seguenti parametri:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Parametri comuni agli esperimenti contro KataGo.}
-    \label{tab:katago_common_config}
-    \begin{tabular}{ll}
-        \hline
-        \textbf{Parametro}         & \textbf{Valore}    \\
-        \hline
-        Partite per configurazione & 100                \\
-        Visite massime KataGo      & 40                 \\
-        Profilo HumanSL            & rank\_20k          \\
-        Seed                       & 42                 \\
-        Komi                       & 7,5                \\
-        Penalità sul logit PASS    & 3,5                \\
-        Soglia penalità PASS       & 16 pietre occupate \\
-        Ricerca Negamax            & Profondità 2       \\
-        Candidati Negamax 9x9      & 5                  \\
-        Candidati Negamax 19x19    & 3                  \\
-        \hline
-    \end{tabular}
-\end{table}
-
-Per entrambe le dimensioni è stato utilizzato il profilo HumanSL di KataGo denominato \texttt{rank\_20k}. È quindi opportuno precisare che il confronto non è stato effettuato con KataGo alla sua massima forza, ma con una configurazione basata sul profilo umano indicato.
-
-I modelli KataGo utilizzati sono differenti in funzione della dimensione della scacchiera: per il 9x9 è stato impiegato il modello \texttt{kata9x9-b18c384nbt-20231025}, mentre per il 19x19 è stato utilizzato \texttt{kata1-tf3-b11c768-s12382M-d6533M}.
-
-Le partite sono state giocate applicando le regole di scoring ad area, il positional superko e il divieto di suicidio. Il komi è stato impostato a 7,5 punti.
-
-Per confrontare gli agenti sono state considerate principalmente le seguenti metriche:
-\begin{itemize}
-    \item numero di vittorie, pareggi e sconfitte;
-    \item percentuale di vittorie del TRM;
-    \item margine medio e mediano delle partite, calcolato dal punto di vista del TRM;
-    \item numero medio di mosse per partita;
-    \item durata complessiva degli esperimenti e, per Negamax, statistiche della ricerca.
-\end{itemize}
-
-Il margine, indicato nel seguito come \textit{gap}, è calcolato sottraendo il punteggio finale di KataGo da quello del TRM. Un valore positivo indica quindi una vittoria o un vantaggio del TRM, mentre un valore negativo indica un vantaggio di KataGo.
-
-\subsubsection{Risultati sul 9x9}
-
-I risultati delle partite sulla scacchiera $9 \times 9$ sono riportati nella Tabella~\ref{tab:katago_9x9}.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Risultati degli esperimenti contro KataGo sul 9x9.}
-    \label{tab:katago_9x9}
-    \begin{tabular}{lrr}
-        \hline
-        \textbf{Metrica} & \textbf{Policy} & \textbf{Negamax} \\
-        \hline
-        Vittorie TRM     & 26              & 58               \\
-        Pareggi          & 0               & 0                \\
-        Sconfitte TRM    & 74              & 42               \\
-        Win rate         & 26,0\%          & 58,0\%           \\
-        Gap medio        & -13,4           & -24,8            \\
-        Gap mediano      & -11,5           & +1,5             \\
-        Mosse medie      & 64,0            & 98,7             \\
-        Durata test      & 2,7 min         & 4,3 min          \\
-        \hline
-    \end{tabular}
-\end{table}
-
-L'introduzione della ricerca Negamax produce un incremento significativo della percentuale di vittorie, che passa dal 26\% al 58\%. La configurazione con ricerca ottiene quindi 32 punti percentuali in più rispetto all'utilizzo diretto della policy.
-
-Si osserva inoltre un aumento del numero medio di mosse per partita, che passa da 64,0 a 98,7. Questo risultato indica che le partite giocate dall'agente con Negamax tendono a proseguire più a lungo.
-
-Il margine medio rimane tuttavia negativo in entrambe le configurazioni. Nel caso di Negamax, la differenza tra margine medio e mediano è particolarmente evidente: il valore mediano è positivo, mentre quello medio è negativo. Ciò suggerisce la presenza di alcune sconfitte con margini particolarmente ampi, capaci di influenzare il valore medio nonostante il maggior numero di vittorie.
-
-\subsubsection{Risultati sul 19x19}
-
-La Tabella~\ref{tab:katago_19x19} riporta i risultati ottenuti sulla scacchiera $19 \times 19$.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Risultati degli esperimenti contro KataGo sul 19x19.}
-    \label{tab:katago_19x19}
-    \begin{tabular}{lrr}
-        \hline
-        \textbf{Metrica} & \textbf{Policy} & \textbf{Negamax} \\
-        \hline
-        Vittorie TRM     & 48              & 65               \\
-        Pareggi          & 0               & 0                \\
-        Sconfitte TRM    & 52              & 35               \\
-        Win rate         & 48,0\%          & 65,0\%           \\
-        Gap medio        & -1,3            & -62,8            \\
-        Gap mediano      & -0,5            & +3,5             \\
-        Mosse medie      & 216,5           & 393,8            \\
-        Durata test      & 17,6 min        & 35,7 min         \\
-        \hline
-    \end{tabular}
-\end{table}
-
-Anche sulla scacchiera $19 \times 19$ la ricerca Negamax determina un incremento della percentuale di vittorie, che passa dal 48\% al 65\%, con un miglioramento di 17 punti percentuali.
-
-Il numero medio di mosse per partita aumenta da 216,5 a 393,8. L'introduzione della ricerca comporta quindi partite mediamente più lunghe e un maggiore costo computazionale.
-
-Anche in questa configurazione si osserva una differenza tra margine medio e mediano. In particolare, il margine medio di Negamax è pari a -62,8 punti, mentre quello mediano è pari a +3,5 punti. Il valore medio risulta pertanto influenzato da alcune sconfitte particolarmente ampie, nonostante il numero complessivo di vittorie sia superiore a quello della policy diretta.
-
-\subsubsection{Confronto tra Policy e Negamax}
-
-La Figura~\ref{fig:katago_winrate} riassume le percentuali di vittoria ottenute nelle quattro configurazioni sperimentali.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\textwidth]{img/win_rate_katago.png}
-    \caption{Percentuale di vittorie del TRM contro KataGo nelle quattro configurazioni sperimentali.}
+    \includegraphics[width=0.78\textwidth]{img/win_rate_katago.png}
+    \caption{Percentuale di vittorie del TRM contro KataGo nelle quattro configurazioni.}
     \label{fig:katago_winrate}
 \end{figure}
 
-In entrambe le dimensioni della scacchiera, l'integrazione della ricerca Negamax migliora la percentuale di vittorie rispetto all'utilizzo diretto della policy.
+L'incremento del win rate comporta un costo computazionale maggiore. Le partite con Negamax hanno avuto una durata media di 4,3 minuti sul 9$\times$9 e 35,7 minuti sul 19$\times$19, rispetto a 2,7 e 17,6 minuti della policy diretta. Il tempo complessivo dedicato alla ricerca è stato di 79,89 secondi sul 9$\times$9 e 899,38 secondi sul 19$\times$19. Sono stati esplorati rispettivamente 123.573 e 301.538 nodi.
 
-Il miglioramento è particolarmente evidente nel caso del 9x9, dove la percentuale di vittorie passa dal 26\% al 58\%. Nel caso del 19x19 si osserva invece un incremento dal 48\% al 65\%.
+\subsection{Considerazioni}
 
-È tuttavia importante considerare che l'aumento delle vittorie non si traduce necessariamente in un miglioramento del margine medio. Come mostrano le tabelle precedenti, alcune sconfitte hanno margini particolarmente elevati e influenzano negativamente la media.
+I test mostrano che la policy appresa individua la mossa presente nei dati con frequenza maggiore quando si considerano più candidate, mentre le partite contro KataGo evidenziano un miglioramento del win rate associato all'integrazione della ricerca Negamax. Quest'ultimo risultato suggerisce che l'esplorazione di alcune risposte dell'avversario può correggere, in parte, i limiti della selezione basata esclusivamente sulla policy.
 
-Un ulteriore aspetto riguarda il costo della ricerca. Nel caso del 9x9, il tempo complessivo dedicato alla ricerca Negamax è stato pari a 79,89 secondi, con 123.573 nodi esplorati e 92.770 foglie valutate. Per il 19x19, il tempo complessivo di ricerca è stato pari a 899,38 secondi, con 301.538 nodi esplorati e 218.254 foglie valutate.
-
-Questi valori evidenziano come l'aumento della dimensione della scacchiera comporti un costo computazionale maggiore, anche a parità di profondità di ricerca. La ricerca Negamax permette quindi di migliorare le prestazioni in termini di vittorie, introducendo però un maggiore costo in termini di tempo di esecuzione.
-
-\subsection{Analisi dei risultati e considerazioni}
-
-I risultati ottenuti permettono di formulare alcune considerazioni sull'adattamento della Tiny Recursive Model al gioco del Go.
-
-In primo luogo, la valutazione sui dataset di test mostra che il modello è in grado di individuare la mossa corretta con una certa frequenza, soprattutto considerando un insieme di mosse candidate anziché la sola previsione principale. Le prestazioni risultano differenti tra le due dimensioni della scacchiera, evidenziando la maggiore difficoltà associata allo spazio di azione più ampio del 19x19.
-
-La valutazione contro KataGo evidenzia inoltre un miglioramento della percentuale di vittorie quando la policy viene integrata con una ricerca Negamax. Tale risultato suggerisce che l'utilizzo delle probabilità prodotte dalla TRM per guidare una ricerca limitata può contribuire a migliorare la selezione delle mosse rispetto all'utilizzo diretto della policy.
-
-D'altra parte, i margini medi delle partite mostrano che il numero di vittorie non è sufficiente, da solo, a descrivere completamente le prestazioni dell'agente. In particolare, le differenze tra media e mediana evidenziano la presenza di partite perse con margini molto ampi, che incidono significativamente sul risultato complessivo.
-
-Infine, la ricerca Negamax comporta un aumento del tempo di esecuzione e del numero di operazioni necessarie per selezionare una mossa. Questo aspetto evidenzia il compromesso tra qualità delle decisioni e costo computazionale: una ricerca più articolata può migliorare il comportamento dell'agente, ma richiede risorse aggiuntive.
-
-Nel complesso, gli esperimenti mostrano che la TRM può essere adattata al gioco del Go e utilizzata come componente di una policy per la selezione delle mosse. L'integrazione con una ricerca Negamax limitata rappresenta un ulteriore miglioramento pratico, pur lasciando emergere limiti nella qualità delle decisioni e nella gestione delle situazioni strategicamente più complesse.
+Il miglioramento non è privo di compromessi: la ricerca aumenta i tempi di esecuzione e non elimina le sconfitte con margini elevati, come mostrano i gap medi. Inoltre, i risultati sono riferiti a un singolo profilo di KataGo e a 100 partite per configurazione. Devono quindi essere interpretati come una valutazione sperimentale del sistema nelle condizioni specificate, non come una misura assoluta della sua forza di gioco.
