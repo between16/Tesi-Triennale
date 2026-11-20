@@ -1,0 +1,23 @@
+\subsection{Sviluppi Futuri}
+
+\subsubsection{Limiti del progetto}
+
+Un primo limite riguarda la natura dell'addestramento. Il modello è stato addestrato tramite apprendimento supervisionato su partite SGF, imparando quindi a prevedere le mosse giocate nelle posizioni presenti nei dati. Questo approccio consente di apprendere comportamenti derivati da partite esistenti, ma non ottimizza direttamente le decisioni in funzione della probabilità di vincere una partita.
+
+Un ulteriore limite riguarda la quantità e la qualità dei dati disponibili. Le prestazioni del modello dipendono dalle posizioni presenti nei dataset e dalla loro distribuzione: non tutte le situazioni strategiche sono rappresentate con la stessa frequenza e il modello può incontrare difficoltà in configurazioni poco presenti durante l'addestramento.
+
+Anche la ricerca Negamax presenta alcuni limiti. La profondità di ricerca contenuta e il numero limitato di mosse candidate permettono di contenere il costo computazionale, ma riducono la capacità di analizzare sequenze strategiche più articolate. Inoltre, la valutazione delle posizioni non terminali si basa su un'euristica progettata manualmente, anziché su una rete di valore appresa. Di conseguenza, la qualità delle decisioni dipende anche dalle approssimazioni introdotte da tale euristica.
+
+Infine, un limite significativo è rappresentato dalle risorse hardware disponibili. L'addestramento e la sperimentazione sono stati eseguiti localmente, utilizzando hardware consumer. Questo ha imposto vincoli sulla durata degli esperimenti, sulla quantità di dati elaborabili e sulle dimensioni dei modelli e delle configurazioni sperimentali. Tali vincoli hanno reso necessario adottare compromessi tra costo computazionale e possibilità di sperimentazione, soprattutto per la scacchiera $19 \times 19$.
+
+\subsubsection{Sviluppi futuri}
+
+Un primo possibile sviluppo consiste nel miglioramento del processo di addestramento, attraverso un maggior numero di epoche e l'utilizzo di dataset più ampi e diversificati. La disponibilità di hardware più performante o di risorse di calcolo dedicate permetterebbe inoltre di sperimentare configurazioni più complesse, modelli di dimensioni maggiori e tempi di addestramento più estesi, valutando in modo più approfondito il potenziale dell'architettura.
+
+Un'evoluzione particolarmente interessante riguarda l'introduzione di tecniche di Reinforcement Learning, seguendo un approccio ispirato a quello adottato da sistemi come AlphaGo. Invece di limitarsi a imitare le mosse presenti nelle partite del dataset, il modello potrebbe essere ulteriormente addestrato attraverso partite giocate contro sé stesso (\textit{self-play}), utilizzando gli esiti delle partite come segnale di apprendimento. Questo consentirebbe di ottimizzare progressivamente la strategia in funzione del risultato finale, superando alcuni dei limiti dell'apprendimento puramente supervisionato.
+
+Un ulteriore sviluppo potrebbe riguardare il miglioramento della ricerca Negamax, aumentando la profondità e il numero di mosse candidate, oppure introducendo una rete di valutazione (\textit{value network}) in grado di stimare la qualità di una posizione senza dover ricorrere esclusivamente a euristiche definite manualmente. In questo modo sarebbe possibile migliorare la valutazione degli stati intermedi e rendere la ricerca più efficace.
+
+Infine, sarebbe interessante ampliare la valutazione sperimentale, considerando un maggior numero di avversari, differenti livelli di forza e un numero più elevato di partite, così da ottenere una stima più robusta delle prestazioni e della generalizzazione dei modelli.
+
+Questi sviluppi rappresentano possibili direzioni per proseguire il lavoro, con l'obiettivo di migliorare sia la qualità delle decisioni sia l'efficienza computazionale del sistema, approfondendo ulteriormente le potenzialità delle architetture ricorsive applicate a problemi di ragionamento strategico.

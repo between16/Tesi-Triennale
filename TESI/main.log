@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  19 NOV 2026 17:29
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  19 NOV 2026 18:12
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -389,7 +389,7 @@ Overfull \hbox (0.75053pt too wide) in paragraph at lines 134--135
 []\OT1/cmr/m/n/10 Queste carat-ter-is-tiche cos-ti-tu-is-cono la base ar-chitet-turale del pro-getto svilup-
  []
 
-<img/trm_paper.png, id=606, 326.21875pt x 492.84125pt>
+<img/trm_paper.png, id=627, 326.21875pt x 492.84125pt>
 File: img/trm_paper.png Graphic file (type png)
 <use img/trm_paper.png>
 Package pdftex.def Info: img/trm_paper.png  used on input line 138.
@@ -710,7 +710,7 @@ Overfull \hbox (4.83388pt too wide) in paragraph at lines 143--1
  []
 
 [49] [50]) (./Chapters/37_gui.tex [51] [52] [53])) (./Chapters/4_risultati.tex [54] (./Chapters/41_valutazione_risultati.tex [55]
-<img/test_accuracy_topk.png, id=909, 570.276pt x 338.355pt>
+<img/test_accuracy_topk.png, id=930, 570.276pt x 338.355pt>
 File: img/test_accuracy_topk.png Graphic file (type png)
 <use img/test_accuracy_topk.png>
 Package pdftex.def Info: img/test_accuracy_topk.png  used on input line 78.
@@ -756,7 +756,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{table.12}) has
                                                   \__shipout_drop_firstpage_...
 l.207 
       ]
-<img/win_rate_katago.png, id=936, 570.276pt x 337.698pt>
+<img/win_rate_katago.png, id=956, 570.276pt x 337.698pt>
 File: img/win_rate_katago.png Graphic file (type png)
 <use img/win_rate_katago.png>
 Package pdftex.def Info: img/win_rate_katago.png  used on input line 214.
@@ -771,27 +771,32 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.233 I
-       n primo luogo, la valutazione sui dataset di test mostra che il model... <./img/win_rate_katago.png>])) (./Chapters/5_conclusioni.tex) (./Chapters/bibliografia.tex [61]) (./Chapters/ringraziamenti.tex) [62] (./main.aux)
+       n primo luogo, la valutazione sui dataset di test mostra che il model... <./img/win_rate_katago.png>])) (./Chapters/5_conclusioni.tex [61] (./Chapters/51_conclusioni_generali.tex) (./Chapters/52_sviluppi_futuri.tex [62]
+Overfull \hbox (7.25061pt too wide) in paragraph at lines 21--22
+[]\OT1/cmr/m/n/10 Infine, sarebbe in-ter-es-sante am-pli-are la va-l-u-tazione sper-i-men-tale, con-siderando
+ []
+
+)) (./Chapters/bibliografia.tex [63]) (./Chapters/ringraziamenti.tex) [64] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 5520F822F12A13C750E7F8C15C3E9585;21495.
+(rerunfilecheck)             Checksum: 76A9668B1420AB1071ADB514F5143991;22063.
  ) 
 Here is how much of TeX's memory you used:
- 12172 strings out of 467525
- 184731 string characters out of 5418982
- 796045 words of memory out of 5000000
- 40570 multiletter control sequences out of 15000+600000
+ 12194 strings out of 467525
+ 185315 string characters out of 5418982
+ 797051 words of memory out of 5000000
+ 40580 multiletter control sequences out of 15000+600000
  635398 words of font info for 67 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,764b,2087s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,779b,2087s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on main.pdf (62 pages, 584153 bytes).
+Output written on main.pdf (64 pages, 589973 bytes).
 PDF statistics:
- 1107 PDF objects out of 1200 (max. 8388607)
- 991 compressed objects within 10 object streams
- 304 named destinations out of 1000 (max. 500000)
- 808 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1137 PDF objects out of 1200 (max. 8388607)
+ 1018 compressed objects within 11 object streams
+ 310 named destinations out of 1000 (max. 500000)
+ 840 words of extra memory for PDF output out of 10000 (max. 10000000)
 

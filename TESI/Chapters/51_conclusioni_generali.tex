@@ -1,0 +1,10 @@
+\subsection{Conclusioni}
+
+Il progetto ha avuto come obiettivo l'adattamento della Tiny Recursive Model (TRM) al gioco del Go, valutando la possibilità di utilizzare un'architettura di ragionamento ricorsivo, originariamente sviluppata per affrontare problemi di natura differente, in un contesto caratterizzato da elevata complessità strategica e da uno spazio di azione variabile.
+
+Il lavoro ha portato alla realizzazione di un sistema completo, comprendente la preparazione dei dati a partire da partite in formato SGF, l'adattamento dell'architettura TRM, l'addestramento dei modelli per le scacchiere $9 \times 9$ e $19 \times 19$, un ambiente di gioco in grado di gestire le principali regole del Go e un'interfaccia grafica per consentire l'interazione con gli agenti sviluppati.
+
+La valutazione sperimentale ha permesso di analizzare sia le prestazioni dei modelli sui dati di test, sia il loro comportamento durante partite complete contro KataGo. I risultati hanno evidenziato che l'integrazione della policy TRM con una ricerca Negamax limitata migliora la percentuale di vittorie rispetto all'utilizzo diretto della policy, per entrambe le dimensioni della scacchiera considerate.
+
+Nel complesso, il progetto dimostra la fattibilità dell'adattamento della TRM al gioco del Go e mette in evidenza il potenziale dell'integrazione tra una rete neurale ricorsiva e un algoritmo di ricerca. Allo stesso tempo, gli esperimenti hanno evidenziato alcuni limiti che impediscono di considerare il sistema sviluppato una soluzione competitiva con motori di gioco specializzati.
+

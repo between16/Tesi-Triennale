@@ -260,6 +260,12 @@ INPUT ./img/win_rate_katago.png
 INPUT ./Chapters/5_conclusioni.tex
 INPUT ./Chapters/5_conclusioni.tex
 INPUT Chapters/5_conclusioni.tex
+INPUT ./Chapters/51_conclusioni_generali.tex
+INPUT ./Chapters/51_conclusioni_generali.tex
+INPUT Chapters/51_conclusioni_generali.tex
+INPUT ./Chapters/52_sviluppi_futuri.tex
+INPUT ./Chapters/52_sviluppi_futuri.tex
+INPUT Chapters/52_sviluppi_futuri.tex
 INPUT ./Chapters/bibliografia.tex
 INPUT ./Chapters/bibliografia.tex
 INPUT Chapters/bibliografia.tex
