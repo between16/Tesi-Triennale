@@ -1,60 +1,50 @@
 \subsection{Implementazione della ricerca Negamax}
 
-Per affiancare alla selezione diretta delle mosse una componente di ricerca, è stato implementato un agente basato sull'algoritmo Negamax con potatura alpha-beta. Questa modalità non sostituisce la rete TRM, ma la utilizza come supporto per individuare e ordinare le mosse da esplorare.
+Per affiancare alla selezione diretta delle mosse una componente di ricerca, è stato implementato un agente basato sull'algoritmo Negamax con potatura alpha-beta. La rete TRM continua a produrre le probabilità delle azioni, utilizzate per guidare l'esplorazione delle sequenze di gioco.
 
-La TRM continua infatti a generare una distribuzione di probabilità sulle azioni possibili, mentre Negamax utilizza tali informazioni per costruire un albero di ricerca composto da sequenze alternative di mosse. L'obiettivo è valutare non soltanto la mossa immediatamente più probabile, ma anche le possibili risposte dell'avversario e le conseguenze delle proprie scelte.
+La ricerca è implementata nel modulo \texttt{negamax.py} e opera senza modificare i pesi o l'architettura della rete neurale.
 
-\subsubsection{Generazione e ordinamento delle mosse candidate}
+\subsubsection{Generazione delle mosse candidate}
 
-A ogni nodo dell'albero, l'agente interroga la policy TRM per ottenere le probabilità associate alle azioni disponibili. Le mosse illegali vengono escluse utilizzando la maschera fornita dall'ambiente di gioco.
+A ogni nodo dell'albero, la policy TRM viene utilizzata per ottenere i punteggi delle azioni disponibili. Le mosse illegali vengono escluse mediante la maschera fornita dall'ambiente, mentre le rimanenti vengono ordinate in base alla probabilità assegnata dal modello.
 
-Le mosse legali vengono quindi ordinate in base alla probabilità assegnata dalla rete e vengono selezionate le prime $K$, dove $K$ rappresenta il numero massimo di candidate considerate per ciascun nodo. Questo limite consente di contenere il numero di rami esplorati, evitando di dover analizzare tutte le mosse possibili in ogni posizione.
+Per contenere il costo computazionale, vengono selezionate le prime \(K\) mosse, dove \(K\) rappresenta il numero massimo di candidate considerate per nodo.
 
-La selezione non si basa esclusivamente sulle indicazioni della rete. Vengono infatti aggiunte alcune mosse tatticamente rilevanti, anche quando la loro probabilità è inferiore rispetto a quella delle candidate selezionate inizialmente. In particolare, vengono considerate le libertà delle catene di pietre che si trovano in atari, così da includere le possibili mosse di cattura o di salvataggio.
+La selezione viene tuttavia integrata con alcune informazioni tattiche ricavate direttamente dalla scacchiera. In particolare, vengono aggiunte le mosse relative alle catene avversarie in atari, così da includere possibili catture e mosse di salvataggio anche quando non figurano tra le prime candidate indicate dalla rete.
 
-Anche la mossa PASS può essere inclusa tra le candidate: viene considerata quando rientra tra le azioni con probabilità più elevata oppure quando l'avversario ha già effettuato un PASS, situazione nella quale è necessario valutare anche la possibilità di terminare la partita.
+Anche \textit{PASS} può essere considerata: viene inclusa quando presenta una probabilità sufficientemente elevata oppure quando l'avversario ha già effettuato un PASS.
 
-Le mosse candidate vengono infine ordinate, dando precedenza a quelle tattiche e utilizzando successivamente la probabilità della policy come criterio di ordinamento. Questo approccio permette di combinare le indicazioni apprese dalla rete con alcune informazioni tattiche ricavate direttamente dalla configurazione della scacchiera.
+Le candidate vengono infine ordinate privilegiando le mosse tattiche e utilizzando la probabilità della policy come ulteriore criterio.
 
-\subsubsection{Ricerca a profondità limitata e potatura alpha-beta}
+\subsubsection{Ricerca e potatura alpha-beta}
 
-Una volta individuate le mosse candidate, l'agente esplora ricorsivamente le possibili sequenze di gioco attraverso l'algoritmo Negamax. La ricerca procede alternando le mosse dei due giocatori e valutando ogni posizione dal punto di vista del giocatore che deve effettuare la mossa.
+L'esplorazione procede ricorsivamente alternando le mosse dei due giocatori. L'algoritmo Negamax sfrutta la natura a somma zero del Go, invertendo il segno della valutazione restituita da ogni livello successivo per riportarla al punto di vista del giocatore corrente.
 
-La profondità massima della ricerca è configurabile e indica il numero di mosse consecutive considerate nell'albero. Ad esempio, una profondità pari a due permette di valutare una possibile mossa del giocatore corrente e la successiva risposta dell'avversario.
+La profondità massima è configurabile e determina il numero di mosse consecutive considerate nell'albero.
 
-L'algoritmo Negamax sfrutta il fatto che, in un gioco a somma zero, il valore di una posizione per un giocatore corrisponde all'opposto del valore della stessa posizione per l'avversario. Di conseguenza, a ogni livello ricorsivo il valore restituito dalla chiamata successiva viene invertito di segno.
+Per ridurre il numero di posizioni esplorate viene utilizzata la potatura alpha-beta. I limiti \(\alpha\) e \(\beta\) rappresentano rispettivamente il miglior valore già garantito al giocatore corrente e il limite oltre il quale il ramo non può migliorare la decisione. Quando \(\alpha\geq\beta\), l'esplorazione delle ulteriori mosse del ramo viene interrotta.
 
-Per ridurre il numero di posizioni da esplorare viene utilizzata la potatura alpha-beta. Durante la ricerca vengono mantenuti due limiti, $\alpha$ e $\beta$, che rappresentano rispettivamente il miglior valore già garantito al giocatore corrente e il limite oltre il quale il giocatore avversario non permetterebbe di proseguire lungo quel ramo. Quando $\alpha \geq \beta$, le ulteriori mosse del ramo possono essere escluse dalla ricerca, poiché non potrebbero influenzare la decisione finale.
-
-Prima di esplorare ciascuna mossa, viene inoltre creata una copia indipendente dell'ambiente di gioco. In questo modo ogni ramo dell'albero può modificare la propria configurazione della scacchiera senza alterare lo stato della partita originale o quello degli altri rami.
+Un aspetto importante riguarda la gestione dello stato dell'ambiente: prima di esplorare ciascuna mossa viene creata una copia indipendente della partita. In questo modo le modifiche apportate a un ramo non alterano lo stato originale né quello degli altri rami dell'albero.
 
 \subsubsection{Funzione euristica di valutazione}
 
-Quando la ricerca raggiunge la profondità massima senza incontrare una condizione terminale, la posizione viene valutata attraverso una funzione euristica. Questa valutazione non è prodotta da una rete neurale dedicata, ma viene calcolata direttamente a partire dallo stato della partita.
+Quando viene raggiunta la profondità massima senza incontrare una condizione terminale, la posizione viene valutata mediante una funzione euristica implementata direttamente a partire dallo stato della scacchiera.
 
-La funzione considera principalmente due aspetti:
+La valutazione considera due componenti principali:
 
 \begin{itemize}
-    \item \textbf{Differenza del punteggio territoriale}: viene calcolata la differenza tra il punteggio del Nero e quello del Bianco, secondo il sistema di conteggio dell'area utilizzato dall'ambiente di gioco.
-    \item \textbf{Sicurezza dei gruppi}: vengono analizzate le libertà delle catene di pietre presenti sulla scacchiera, applicando una penalità ai gruppi più vulnerabili. In particolare, la penalità è maggiore per i gruppi in atari o con un numero ridotto di libertà.
+    \item \textbf{Punteggio territoriale}: differenza tra il punteggio del Nero e quello del Bianco, calcolata secondo il sistema di conteggio dell'area utilizzato dall'ambiente.
+    \item \textbf{Sicurezza dei gruppi}: penalizzazione delle catene di pietre vulnerabili, con particolare attenzione ai gruppi in atari o caratterizzati da un numero ridotto di libertà.
 \end{itemize}
 
-Il contributo dei due aspetti viene combinato in un unico valore, successivamente adattato al punto di vista del giocatore corrente. In questo modo, una posizione viene valutata positivamente quando presenta un vantaggio territoriale e una configurazione tatticamente favorevole per il giocatore considerato.
+I due contributi vengono combinati in un unico valore, adattato al giocatore corrente. La funzione costituisce una stima euristica della posizione e non una valutazione appresa dalla TRM, che è stata addestrata esclusivamente per produrre una policy.
 
-È importante sottolineare che questa funzione rappresenta una stima euristica della posizione e non una valutazione appresa durante l'addestramento. La TRM, infatti, è stata progettata e addestrata per generare una policy, ossia una distribuzione di probabilità sulle mosse, e non per stimare direttamente il valore di una posizione o la probabilità di vittoria.
+\subsubsection{Condizioni terminali e scelta della mossa}
 
-\subsubsection{Gestione delle condizioni terminali}
+A ogni nodo viene verificato se la partita è terminata. In caso affermativo, la valutazione utilizza il punteggio effettivo della partita anziché la funzione euristica.
 
-Durante la ricerca viene verificato a ogni nodo se la partita è terminata. Nel caso in cui venga raggiunta una posizione terminale, la valutazione viene effettuata utilizzando il punteggio effettivo della partita, anziché la funzione euristica.
+Il valore terminale deriva dalla differenza tra i punteggi del Nero e del Bianco, adattata al giocatore di riferimento. Viene inoltre aggiunto un bonus di ampiezza elevata per distinguere le vittorie e le sconfitte definitive dalle semplici stime delle posizioni non terminali.
 
-Il valore terminale viene calcolato a partire dalla differenza tra il punteggio del Nero e quello del Bianco, adattandolo al giocatore di riferimento. Per distinguere chiaramente un risultato definitivo da una semplice stima euristica, viene inoltre aggiunto un bonus di ampiezza elevata al valore delle vittorie e delle sconfitte.
+Al termine dell'esplorazione, l'agente restituisce la prima mossa della sequenza individuata come migliore. L'ambiente applica quindi l'azione e aggiorna lo stato effettivo della partita.
 
-In questo modo, quando la ricerca individua una sequenza che conduce a una vittoria o a una sconfitta, il relativo risultato assume priorità rispetto alle valutazioni delle posizioni non terminali.
-
-Al termine della ricerca, l'agente restituisce la prima mossa della sequenza individuata come migliore. L'ambiente di gioco applica quindi tale mossa e aggiorna lo stato effettivo della partita.
-
-\paragraph{Considerazioni sull'integrazione con la TRM}
-
-L'introduzione di Negamax costituisce un'estensione del processo di inferenza e non comporta modifiche alla rete neurale. I pesi della TRM rimangono invariati e vengono utilizzati per generare le probabilità delle mosse candidate durante la ricerca.
-
-La componente Negamax opera quindi al di sopra della policy esistente, combinando le indicazioni del modello con l'esplorazione di sequenze di gioco, la valutazione euristica delle posizioni e la potatura alpha-beta. Non è pertanto necessario eseguire un nuovo addestramento per utilizzare questa modalità: è sufficiente caricare il checkpoint della TRM già addestrata e configurare i parametri della ricerca, come la profondità massima e il numero di mosse candidate.
+L'integrazione di Negamax costituisce pertanto un'estensione del processo di inferenza: la TRM fornisce le indicazioni iniziali sulle mosse, mentre la ricerca considera le possibili risposte dell'avversario e le conseguenze delle sequenze esplorate. Non è necessario effettuare un nuovo addestramento, ma è sufficiente caricare il checkpoint esistente e configurare i parametri della ricerca, tra cui profondità massima e numero di candidate.

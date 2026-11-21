@@ -1,59 +1,29 @@
 \subsection{Integrazione con ambiente di gioco e agente}
 
-La rete neurale descritta nelle sezioni precedenti costituisce il componente responsabile della previsione delle mosse, ma da sola non è sufficiente per realizzare un sistema in grado di giocare autonomamente a Go. È infatti necessario integrare il modello con componenti che gestiscano le regole del gioco, interpretino le sue previsioni e consentano l'interazione con una partita.
+La rete neurale costituisce il componente responsabile della previsione delle mosse, ma non è sufficiente da sola per realizzare un sistema in grado di giocare autonomamente a Go. È necessario integrarla con componenti dedicate alla gestione delle regole, alla selezione delle azioni e all'interazione con la partita.
 
-Per questo motivo, il sistema è stato organizzato separando tre responsabilità principali: la gestione dell'ambiente di gioco, affidata a \texttt{game\_env.py}; la selezione delle mosse, gestita dagli agenti definiti in \texttt{agents.py}; e l'interazione con l'utente, realizzata attraverso l'interfaccia grafica di \texttt{app.py}.
+L'architettura distingue quindi tre responsabilità principali: la gestione dello stato di gioco, affidata all'ambiente; l'interpretazione delle previsioni della rete, affidata agli agenti; e l'interazione con l'utente, realizzata attraverso l'interfaccia grafica.
 
-Questa separazione permette di mantenere indipendenti la previsione effettuata dalla rete neurale, la verifica della correttezza delle azioni e le modalità con cui il sistema viene utilizzato.
+\subsubsection{Ambiente e agenti}
 
-\subsubsection{Ambiente di gioco}
+L'ambiente di gioco rappresenta il riferimento unico per la gestione dello stato della partita e delle regole del Go. Si occupa di verificare la legalità delle mosse, applicarne gli effetti sulla scacchiera e determinare le condizioni di terminazione.
 
-L'ambiente di gioco, implementato nel modulo \texttt{game\_env.py}, ha il compito di mantenere lo stato effettivo della partita e di gestire le regole necessarie alla sua evoluzione. Esso rappresenta il riferimento per la verifica della legalità delle mosse, indipendentemente dal fatto che queste siano proposte da un agente artificiale o da un giocatore umano.
+Gli agenti utilizzano invece le informazioni fornite dall'ambiente per decidere quale azione eseguire. In particolare, l'agente basato sulla TRM interpreta i logits prodotti dalla rete e seleziona una mossa tra quelle consentite. La verifica della legalità rimane comunque responsabilità dell'ambiente, mantenendo separati il processo di previsione e l'applicazione delle regole.
 
-L'ambiente gestisce la disposizione delle pietre sulla scacchiera, il giocatore di turno, la cronologia degli stati e le condizioni di terminazione della partita. In particolare, sono state implementate le seguenti regole:
-
-\begin{itemize}
-    \item \textbf{Divieto di suicidio:} non è consentito effettuare una mossa che comporti l'eliminazione del gruppo di pietre appena posizionato per mancanza di libertà.
-    \item \textbf{Positional superko:} viene impedito il ripetersi di una configurazione della scacchiera già verificatasi durante la partita.
-    \item \textbf{PASS:} l'azione di passaggio è sempre consentita durante una partita in corso.
-    \item \textbf{Terminazione:} la partita termina quando entrambi i giocatori effettuano PASS consecutivamente.
-    \item \textbf{Calcolo del punteggio:} viene utilizzato il sistema di conteggio basato sull'area, secondo l'impostazione Tromp-Taylor, considerando anche il komi assegnato al Bianco.
-\end{itemize}
-
-L'ambiente fornisce inoltre una maschera delle mosse legali, che identifica le azioni effettivamente disponibili nella posizione corrente. Questa informazione viene utilizzata dall'agente per escludere le mosse non valide prima della selezione.
-
-La gestione delle regole è quindi completamente separata dalla rete neurale: il modello può proporre una mossa sulla base delle proprie previsioni, ma è l'ambiente a determinarne la validità e ad applicarne gli effetti sullo stato della partita.
-
-\subsubsection{Agente e selezione delle mosse}
-
-Il modulo \texttt{agents.py} definisce gli agenti che interagiscono con l'ambiente di gioco. In particolare, l'agente basato sulla TRM ha il compito di utilizzare il modello addestrato per trasformare lo stato corrente della partita in un'azione da eseguire.
-
-Durante l'inizializzazione, l'agente carica il checkpoint contenente i pesi appresi durante l'addestramento e ricostruisce il modello utilizzando la configurazione salvata. Prima di ogni decisione, prepara la rappresentazione dello stato della partita secondo i sette canali descritti nella Sezione 2.2, quindi esegue il modello in modalità inferenza per ottenere i logits associati alle possibili azioni.
-
-I punteggi prodotti dalla policy head vengono successivamente combinati con la maschera delle mosse legali fornita dall'ambiente. Le azioni non valide vengono escluse dalla distribuzione, assegnando loro un logit pari a $-\infty$. Viene quindi applicata la funzione softmax per ottenere una distribuzione di probabilità sulle sole azioni legali.
-
-La selezione finale non avviene necessariamente scegliendo in modo deterministico l'azione con probabilità massima. L'agente considera infatti tutte le mosse legali la cui probabilità è almeno pari al 98\% della probabilità migliore e ne seleziona una casualmente. Questa strategia introduce una limitata variabilità nelle decisioni, mantenendo la scelta vicina alle preferenze espresse dal modello.
-
-L'agente prevede inoltre una penalizzazione configurabile del logit associato a PASS nelle fasi iniziali della partita, allo scopo di ridurre la probabilità di interrompere prematuramente il gioco.
-
-La responsabilità dell'agente è quindi quella di interpretare le previsioni della rete e convertirle in un'azione concreta, senza occuparsi direttamente dell'applicazione delle regole o della modifica dello stato della scacchiera, che rimangono compiti dell'ambiente.
-
-\subsubsection{Interfaccia grafica}
-
-Per consentire l'utilizzo del sistema in modo interattivo è stata sviluppata un'interfaccia grafica, implementata nel modulo \texttt{app.py} attraverso la libreria Pygame.
-
-L'interfaccia permette di visualizzare lo stato della scacchiera e di interagire con la partita, supportando sia modalità di gioco tra un utente umano e l'agente basato sulla TRM, sia partite tra due agenti autonomi. Sono inoltre disponibili le funzionalità necessarie per avviare una nuova partita e gestire lo svolgimento di quelle in corso.
-
-Dal punto di vista architetturale, l'interfaccia non implementa direttamente la logica del gioco né il processo di previsione delle mosse. Si limita a coordinare l'interazione tra giocatori, agenti e ambiente, delegando a questi ultimi le rispettive responsabilità.
+Questa organizzazione permette di utilizzare differenti tipologie di agenti senza modificare il funzionamento dell'ambiente di gioco.
 
 \subsubsection{Estensione della selezione delle mosse tramite Negamax}
 
-Oltre alla selezione diretta basata sulla policy della TRM, il sistema prevede una modalità alternativa che integra un algoritmo di ricerca basato su Negamax.
+Oltre alla selezione diretta basata sulla policy della TRM, è stata introdotta una modalità alternativa basata sull'algoritmo Negamax con potatura alpha-beta.
 
-Questa funzionalità è stata introdotta come componente separata dall'agente standard, in modo da poter confrontare due strategie di selezione delle mosse senza modificare l'architettura della rete neurale o il processo di addestramento.
+In questa configurazione, la rete continua a produrre le proprie previsioni, utilizzate per individuare e ordinare le mosse candidate da esplorare. Negamax considera inoltre le possibili risposte dell'avversario, valutando le conseguenze delle sequenze di gioco attraverso una funzione euristica basata sul punteggio territoriale e sulla vulnerabilità dei gruppi di pietre.
 
-Nella modalità diretta, l'agente utilizza le probabilità prodotte dalla policy per selezionare una delle mosse legali più promettenti. Con Negamax, invece, le previsioni della TRM vengono utilizzate per ordinare e individuare un insieme limitato di mosse candidate da esplorare. L'algoritmo considera quindi anche le possibili risposte dell'avversario, valutando le posizioni raggiunte durante la ricerca.
+La ricerca costituisce un'estensione del processo di inferenza e non comporta modifiche all'architettura o ai pesi della rete neurale. Rimane pertanto disponibile anche la modalità di selezione diretta, che utilizza esclusivamente la policy prodotta dalla TRM.
 
-La valutazione delle posizioni non si basa su una seconda rete neurale o su una value head appresa durante l'addestramento. Viene invece utilizzata un'euristica progettata nel progetto, che considera principalmente il punteggio territoriale stimato e la vulnerabilità dei gruppi di pietre in funzione del numero di libertà disponibili.
+\subsubsection{Interfaccia grafica}
 
-Negamax costituisce pertanto un'estensione utilizzata durante l'inferenza: la TRM continua a fornire le previsioni sulle mosse, mentre la ricerca le utilizza per guidare l'esplorazione delle possibili evoluzioni della partita. Rimane comunque disponibile la modalità di selezione diretta, che consente di utilizzare il modello senza effettuare alcuna ricerca aggiuntiva.
+Per consentire l'utilizzo interattivo del sistema è stata sviluppata un'interfaccia grafica attraverso la libreria Pygame.
+
+L'interfaccia permette di visualizzare la scacchiera e di gestire le partite, supportando sia il confronto tra un giocatore umano e un agente automatico sia le partite tra due agenti autonomi.
+
+Dal punto di vista architetturale, l'interfaccia svolge esclusivamente una funzione di coordinamento e visualizzazione: la gestione delle regole rimane affidata all'ambiente, mentre la selezione delle mosse è demandata agli agenti.

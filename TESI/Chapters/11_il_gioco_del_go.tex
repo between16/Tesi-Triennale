@@ -2,13 +2,13 @@
 
 Il Go è un gioco da tavolo strategico per due giocatori, originario della Cina e successivamente diffusosi in altri paesi dell'Asia orientale, in particolare in Giappone e Corea. I due giocatori, uno con le pietre nere e l'altro con quelle bianche, si alternano nel posizionamento delle proprie pietre su una scacchiera, con l'obiettivo di conquistare il controllo di una porzione di territorio maggiore rispetto all'avversario.
 
-Il gioco si svolge su una griglia, denominata *goban*, costituita da linee orizzontali e verticali che si intersecano formando dei punti di gioco. Le dimensioni tradizionali della scacchiera sono 19×19, per un totale di 361 intersezioni. Sono tuttavia utilizzate anche dimensioni ridotte, come 9×9 e 13×13, particolarmente adatte a partite più brevi e a contesti di apprendimento.
+Il gioco si svolge su una griglia, denominata "goban", costituita da linee orizzontali e verticali che si intersecano formando dei punti di gioco. Le dimensioni tradizionali della scacchiera sono 19×19, per un totale di 361 intersezioni. Sono tuttavia utilizzate anche dimensioni ridotte, come 9×9 e 13×13, particolarmente adatte a partite più brevi e a contesti di apprendimento.
 
 A differenza di altri giochi da tavolo, le pietre non vengono posizionate all'interno delle caselle, ma sulle intersezioni della griglia. Una volta collocata, una pietra rimane nella propria posizione fino a quando non viene eventualmente catturata dall'avversario. Le pietre dello stesso colore che si trovano su intersezioni adiacenti orizzontalmente o verticalmente formano un gruppo e condividono le proprie libertà.
 
 Le libertà rappresentano le intersezioni libere direttamente adiacenti a una pietra o a un gruppo di pietre. Quando un gruppo perde tutte le proprie libertà, viene catturato e rimosso dalla scacchiera. Per questo motivo, durante una partita, i giocatori devono bilanciare l'espansione del proprio territorio con la necessità di proteggere i propri gruppi e limitare le possibilità dell'avversario.
 
-Una regola fondamentale del Go è il divieto di ripetizione immediata della posizione precedente, noto come regola del *ko*. Questa impedisce che una sequenza di catture possa generare una ripetizione infinita delle stesse configurazioni. A seconda del regolamento adottato, possono essere previste ulteriori restrizioni sulla ripetizione delle posizioni.
+Una regola fondamentale del Go è il divieto di ripetizione immediata della posizione precedente, noto come regola del "ko". Questa impedisce che una sequenza di catture possa generare una ripetizione infinita delle stesse configurazioni. A seconda del regolamento adottato, possono essere previste ulteriori restrizioni sulla ripetizione delle posizioni.
 
 Durante il proprio turno, un giocatore può anche decidere di passare, rinunciando a effettuare una mossa. La partita termina quando entrambi i giocatori passano consecutivamente. Si procede quindi alla determinazione del punteggio, che dipende dal territorio controllato e, in funzione del regolamento adottato, dal numero di pietre catturate e da altri elementi. Vince il giocatore che ottiene il punteggio maggiore.
 
@@ -26,6 +26,7 @@ La complessità del Go non deriva esclusivamente dal numero di intersezioni disp
 
 A ogni turno, il giocatore deve scegliere tra un insieme di azioni legali, valutando non soltanto gli effetti immediati della propria mossa, ma anche le possibili risposte dell'avversario. Una scelta apparentemente vantaggiosa nel breve periodo può infatti compromettere la posizione complessiva nelle fasi successive della partita.
 
-Inoltre, a differenza di problemi nei quali è possibile determinare una soluzione attraverso una sequenza di operazioni indipendenti dalle decisioni di un avversario, nel Go ogni azione modifica lo stato della scacchiera e influenza le possibilità di entrambi i giocatori. La valutazione di una mossa deve quindi tenere conto di un ambiente in continua evoluzione e di un processo decisionale competitivo.
+Inoltre, a differenza di problemi nei quali è possibile determinare una soluzione attraverso una sequenza di operazioni indipendenti dalle decisioni di un avversario, nel Go ogni azione modifica lo stato della scacchiera e influenza le possibilità di entrambi i giocatori.
+La valutazione di una mossa deve quindi tenere conto di un ambiente in continua evoluzione e di un processo decisionale competitivo.
 
 Queste caratteristiche rendono particolarmente complessa la ricerca di una strategia efficace. Il numero elevato di mosse possibili, combinato con la profondità delle sequenze di gioco e con la necessità di prevedere le risposte dell'avversario, rende difficile esplorare esaustivamente tutte le possibili evoluzioni della partita. La scelta di una mossa richiede pertanto un processo di valutazione capace di individuare le azioni più promettenti senza dover necessariamente analizzare ogni possibile continuazione.

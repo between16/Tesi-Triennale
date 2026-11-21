@@ -1,57 +1,51 @@
 \subsection{Ambiente di gioco e interfaccia grafica}
 
-Per consentire l'esecuzione e la valutazione pratica del modello è stato sviluppato un ambiente di gioco dedicato, affiancato da un'interfaccia grafica realizzata con la libreria Pygame. Questa componente permette di gestire una partita completa, applicare le regole del Go e integrare gli agenti sviluppati, offrendo inoltre la possibilità di osservare direttamente il comportamento del modello.
+Per consentire l'esecuzione delle partite e l'interazione con gli agenti è stato sviluppato un ambiente di gioco, integrato con un'interfaccia grafica realizzata mediante Pygame.
 
 \subsubsection{Implementazione dell'ambiente di gioco}
 
-La gestione della partita è affidata alla classe \texttt{GoGameEnv}, implementata nel modulo \texttt{game\_env.py}. L'ambiente mantiene lo stato corrente della scacchiera, il giocatore di turno, la cronologia delle configurazioni precedenti e le informazioni necessarie a determinare la terminazione della partita.
+La gestione della partita è affidata alla classe \texttt{GoGameEnv}, implementata nel modulo \texttt{game\_env.py}. L'ambiente mantiene lo stato della scacchiera, il giocatore di turno, la cronologia delle configurazioni e le informazioni necessarie a determinare la terminazione della partita.
 
-Per la rappresentazione e la modifica della scacchiera viene utilizzata la libreria \texttt{sgfmill}, mentre la logica di gestione della partita è implementata nel progetto. In particolare, l'ambiente costituisce il riferimento unico per la verifica della legalità delle mosse, evitando che agenti e interfaccia grafica debbano implementare separatamente le regole.
+Per la rappresentazione e la modifica della scacchiera viene utilizzata la libreria \texttt{sgfmill}, mentre la logica di gestione delle regole è implementata nel progetto.
 
-Ogni azione viene identificata attraverso un indice intero: gli indici da $0$ a $N^2-1$ rappresentano le intersezioni della scacchiera, mentre l'indice $N^2$ identifica la mossa PASS. Questa rappresentazione è coerente con lo spazio delle azioni utilizzato dalla policy TRM.
+Le azioni vengono rappresentate mediante indici interi: i valori da \(0\) a \(N^2-1\) identificano le intersezioni, mentre \(N^2\) rappresenta l'azione \textit{PASS}. Questa codifica è coerente con lo spazio delle azioni utilizzato dalla Policy Head.
 
-Prima di applicare una mossa sulla scacchiera, l'ambiente ne verifica la legalità. Oltre a controllare che l'intersezione sia libera e appartenga ai limiti della scacchiera, vengono gestiti i casi di suicidio e di ripetizione di una configurazione precedente. In particolare, è stata adottata la regola del positional superko, che impedisce di ricreare una qualsiasi configurazione della scacchiera già incontrata durante la partita.
+Prima di applicare una mossa, l'ambiente ne verifica la legalità, controllando che l'intersezione sia libera e interna alla scacchiera, gestendo inoltre i casi di suicidio e di ripetizione delle configurazioni. Per quest'ultimo aspetto è stata adottata la regola del \textit{positional superko}, che impedisce di ricreare una configurazione già incontrata durante la partita.
 
-La gestione delle mosse comprende inoltre le catture delle catene avversarie, affidate alle operazioni sulla scacchiera, e l'aggiornamento dello stato del gioco. Le mosse PASS sono sempre ammesse durante una partita attiva; due PASS consecutivi determinano invece la terminazione della partita.
+L'ambiente gestisce anche le catture delle catene avversarie e aggiorna lo stato del gioco dopo ogni azione. Le mosse PASS sono ammesse durante una partita attiva, mentre due PASS consecutivi determinano la terminazione.
 
-L'ambiente mantiene anche una cronologia delle ultime tre configurazioni della scacchiera. Questa informazione viene aggiornata dopo ogni mossa, compreso il PASS, ed è utilizzata per costruire la rappresentazione a sette canali richiesta dal modello durante l'inferenza.
+Viene inoltre mantenuta una cronologia delle ultime tre configurazioni della scacchiera, aggiornata dopo ogni mossa e utilizzata per costruire la rappresentazione a sette canali richiesta dal modello.
 
 \subsubsection{Calcolo del punteggio}
 
-Al termine della partita, il risultato viene determinato attraverso un sistema di conteggio basato sull'area, nello stile Tromp-Taylor. Il punteggio di ciascun giocatore comprende le pietre del proprio colore presenti sulla scacchiera e le intersezioni vuote appartenenti a regioni delimitate esclusivamente da pietre del medesimo colore.
+Il risultato della partita viene determinato mediante un sistema di conteggio basato sull'area, nello stile Tromp-Taylor. Il punteggio di ciascun giocatore comprende le pietre del proprio colore presenti sulla scacchiera e le intersezioni vuote appartenenti a regioni delimitate esclusivamente dalle proprie pietre.
 
-Al punteggio del Bianco viene inoltre aggiunto il komi, un valore configurabile che compensa il vantaggio iniziale del Nero, che effettua la prima mossa. Nel progetto è stato adottato un valore predefinito pari a 7.5 punti.
+Al punteggio del Bianco viene aggiunto il \textit{komi}, che compensa il vantaggio iniziale del Nero. Nel progetto è stato adottato un valore predefinito pari a 7.5 punti.
 
-Il metodo \texttt{calculate\_score()} restituisce i punteggi dei due giocatori, il vincitore e il margine finale. Il risultato viene utilizzato sia per determinare l'esito della partita sia dalle componenti di ricerca che necessitano di valutare una posizione.
+Il metodo \texttt{calculate\_score()} restituisce i punteggi dei due giocatori, il vincitore e il margine finale. Queste informazioni vengono utilizzate sia per determinare l'esito della partita sia durante la ricerca Negamax.
 
 \subsubsection{Integrazione degli agenti}
 
-L'ambiente è progettato per interagire con diverse tipologie di agenti, mantenendo separata la logica di gioco dalla strategia utilizzata per scegliere le mosse.
+L'ambiente permette di interagire con differenti tipologie di agenti, mantenendo separata la gestione delle regole dalla strategia di selezione delle mosse.
 
-L'agente umano riceve le azioni direttamente dall'interfaccia grafica, mentre gli agenti automatici implementano un metodo comune per ottenere la prossima mossa a partire dallo stato dell'ambiente. In questo modo è possibile utilizzare sia l'agente basato sulla policy TRM sia la variante che integra la ricerca Negamax senza modificare il funzionamento dell'ambiente.
+L'agente umano riceve le azioni dall'interfaccia grafica, mentre gli agenti automatici determinano la propria mossa a partire dallo stato dell'ambiente. Sono supportate sia la selezione diretta mediante policy TRM sia la variante che integra la ricerca Negamax.
 
-Prima di applicare una mossa, l'ambiente ne verifica nuovamente la legalità. Questo controllo garantisce che anche le azioni provenienti da componenti esterne rispettino le regole della partita e che lo stato venga aggiornato soltanto in seguito a una mossa valida.
+Prima di aggiornare la partita, l'ambiente verifica nuovamente la legalità dell'azione ricevuta, garantendo che anche le mosse provenienti da componenti esterne rispettino le regole del gioco.
 
 \subsubsection{Interfaccia grafica Pygame}
 
-Per consentire l'interazione con il sistema è stata realizzata un'interfaccia grafica utilizzando Pygame, implementata nel modulo \texttt{app.py}. L'applicazione visualizza la scacchiera, le pietre presenti, il giocatore di turno e le informazioni relative alla partita.
+L'interfaccia è implementata nel modulo \texttt{app.py} mediante la libreria Pygame. Consente di visualizzare la scacchiera, le pietre presenti, il giocatore di turno e le informazioni relative alla partita.
 
-L'interfaccia permette di selezionare la modalità di gioco, avviare una nuova partita e, quando previsto, mettere in pausa l'esecuzione. Sono inoltre disponibili controlli per regolare il ritardo tra le mosse automatiche, rendendo più semplice osservare le decisioni degli agenti durante una partita.
+L'applicazione permette di configurare e avviare una nuova partita, selezionare la modalità di gioco e regolare il ritardo tra le mosse automatiche. Le azioni umane vengono inserite selezionando un'intersezione oppure utilizzando il comando PASS; quelle automatiche vengono invece richieste all'agente quando è il suo turno.
 
-Le mosse umane vengono inserite selezionando un'intersezione libera della scacchiera oppure utilizzando il comando PASS. L'interfaccia inoltra l'azione all'ambiente, che ne verifica la legalità e aggiorna lo stato della partita. Le mosse degli agenti automatici vengono invece richieste quando il turno appartiene a un giocatore controllato dall'intelligenza artificiale.
+L'interfaccia inoltra le azioni all'ambiente, che ne verifica la legalità e aggiorna lo stato della partita. Al termine viene mostrato il risultato del conteggio, con indicazione del vincitore e del margine finale.
 
-Al termine della partita, l'interfaccia mostra il risultato del conteggio, indicando il vincitore e il margine di punteggio.
-
-\subsubsection{Modalità di esecuzione}
-
-L'applicazione supporta tre configurazioni principali:
+Sono disponibili tre principali modalità di esecuzione:
 
 \begin{itemize}
-    \item \textbf{Umano contro TRM}: un giocatore umano affronta l'agente automatico, con possibilità di scegliere quale dei due colori controllare.
-    \item \textbf{TRM contro TRM}: entrambi i giocatori sono controllati da agenti automatici. Questa modalità consente di osservare partite complete senza intervento umano.
-    \item \textbf{Selezione della strategia}: per gli agenti automatici è possibile scegliere tra la selezione diretta delle mosse tramite policy TRM e la ricerca guidata da Negamax. Quest'ultima può essere configurata specificando la profondità della ricerca e il numero massimo di mosse candidate considerate.
+    \item \textbf{Umano contro TRM}: un giocatore umano affronta un agente automatico, potendo scegliere quale colore controllare.
+    \item \textbf{TRM contro TRM}: entrambi i giocatori sono controllati da agenti automatici, consentendo l'esecuzione di partite senza intervento umano.
+    \item \textbf{Selezione della strategia}: gli agenti possono utilizzare la policy diretta oppure la ricerca Negamax, configurabile attraverso la profondità e il numero massimo di mosse candidate.
 \end{itemize}
 
-L'applicazione supporta entrambe le dimensioni di scacchiera considerate nel progetto, $9 \times 9$ e $19 \times 19$, caricando il checkpoint corrispondente alla configurazione selezionata.
-
-Nel complesso, l'ambiente e l'interfaccia grafica costituiscono il livello applicativo del sistema: il primo garantisce la gestione coerente delle regole e dello stato della partita, mentre la seconda permette di interagire con gli agenti e osservare il loro comportamento.
+L'applicazione supporta entrambe le dimensioni di scacchiera considerate, \(9\times9\) e \(19\times19\), caricando il checkpoint corrispondente alla configurazione selezionata.

@@ -1,16 +1,12 @@
 \subsection{Inferenza e selezione delle mosse}
 
-Durante una partita, il modello viene utilizzato per individuare la mossa da eseguire a partire dallo stato corrente della scacchiera. Questa fase, denominata inferenza, è gestita dalla classe \texttt{TRMAgent}, implementata nel file \texttt{agents.py}.
+Durante una partita, il modello viene utilizzato per individuare la mossa da eseguire a partire dallo stato corrente della scacchiera. Questa fase è gestita dalla classe \texttt{TRMAgent}, implementata nel file \texttt{agents.py}.
 
-A differenza della fase di addestramento, durante l'inferenza i parametri della rete rimangono invariati. Il modello viene utilizzato per produrre le predizioni, mentre l'agente si occupa di adattarle alle regole del gioco e di selezionare l'azione da eseguire.
+A differenza dell'addestramento, durante l'inferenza i parametri della rete rimangono invariati. L'agente carica il modello, prepara l'input, esegue il forward pass e trasforma le predizioni in un'azione compatibile con le regole del gioco.
 
-Il processo comprende il caricamento del modello, la preparazione dell'input, il calcolo dei logits, il filtraggio delle mosse illegali e la selezione finale dell'azione.
+\subsubsection{Caricamento del modello e preparazione dell'input}
 
-\subsubsection{Caricamento del modello}
-
-All'inizializzazione dell'agente viene caricato il checkpoint \texttt{best\_model.pt}, contenente i pesi selezionati durante l'addestramento e la configurazione dell'architettura.
-
-La configurazione viene utilizzata per ricostruire un'istanza della classe \texttt{GoTRMModel}, sulla quale vengono successivamente caricati i parametri salvati:
+All'inizializzazione, l'agente carica il checkpoint \texttt{best\_model.pt}, dal quale recupera la configurazione necessaria a ricostruire il modello e i relativi pesi:
 
 \begin{lstlisting}[language=Python, caption={Caricamento del modello dal checkpoint}, label={lst:inference_load}]
 checkpoint = torch.load(checkpoint_path, map_location=self.device)
@@ -21,123 +17,87 @@ self.model.load_state_dict(checkpoint["model_state_dict"])
 self.model.eval()
 \end{lstlisting}
 
-Il modello viene trasferito sul dispositivo disponibile, selezionato tra GPU CUDA, Apple MPS e CPU, e impostato in modalità valutazione mediante \texttt{eval()}. Quest'ultima operazione configura i moduli della rete per l'inferenza, disabilitando ad esempio il comportamento di aggiornamento delle statistiche di Batch Normalization.
+Il modello viene trasferito sul dispositivo disponibile, selezionato tra CUDA, Apple MPS e CPU, e impostato in modalità valutazione.
 
-\subsubsection{Preparazione dell'input ed esecuzione del modello}
+Prima dell'inferenza, il metodo \texttt{\_extract\_features()} costruisce il tensore di input a partire dallo stato mantenuto dall'ambiente. La rappresentazione è coerente con quella utilizzata durante il training e presenta forma \([1,7,N,N]\).
 
-Prima di eseguire il forward pass, l'agente deve convertire lo stato corrente dell'ambiente nella stessa rappresentazione utilizzata durante l'addestramento.
+L'esecuzione del modello avviene senza calcolo dei gradienti:
 
-Questa operazione viene effettuata dal metodo \texttt{\_extract\_features()}, che costruisce un tensore di forma \([1, 7, N, N]\). Le informazioni vengono ricavate dalla cronologia degli stati mantenuta dall'ambiente, considerando la configurazione corrente della scacchiera e i due stati precedenti.
-
-I canali vengono organizzati rispetto al giocatore che deve effettuare la mossa: le pietre del giocatore corrente e quelle dell'avversario vengono rappresentate separatamente, mentre il settimo canale identifica il colore del giocatore corrente.
-
-Una volta preparato l'input, l'agente esegue il forward pass del modello:
-
-\begin{lstlisting}[language=Python, caption={Esecuzione dell'inferenza}, label={lst:inference_forward}]
+\begin{lstlisting}[language=Python, caption={Esecuzione del forward pass durante l'inferenza}, label={lst:inference_forward}]
 x = self._extract_features(env)
 
 with torch.inference_mode():
     logits = self.model(x).squeeze(0)
 \end{lstlisting}
 
-L'utilizzo di \texttt{torch.inference\_mode()} evita il calcolo e la memorizzazione delle informazioni necessarie alla retropropagazione, riducendo il consumo di risorse durante l'esecuzione.
+Il risultato è un vettore di \(N^2+1\) logits, corrispondenti alle intersezioni e all'azione \textit{PASS}.
 
-Il risultato è un vettore di \(N^2+1\) logits, corrispondenti alle intersezioni della scacchiera e all'azione \textit{PASS}. Questi valori rappresentano le preferenze iniziali del modello e devono ancora essere elaborati prima di poter determinare una mossa effettivamente eseguibile.
+\subsubsection{Filtraggio delle mosse illegali}
 
-\subsubsection{Mascheramento delle mosse illegali}
+Prima della selezione, è necessario escludere le azioni non consentite dalle regole del Go. L'agente richiede all'ambiente una maschera mediante il metodo \texttt{get\_legal\_moves\_mask()}, che restituisce un vettore booleano della stessa dimensione dei logits.
 
-Non tutte le azioni considerate dal modello sono necessariamente consentite dalle regole del Go. Per questo motivo, prima di calcolare la distribuzione di probabilità, l'agente richiede all'ambiente una maschera delle mosse legali mediante il metodo \texttt{get\_legal\_moves\_mask()}.
+Le azioni illegali vengono escluse sostituendo i rispettivi valori con \(-\infty\):
 
-La maschera è un vettore booleano della stessa dimensione dei logits: un valore \texttt{True} identifica un'azione legale, mentre \texttt{False} indica un'azione non consentita nello stato corrente.
-
-Il filtraggio viene effettuato sostituendo i logits delle azioni illegali con \(-\infty\):
-
-\begin{lstlisting}[language=Python, caption={Applicazione della maschera delle mosse legali}, label={lst:legal_mask}]
+\begin{lstlisting}[language=Python, caption={Mascheramento delle mosse illegali}, label={lst:legal_mask}]
 masked_logits = logits.masked_fill(
     ~legal_mask,
     float("-inf")
 )
 \end{lstlisting}
 
-In questo modo, dopo l'applicazione della softmax, le azioni illegali ricevono probabilità pari a zero e non possono essere selezionate dall'agente.
-
-La verifica della legalità è delegata all'ambiente di gioco, che costituisce l'unica fonte di riferimento per le regole e per la validità delle mosse. Questo permette di mantenere separati il processo di predizione della rete e il controllo delle regole del Go.
+In questo modo, dopo la normalizzazione, tali azioni ricevono probabilità nulla e non possono essere selezionate. La verifica rimane delegata all'ambiente, che costituisce l'unico riferimento per la legalità delle mosse.
 
 \subsubsection{Penalizzazione della mossa PASS}
 
-Dopo il mascheramento delle azioni illegali, può essere applicata una penalizzazione al logit associato alla mossa \textit{PASS}.
+Per ridurre la tendenza del modello a interrompere prematuramente la partita, durante l'inferenza può essere applicata una penalizzazione al logit associato a \textit{PASS}.
 
-Questa regolazione è stata introdotta per ridurre la tendenza del modello a passare prematuramente durante le fasi iniziali della partita. In particolare, quando il numero di pietre presenti sulla scacchiera è inferiore a una soglia configurabile, viene sottratto un valore al logit di \textit{PASS}.
+La configurazione predefinita prevede una penalità pari a \(3.5\), applicata quando il numero di pietre presenti sulla scacchiera è inferiore a 16:
 
-La configurazione predefinita prevede una penalità pari a \(3.5\), applicata quando sono presenti meno di 16 pietre:
-
-\begin{lstlisting}[language=Python, caption={Applicazione della penalità al logit PASS}, label={lst:pass_penalty}]
+\begin{lstlisting}[language=Python, caption={Penalizzazione del logit PASS}, label={lst:pass_penalty}]
 if occupied_stones < before_stones:
     adjusted_logits = logits.clone()
     adjusted_logits[-1] -= penalty
 \end{lstlisting}
 
-La penalizzazione interviene esclusivamente sul valore associato a \textit{PASS}, senza modificare i logits delle altre azioni. Inoltre, è configurabile e può essere disabilitata impostando a zero sia il valore della penalità sia la relativa soglia.
-
-Si tratta di una regolazione applicata durante l'inferenza, che non modifica i pesi della rete e non richiede un nuovo addestramento.
+La penalizzazione interviene esclusivamente sul valore di \textit{PASS}, non modifica i pesi del modello e può essere regolata o disabilitata attraverso i parametri di configurazione.
 
 \subsubsection{Conversione in probabilità e selezione della mossa}
 
-Una volta applicati il mascheramento delle azioni illegali e l'eventuale penalizzazione di \textit{PASS}, i logits vengono convertiti in una distribuzione di probabilità mediante la funzione softmax:
+Dopo il filtraggio e l'eventuale penalizzazione, i logits vengono convertiti in probabilità mediante softmax:
 
 \[
     P(a_i) =
     \frac{\exp(l_i)}
-    {\sum_{j \in A_{\mathrm{legali}}} \exp(l_j)}
+    {\sum_{j \in A_{\mathrm{legali}}}\exp(l_j)}
 \]
 
-dove \(l_i\) rappresenta il logit associato all'azione \(a_i\) e \(A_{\mathrm{legali}}\) è l'insieme delle azioni consentite nello stato corrente.
+dove \(A_{\mathrm{legali}}\) rappresenta l'insieme delle azioni consentite.
 
-La selezione della mossa non avviene scegliendo necessariamente l'azione con probabilità massima. L'agente considera invece tutte le azioni legali la cui probabilità è sufficientemente vicina a quella della migliore azione disponibile.
+La selezione non consiste necessariamente nell'individuare l'azione con probabilità massima. L'agente considera infatti tutte le mosse la cui probabilità risulta sufficientemente vicina a quella della migliore candidata.
 
-Indicando con \(p_{\max}\) la probabilità massima tra le azioni legali, viene definita una soglia pari al 98\% di tale valore:
+Indicando con \(p_{\max}\) la probabilità massima, viene definita una soglia pari al 98\% di tale valore:
 
 \[
-    p_{\mathrm{soglia}} = 0.98 \cdot p_{\max}
+    p_{\mathrm{soglia}}=0.98\cdot p_{\max}
 \]
 
-L'insieme delle azioni candidate è quindi:
+L'insieme delle mosse candidate è quindi:
 
 \[
     A_{\mathrm{candidate}} =
     \left\{
     a_i \in A_{\mathrm{legali}}
-    \mid
-    P(a_i) \geq 0.98 \cdot p_{\max}
+    \mid P(a_i)\geq 0.98\cdot p_{\max}
     \right\}
 \]
 
-La mossa finale viene estratta uniformemente e casualmente da questo insieme:
+La mossa viene infine estratta uniformemente da questo insieme:
 
 \[
-    a_{\mathrm{scelta}} \sim
+    a_{\mathrm{scelta}}\sim
     \operatorname{Uniforme}(A_{\mathrm{candidate}})
 \]
 
-Questa strategia introduce una componente stocastica nella selezione: quando più azioni presentano probabilità simili, l'agente non privilegia necessariamente quella con il valore più alto, ma può scegliere una qualsiasi delle candidate con uguale probabilità.
+La tolleranza del 2\% è relativa alla probabilità massima e non rappresenta una differenza assoluta di due punti percentuali. In presenza di più azioni con probabilità simili, l'agente introduce quindi una componente stocastica, evitando di selezionare sistematicamente la stessa mossa.
 
-La tolleranza del 2\% è relativa alla probabilità massima, e non rappresenta una differenza assoluta di due punti percentuali. Di conseguenza, l'insieme delle candidate si adatta alla distribuzione prodotta dal modello nelle diverse posizioni.
-
-La procedura è implementata nella funzione \texttt{select\_near\_best\_action()}, che individua le azioni candidate e ne seleziona una utilizzando un generatore di numeri casuali.
-
-\paragraph{Flusso complessivo dell'inferenza}
-
-Il processo di selezione della mossa può essere riassunto nei seguenti passaggi:
-
-\begin{enumerate}
-    \item acquisizione dello stato corrente dell'ambiente;
-    \item estrazione delle feature e costruzione del tensore di input;
-    \item esecuzione del forward pass e generazione dei logits;
-    \item applicazione della maschera delle mosse illegali;
-    \item eventuale penalizzazione del logit associato a \textit{PASS};
-    \item applicazione della softmax per ottenere le probabilità;
-    \item individuazione delle azioni con probabilità almeno pari al 98\% della probabilità massima;
-    \item selezione casuale uniforme di una delle azioni candidate.
-\end{enumerate}
-
-L'azione restituita dall'agente viene infine passata all'ambiente, che ne gestisce l'esecuzione e l'aggiornamento dello stato della partita.
+La procedura è implementata nella funzione \texttt{select\_near\_best\_action()}. L'azione restituita viene infine passata all'ambiente, che ne gestisce l'esecuzione e l'aggiornamento dello stato della partita.

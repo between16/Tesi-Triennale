@@ -1,14 +1,10 @@
 \subsection{Implementazione del modello}
 
-In questa sezione viene descritta l'implementazione software delle componenti principali del modello, riprendendo le scelte architetturali illustrate nel capitolo precedente. L'obiettivo è mostrare come i diversi moduli siano stati realizzati utilizzando PyTorch e come interagiscano durante il processo di elaborazione dell'input.
-
-L'implementazione è suddivisa in tre componenti principali: l'encoder convoluzionale, che trasforma la rappresentazione della scacchiera in una sequenza di vettori; il nucleo ricorsivo, che elabora tali rappresentazioni attraverso aggiornamenti successivi degli stati latenti; infine, la \textit{Policy Head}, che converte le rappresentazioni ottenute in un insieme di valori associati alle possibili mosse.
+Il modello è implementato mediante PyTorch e organizzato in tre componenti principali: encoder convoluzionale, nucleo ricorsivo e Policy Head. Queste componenti sono definite in moduli separati e integrate dalla classe \texttt{GoTRMModel}, implementata in \texttt{go\_model.py}.
 
 \subsubsection{Encoder convoluzionale}
 
-L'encoder è implementato nella classe \texttt{GoEncoder}, definita nel file \texttt{go\_encoder.py}. Il modulo riceve in ingresso un tensore contenente la rappresentazione della scacchiera e restituisce una sequenza di embedding, uno per ciascuna intersezione.
-
-La prima operazione consiste nell'estrazione delle caratteristiche spaziali attraverso un blocco convoluzionale, implementato mediante una sequenza di tre livelli PyTorch:
+L'encoder è implementato nella classe \texttt{GoEncoder}, definita in \texttt{go\_encoder.py}. Il blocco convoluzionale iniziale è costituito da una convoluzione bidimensionale, seguita da Batch Normalization e ReLU:
 
 \begin{lstlisting}[language=Python, caption={Definizione del blocco convoluzionale di GoEncoder}, label={lst:go_encoder}]
 self.conv_stem = nn.Sequential(
@@ -19,13 +15,11 @@ self.conv_stem = nn.Sequential(
 )
 \end{lstlisting}
 
-La convoluzione trasforma i sette canali iniziali in un numero di mappe di caratteristiche pari alla dimensione nascosta del modello, impostata a 256. L'utilizzo di un kernel \(3 \times 3\) e del padding pari a 1 consente di mantenere invariate le dimensioni spaziali della scacchiera.
+La convoluzione trasforma i sette canali iniziali in 256 mappe di caratteristiche, mantenendo invariate le dimensioni spaziali grazie al kernel \(3\times3\) e al padding pari a 1.
 
-Successivamente, il tensore viene normalizzato tramite \texttt{BatchNorm2d} e sottoposto alla funzione di attivazione ReLU. L'intera sequenza restituisce quindi un tensore di forma \([B, 256, N, N]\), dove \(B\) rappresenta la dimensione del batch e \(N\) la dimensione della scacchiera.
+Il risultato viene successivamente convertito nella sequenza di token richiesta dal nucleo ricorsivo. Le dimensioni spaziali vengono appiattite e riordinate, mentre a ciascun token viene sommato il corrispondente embedding posizionale apprendibile:
 
-Per poter essere elaborato dal nucleo ricorsivo, il tensore deve essere trasformato nel formato sequenziale atteso dalla rete. Questa operazione viene effettuata all'interno del metodo \texttt{forward()}:
-
-\begin{lstlisting}[language=Python, caption={Conversione delle mappe convoluzionali in una sequenza di embedding}, label={lst:go_encoder_sequence}]
+\begin{lstlisting}[language=Python, caption={Conversione delle mappe convoluzionali in una sequenza}, label={lst:go_encoder_sequence}]
 x = self.conv_stem(x)
 
 batch_size = x.size(0)
@@ -35,17 +29,15 @@ x = x.transpose(1, 2)
 x = x + self.pos_embedding
 \end{lstlisting}
 
-Le prime due operazioni successive alla convoluzione appiattiscono le dimensioni spaziali e riordinano il tensore, ottenendo una sequenza di \(N^2\) token, ciascuno di dimensione 256. Viene infine sommato a ogni token il corrispondente embedding posizionale, definito come parametro apprendibile del modello.
-
-L'output dell'encoder assume pertanto la forma \([B, N^2, 256]\), indipendentemente dalla dimensione della scacchiera, purché questa corrisponda a quella specificata nella configurazione del modello.
+L'output assume forma \([B,N^2,256]\), dove \(B\) indica la dimensione del batch e \(N\) quella della scacchiera.
 
 \subsubsection{Nucleo ricorsivo}
 
-Il nucleo ricorsivo è implementato nel file \texttt{go\_trm.py}. La struttura principale è organizzata in più classi, che gestiscono rispettivamente la configurazione del modello, il singolo blocco di elaborazione, l'aggiornamento degli stati latenti e il processo ricorsivo.
+Il nucleo è implementato nel modulo \texttt{go\_trm.py}, che contiene le classi dedicate alla configurazione, ai blocchi di elaborazione e alla gestione degli stati ricorsivi.
 
-Gli stati latenti \(z_H\) e \(z_L\) sono rappresentati attraverso tensori di forma \([B, N^2, 256]\). La loro inizializzazione è gestita dal metodo \texttt{empty\_carry()}, mentre il metodo \texttt{reset\_carry()} consente di ripristinarne i valori iniziali quando necessario.
+Gli stati \(z_H\) e \(z_L\) sono rappresentati mediante tensori di forma \([B,N^2,256]\). La loro inizializzazione e il ripristino sono gestiti rispettivamente dai metodi \texttt{empty\_carry()} e \texttt{reset\_carry()}.
 
-Il cuore del processo ricorsivo è contenuto nel metodo \texttt{forward()} della classe interna del modello. Dopo aver trasformato l'input tramite \texttt{GoEncoder}, gli embedding ottenuti vengono utilizzati per aggiornare alternativamente i due stati latenti:
+Il metodo \texttt{forward()} coordina gli aggiornamenti ricorsivi, reinserendo la rappresentazione prodotta dall'encoder durante gli aggiornamenti di \(z_L\):
 
 \begin{lstlisting}[language=Python, caption={Aggiornamento ricorsivo degli stati latenti}, label={lst:trm_cycles}]
 input_embeddings = self.go_encoder(batch["inputs"])
@@ -63,25 +55,19 @@ for _ in range(self.config.L_cycles):
 z_H = self.L_level(z_H, z_L)
 \end{lstlisting}
 
-L'aggiornamento di \(z_L\) combina il suo stato precedente con lo stato \(z_H\) e le informazioni provenienti dall'input. Successivamente, \(z_H\) viene aggiornato utilizzando il nuovo stato \(z_L\).
+Gli aggiornamenti utilizzano lo stesso modulo \texttt{L\_level}, condividendone i parametri tra i due stati e le diverse iterazioni.
 
-Entrambi gli aggiornamenti vengono eseguiti attraverso il modulo \texttt{L\_level}. Si tratta dello stesso modulo condiviso tra i due stati latenti e tra le diverse iterazioni ricorsive, anziché di blocchi indipendenti per ciascun aggiornamento.
+La gestione del gradiente costituisce un aspetto rilevante dell'implementazione: i primi \(H\_cycles-1\) cicli vengono eseguiti mediante \texttt{torch.no\_grad()}, mentre il ciclo finale mantiene attivo il calcolo necessario alla retropropagazione. Al termine, gli stati aggiornati vengono salvati nella struttura \texttt{carry}, utilizzando \texttt{detach()} per separarli dal grafo computazionale.
 
-Un aspetto rilevante dell'implementazione riguarda la gestione del calcolo dei gradienti. I primi \(H\_cycles - 1\) cicli vengono eseguiti all'interno del contesto \texttt{torch.no\_grad()}, evitando di memorizzare le operazioni necessarie alla retropropagazione. Soltanto il ciclo finale viene invece eseguito con il calcolo dei gradienti attivo.
-
-Al termine delle iterazioni, gli stati latenti aggiornati vengono salvati in una nuova struttura di tipo \texttt{carry}, utilizzando \texttt{detach()} per separare tali valori dal grafo computazionale. Il metodo restituisce inoltre lo stato \(z_H\), che costituisce la rappresentazione finale utilizzata dal modulo successivo.
-
-La gestione del numero di iterazioni è affidata ai parametri \texttt{H\_cycles} e \texttt{L\_cycles}, definiti nella configurazione. In questo modo è possibile modificare il numero di aggiornamenti ricorsivi senza intervenire direttamente sull'implementazione del modulo.
+Il numero di aggiornamenti è determinato dai parametri \texttt{H\_cycles} e \texttt{L\_cycles}, consentendo di modificare la profondità ricorsiva attraverso la configurazione senza intervenire sul codice del modello.
 
 \subsubsection{Policy Head}
 
-La trasformazione delle rappresentazioni latenti in predizioni sulle possibili mosse è affidata alla classe \texttt{GoPolicyHead}, implementata nel file \texttt{go\_policy\_head.py}.
+La classe \texttt{GoPolicyHead}, definita in \texttt{go\_policy\_head.py}, riceve la sequenza prodotta dal nucleo ricorsivo e genera i logits associati alle azioni.
 
-Il modulo riceve in ingresso la sequenza prodotta dal nucleo ricorsivo, di forma \([B, N^2, 256]\), e utilizza due percorsi distinti per generare i valori associati alle mosse sulla scacchiera e alla possibilità di passare il turno.
+Per le intersezioni viene utilizzato un MLP condiviso tra tutti i token:
 
-Il primo percorso applica un piccolo MLP a ciascun token, producendo un singolo valore per ogni intersezione:
-
-\begin{lstlisting}[language=Python, caption={MLP per la generazione dei valori associati alle intersezioni}, label={lst:policy_board}]
+\begin{lstlisting}[language=Python, caption={MLP per la previsione delle mosse sul tabellone}, label={lst:policy_board}]
 self.board_mlp = nn.Sequential(
     nn.Linear(hidden_size, hidden_size // 2),
     nn.ReLU(),
@@ -89,18 +75,14 @@ self.board_mlp = nn.Sequential(
 )
 \end{lstlisting}
 
-Poiché il modulo viene applicato separatamente a ogni token, il risultato è un valore per ciascuna delle \(N^2\) posizioni della scacchiera.
+Il ramo dedicato a \textit{PASS} utilizza invece una rappresentazione globale, ottenuta mediante media delle rappresentazioni latenti lungo la dimensione della sequenza:
 
-La mossa \textit{PASS} viene invece gestita attraverso un percorso dedicato. In questo caso, le rappresentazioni di tutte le intersezioni vengono aggregate mediante una media lungo la dimensione della sequenza:
-
-\begin{lstlisting}[language=Python, caption={Generazione del valore associato alla mossa PASS}, label={lst:policy_pass}]
+\begin{lstlisting}[language=Python, caption={Generazione del logit PASS}, label={lst:policy_pass}]
 global_features = x.mean(dim=1)
 pass_logit = self.pass_mlp(global_features)
 \end{lstlisting}
 
-La rappresentazione aggregata viene quindi elaborata da un secondo MLP, strutturalmente analogo a quello utilizzato per le singole intersezioni, ma applicato a un'unica rappresentazione globale della scacchiera.
-
-Infine, i valori prodotti dai due percorsi vengono concatenati:
+I risultati vengono infine concatenati per produrre un vettore di \(N^2+1\) valori:
 
 \begin{lstlisting}[language=Python, caption={Composizione dell'output della Policy Head}, label={lst:policy_output}]
 board_logits = self.board_mlp(x).squeeze(-1)
@@ -108,13 +90,11 @@ logits = torch.cat([board_logits, pass_logit], dim=-1)
 return logits
 \end{lstlisting}
 
-L'output è quindi un tensore di forma \([B, N^2+1]\), contenente un valore per ogni intersezione e un ulteriore valore per la mossa \textit{PASS}. Questi valori, denominati \textit{logits}, non rappresentano direttamente probabilità: la loro conversione in una distribuzione di probabilità viene effettuata successivamente, durante la fase di selezione della mossa, tenendo conto anche della legalità delle azioni.
+I primi \(N^2\) valori corrispondono alle intersezioni, mentre l'ultimo rappresenta l'azione \textit{PASS}. I valori ottenuti sono logits non normalizzati e vengono convertiti in probabilità soltanto durante la fase di inferenza.
 
 \paragraph{Integrazione dei componenti}
 
-Le tre componenti descritte vengono riunite nella classe \texttt{GoTRMModel}, definita nel file \texttt{go\_model.py}. Questa classe costituisce il modello completo utilizzato durante l'addestramento e l'inferenza.
-
-Il metodo \texttt{forward()} coordina il passaggio dei dati tra i moduli: inizializza la struttura di stato del nucleo ricorsivo, esegue il modello TRM e passa la rappresentazione risultante alla \textit{Policy Head}:
+La classe \texttt{GoTRMModel}, definita in \texttt{go\_model.py}, integra encoder, nucleo ricorsivo e Policy Head. Il metodo \texttt{forward()} coordina il passaggio delle rappresentazioni tra i moduli:
 
 \begin{lstlisting}[language=Python, caption={Integrazione tra nucleo ricorsivo e Policy Head}, label={lst:go_model}]
 carry = self.trm.initial_carry(batch_dict)
@@ -122,4 +102,4 @@ carry, hidden_features = self.trm(carry, batch_dict)
 return self.policy_head(hidden_features)
 \end{lstlisting}
 
-In questo modo, l'intero processo di generazione dei logits viene esposto attraverso un'unica interfaccia, semplificando l'utilizzo del modello nelle successive procedure di addestramento e valutazione.
+In questo modo, le procedure di addestramento e inferenza possono utilizzare il modello completo attraverso un'unica interfaccia, senza dover gestire separatamente le singole componenti.

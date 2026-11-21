@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  20 NOV 2026 08:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  21 NOV 2026 16:57
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -317,12 +317,12 @@ Package hyperref Info: Link coloring OFF on input line 13.
  [4] (./Chapters/0_intro.tex [5{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [6]) [7] (./Chapters/1_backgrorund.tex (./Chapters/11_il_gioco_del_go.tex [8
 
 ]
-Overfull \hbox (3.8617pt too wide) in paragraph at lines 29--30
+Overfull \hbox (3.8617pt too wide) in paragraph at lines 29--31
 []\OT1/cmr/m/n/10 Inoltre, a dif-ferenza di prob-lemi nei quali ^^Re pos-si-bile de-ter-minare una soluzione
  []
 
 ) (./Chapters/12_intro_nn.tex
-Overfull \hbox (11.86159pt too wide) in paragraph at lines 31--1
+Overfull \hbox (11.86159pt too wide) in paragraph at lines 32--1
 \OT1/cmr/m/n/10 dit^^Ra delle se-quenze di gioco e con la ne-ces-sit^^Ra di prevedere le risposte dell'avversario,
  []
 
@@ -391,7 +391,7 @@ Overfull \hbox (0.75053pt too wide) in paragraph at lines 134--135
 []\OT1/cmr/m/n/10 Queste carat-ter-is-tiche cos-ti-tu-is-cono la base ar-chitet-turale del pro-getto svilup-
  []
 
-<img/trm_paper.png, id=627, 326.21875pt x 492.84125pt>
+<img/trm_paper.png, id=611, 326.21875pt x 492.84125pt>
 File: img/trm_paper.png Graphic file (type png)
 <use img/trm_paper.png>
 Package pdftex.def Info: img/trm_paper.png  used on input line 138.
@@ -402,338 +402,178 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has
                                                   \__shipout_drop_firstpage_...
 l.24 \clearpage
                 <./img/trm_paper.png>] (./Chapters/2_architettura.tex (./Chapters/21_architettura_generale.tex
-Overfull \hbox (4.18584pt too wide) in paragraph at lines 15--16
-\OT1/cmr/m/n/10 mosse at-traverso al-go-ritmi di ricerca. In par-ti-co-lare, ^^Re stata in-trodotta un'opzione
- []
-
-
-Overfull \hbox (11.55504pt too wide) in paragraph at lines 15--16
-\OT1/cmr/m/n/10 basata su Nega-max, che uti-lizza le pre-vi-sioni della TRM per ori-entare l'esplorazione
+Overfull \hbox (22.5006pt too wide) in paragraph at lines 11--12
+[]\OT1/cmr/m/n/10 Per con-sen-tire l'utilizzo pratico del sis-tema ^^Re stata in-oltre svilup-pata un'interfaccia
  []
 
 ) (./Chapters/22_adattamento_trm.tex [20
 
-] [21
+]
+Overfull \hbox (26.72292pt too wide) in paragraph at lines 13--15
+[]\OT1/cmr/m/n/10 Questa rap-p-re-sen-tazione per-me-tte di fornire al mod-ello in-for-mazioni sull'evoluzione
+ []
+
+
+Overfull \hbox (0.36159pt too wide) in paragraph at lines 13--15
+\OT1/cmr/m/n/10 re-cente della scac-chiera, anzich^^Se con-sid-er-are es-clu-si-va-mente la sua con-fig-u-razione
+ []
+
+[21]) (./Chapters/23_modello_ricorsivo_trm.tex [22]
+Overfull \hbox (7.6026pt too wide) in paragraph at lines 33--35
+\OT1/cmr/m/n/10 quenza tem-po-rale or-di-nata. Ogni po-sizione pu^^Ro quindi con-tribuire all'elaborazione
+ []
+
+[23
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.37 
-     ] [22]
-Overfull \hbox (6.94624pt too wide) in paragraph at lines 92--93
-[]\OT1/cmr/m/n/10 Pertanto, l'impostazione \OT1/cmtt/m/n/10 pos[]encodings="none" \OT1/cmr/m/n/10 dis-abilita l'impiego di RoPE,
+l.60 A
+      nche la gestione del gradiente segue una scelta specifica: il primo ci...]) (./Chapters/24_policy_head.tex [24]
+Overfull \hbox (2.44394pt too wide) in paragraph at lines 37--38
+[]\OT1/cmr/m/n/10 I primi $\OML/cmm/m/it/10 N[]$ \OT1/cmr/m/n/10 val-ori cor-rispon-dono alle in-ter-sezioni del tabel-lone, men-tre l'ultimo
  []
 
-) (./Chapters/23_modello_ricorsivo_trm.tex [23] [24]
-Overfull \hbox (26.04588pt too wide) in paragraph at lines 56--57
-[]\OT1/cmr/m/n/10 L'attenzione causale ^^Re dis-abil-i-tata. A dif-ferenza di quanto avviene nell'elaborazione
+) (./Chapters/25_ambiente_gioco.tex [25]) (./Chapters/26_multidimensionalità.tex
+Overfull \hbox (20.19511pt too wide) in paragraph at lines 5--6
+\OT1/cmr/m/n/10 lunghezza della se-quenza elab-o-rata dal nu-cleo ri-cor-sivo, la di-men-sione dell'embedding
  []
 
-[25
+
+Overfull \hbox (2.66722pt too wide) in paragraph at lines 7--8
+[]\OT1/cmr/m/n/10 Le prin-ci-pali dif-ferenze tra le due con-fig-u-razioni sono ri-as-sunte nella Tabella []2[]. 
+ []
+
+) (./Chapters/27_recap.tex [26
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.81 
-     ]) (./Chapters/24_policy_head.tex [26
-pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.5 I
-     l suo compito è associare un punteggio a ciascuna mossa possibile, pro...]
-Overfull \hbox (28.38954pt too wide) in paragraph at lines 31--32
-[]\OT1/cmr/m/n/10 Per ot-tenere una rap-p-re-sen-tazione glob-ale dello stato, viene ap-pli-cata un'operazione
- []
-
-[27]) (./Chapters/25_ambiente_gioco.tex [28]
-Overfull \hbox (3.00064pt too wide) in paragraph at lines 20--21
-\OT1/cmr/m/n/10 sull'area, sec-ondo l'impostazione Tromp-Taylor, con-siderando an-che il komi
- []
-
-[29]) (./Chapters/26_multidimensionalità.tex [30]
-Overfull \hbox (2.66722pt too wide) in paragraph at lines 7--8
-[]\OT1/cmr/m/n/10 Le prin-ci-pali dif-ferenze tra le due con-fig-u-razioni sono ri-as-sunte nella Tabella []4[]. 
- []
-
-) (./Chapters/27_recap.tex
-Underfull \hbox (badness 10000) in paragraph at lines 12--12
-[]\OT1/cmr/m/n/9 Rappresentazione dello stato
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 15--15
+l.1 \subsection
+               {Riepilogo delle scelte architetturali}]
+Underfull \hbox (badness 10000) in paragraph at lines 14--14
 []\OT1/cmr/m/n/9 Encoder con-
  []
 
 
-Underfull \hbox (badness 4181) in paragraph at lines 16--16
-\OT1/cmr/m/n/9 cali preser-vando la strut-tura
+Underfull \hbox (badness 1231) in paragraph at lines 15--16
+[]\OT1/cmr/m/n/9 Estrazione di carat-ter-is-tiche lo-cali preser-vando la
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 17--18
-[]\OT1/cmr/m/n/9 Encoder basato su
+Underfull \hbox (badness 7451) in paragraph at lines 20--20
+[]\OT1/cmr/m/n/9 Due stati la-tenti e
  []
 
-
-Underfull \hbox (badness 6316) in paragraph at lines 20--20
-\OT1/cmr/m/n/9 adi-a-centi du-rante l'estrazione
- []
-
-
-Underfull \hbox (badness 2744) in paragraph at lines 21--22
-[]\OT1/cmr/m/n/9 Kernel di di-men-sioni
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 27--27
-[]\OT1/cmr/m/n/9 Self-attention non
- []
-
-
-Underfull \hbox (badness 1337) in paragraph at lines 28--28
-[]\OT1/cmr/m/n/9 Possibilit^^Ra di elab-o-rare le re-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 37--38
-[]\OT1/cmr/m/n/9 Moduli dis-tinti per
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 37--38
-\OT1/cmr/m/n/9 cias-cun ag-gior-na-
- []
-
-
-Underfull \hbox (badness 2600) in paragraph at lines 40--40
-\OT1/cmr/m/n/9 fon-dit^^Ra del pro-cesso ri-cor-sivo
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 40--40
-\OT1/cmr/m/n/9 e del rel-a-tivo costo com-
- []
-
-
-Underfull \hbox (badness 3271) in paragraph at lines 45--46
-\OT1/cmr/m/n/9 di-ret-ta-mente dal nu-
- []
-
-
-Underfull \hbox (badness 1436) in paragraph at lines 47--47
-[]\OT1/cmr/m/n/9 Output PASS ded-i-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 48--48
-[]\OT1/cmr/m/n/9 Rappresentazione es-plicita
- []
-
-
-Underfull \hbox (badness 3492) in paragraph at lines 48--48
-\OT1/cmr/m/n/9 dell'azione di pas-sag-gio, non
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 49--50
-[]\OT1/cmr/m/n/9 Gestione sep-a-rata
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 53--54
-[]\OT1/cmr/m/n/9 Integrazione della
- []
-
-
-Underfull \hbox (badness 2582) in paragraph at lines 53--54
-\OT1/cmr/m/n/9 le-galit^^Ra nella com-po-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 56--56
-[]\OT1/cmr/m/n/9 Possibilit^^Ra di in-te-grare una
- []
-
-
-Underfull \hbox (badness 5592) in paragraph at lines 56--56
-\OT1/cmr/m/n/9 l'architettura o i pesi della
- []
-
-
-Overfull \hbox (1.50316pt too wide) in paragraph at lines 8--59
- [][] 
- []
-
-[31
-pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.62 
-     ]))
-Overfull \hbox (0.71364pt too wide) in paragraph at lines 63--26
-\OT1/cmr/m/n/10 tutte im-ple-men-tate o con-frontate sper-i-men-tal-mente. La va-l-u-tazione dell'efficacia
- []
-
-[32
-pdfTeX warning (ext4): destination with the same identifier (name{table.5}) has been already used, duplicate ignored
+)) [27
+pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.26 \clearpage
                ] (./Chapters/3_implementazione.tex (./Chapters/31_organizzazzione_progetto.tex
-Underfull \hbox (badness 10000) in paragraph at lines 20--21
-[]\OT1/cmr/m/n/10 Implementazione della ricerca Nega-max con
- []
-
-
-Underfull \hbox (badness 1478) in paragraph at lines 20--21
-\OT1/cmr/m/n/10 potatura alpha-beta, uti-liz-zando la pol-icy della
- []
-
-
-Overfull \hbox (48.88582pt too wide) in paragraph at lines 11--23
+Overfull \hbox (48.88582pt too wide) in paragraph at lines 12--32
  [][] 
  []
 
-
-Overfull \hbox (5.32358pt too wide) in paragraph at lines 27--28
-\OT1/cmr/m/n/10 del gioco. []E re-spon-s-abile della rap-p-re-sen-tazione della scac-chiera, dell'applicazione
- []
-
-[33
+) (./Chapters/32_dataset.tex [28
 
 
-pdfTeX warning (ext4): destination with the same identifier (name{table.6}) has been already used, duplicate ignored
+pdfTeX warning (ext4): destination with the same identifier (name{table.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.28 
-     ]
-Overfull \hbox (4.25015pt too wide) in paragraph at lines 29--30
-[]\OT1/cmr/m/n/10 Le com-po-nenti del mod-ello neu-rale sono in-vece rac-colte nella cartella \OT1/cmtt/m/n/10 models/\OT1/cmr/m/n/10 .
+l.4 
+    ]
+Overfull \hbox (1.22403pt too wide) in paragraph at lines 5--6
+[]\OT1/cmr/m/n/10 La pipeline ^^Re im-ple-men-tata prin-ci-pal-mente nei mod-uli \OT1/cmtt/m/n/10 go[]preprocessing.py
  []
 
-
-Overfull \hbox (7.33331pt too wide) in paragraph at lines 33--35
-[]\OT1/cmr/m/n/10 La ricerca opzionale delle mosse ^^Re im-ple-men-tata sep-a-rata-mente in \OT1/cmtt/m/n/10 negamax.py\OT1/cmr/m/n/10 .
- []
-
-) (./Chapters/32_dataset.tex [34] [35]
-Overfull \hbox (27.74675pt too wide) in paragraph at lines 80--80
+[29]
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 35--35
 []\OT1/cmtt/m/n/10 tensor[opponent_channel] = board_array == opposite_color(current_color)[] 
  []
 
-[36
-pdfTeX warning (ext4): destination with the same identifier (name{table.7}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.90 S
-      eparando invece le partite prima di estrarne gli esempi, tutte le posi...]
-Overfull \hbox (16.77705pt too wide) in paragraph at lines 108--110
-\OT1/cmr/m/n/10 modalit^^Ra di mem-o-riz-zazione: il for-mato com-presso \OT1/cmtt/m/n/10 NPZ \OT1/cmr/m/n/10 e il for-mato \OT1/cmtt/m/n/10 NPY\OT1/cmr/m/n/10 , quest'ultimo
+
+Overfull \hbox (5.20602pt too wide) in paragraph at lines 51--52
+\OT1/cmr/m/n/10 Durante l'addestramento viene ap-pli-cata una tec-nica di \OT1/cmr/m/it/10 data aug-men-ta-tion \OT1/cmr/m/n/10 basata
  []
 
-[37]
-Overfull \hbox (12.3905pt too wide) in paragraph at lines 126--127
-[]\OT1/cmr/m/n/10 Durante l'addestramento, il mod-ulo \OT1/cmtt/m/n/10 go[]dataset.py \OT1/cmr/m/n/10 uti-lizza la classe \OT1/cmtt/m/n/10 GoDataset
+[30]
+Overfull \hbox (5.7228pt too wide) in paragraph at lines 72--73
+[]\OT1/cmr/m/n/10 Per evitare di cari-care in-ter-a-mente in memo-ria dataset par-ti-co-lar-mente grandi,
  []
 
-) (./Chapters/33_implementazione_modello.tex
-Overfull \hbox (5.08492pt too wide) in paragraph at lines 9--10
-\OT1/cmr/m/n/10 L'encoder ^^Re im-ple-men-tato nella classe \OT1/cmtt/m/n/10 GoEncoder\OT1/cmr/m/n/10 , definita nel file \OT1/cmtt/m/n/10 go[]encoder.py\OT1/cmr/m/n/10 .
- []
-
-(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
+) (./Chapters/33_implementazione_modello.tex (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2025/11/14 1.11b listings language file
 )
-Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 13.
- [38] [39]
-Overfull \hbox (9.0036pt too wide) in paragraph at lines 58--59
+Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 9.
+ [31]
+Overfull \hbox (9.0036pt too wide) in paragraph at lines 50--51
 [][][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (24.80623pt too wide) in paragraph at lines 74--75
-\OT1/cmr/m/n/10 nu-mero di ag-gior-na-menti ri-cor-sivi senza in-ter-venire di-ret-ta-mente sull'implementazione
+Overfull \hbox (6.80614pt too wide) in paragraph at lines 60--61
+[]\OT1/cmr/m/n/10 La ges-tione del gra-di-ente cos-ti-tu-isce un as-petto ril-e-vante dell'implementazione:
+ []
+
+[32]
+Overfull \hbox (3.14305pt too wide) in paragraph at lines 62--63
+[]\OT1/cmr/m/n/10 Il nu-mero di ag-gior-na-menti ^^Re de-ter-mi-nato dai parametri \OT1/cmtt/m/n/10 H[]cycles \OT1/cmr/m/n/10 e \OT1/cmtt/m/n/10 L[]cycles\OT1/cmr/m/n/10 ,
  []
 
 
-Overfull \hbox (1.77838pt too wide) in paragraph at lines 78--79
-\OT1/cmr/m/n/10 La trasfor-mazione delle rap-p-re-sen-tazioni la-tenti in predi-zioni sulle pos-si-bili mosse
+Overfull \hbox (7.81319pt too wide) in paragraph at lines 97--98
+ []\OT1/cmr/bx/n/10 Integrazione dei com-po-nenti[] \OT1/cmr/m/n/10 La classe \OT1/cmtt/m/n/10 GoTRMModel\OT1/cmr/m/n/10 , definita in \OT1/cmtt/m/n/10 go[]model.py\OT1/cmr/m/n/10 ,
  []
 
-[40]) (./Chapters/34_addestramento.tex [41] [42] [43]
-Overfull \hbox (37.58398pt too wide) in paragraph at lines 76--77
-\OT1/cmr/m/n/10 Val-i-da-tion Loss, in-sieme alla con-fig-u-razione nec-es-saria per ri-costru-ire l'architettura.
+[33]) (./Chapters/34_addestramento.tex
+Overfull \hbox (49.77754pt too wide) in paragraph at lines 11--12
+[]\OT1/cmr/m/n/10 Il con-fronto tra predi-zioni e mosse tar-get viene ef-fet-tuato me-di-ante la \OT1/cmtt/m/n/10 CrossEntropyLoss
  []
 
-
-Overfull \hbox (38.16829pt too wide) in paragraph at lines 87--88
-\OT1/cmr/m/n/10 parametro \OT1/cmtt/m/n/10 --resume\OT1/cmr/m/n/10 , che per-me-tte di ri-par-tire dallo stato reg-is-trato in \OT1/cmtt/m/n/10 latest[]model.pt\OT1/cmr/m/n/10 . 
- []
-
-[44]
-Overfull \hbox (6.11172pt too wide) in paragraph at lines 95--96
-\OT1/cmr/m/n/10 mente il learn-ing rate quando si desidera adattare la fase fi-nale dell'ottimizzazione. 
- []
-
-
-Overfull \hbox (27.00378pt too wide) in paragraph at lines 119--121
+[34] [35]
+Overfull \hbox (27.00378pt too wide) in paragraph at lines 101--103
 [][][][][][][][][][][][][][][][][][][][][] 
  []
 
-LaTeX Font Info:    Trying to load font information for OML+cmr on input line 121.
+LaTeX Font Info:    Trying to load font information for OML+cmr on input line 103.
 (/usr/local/texlive/2026/texmf-dist/tex/latex/base/omlcmr.fd
 File: omlcmr.fd 2024/11/19 v2.5n Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <10> not available
-(Font)              Font shape `OML/cmm/m/it' tried instead on input line 121.
-) (./Chapters/35_inferenza_e_selezione_mosse.tex [45]
-Overfull \hbox (22.80618pt too wide) in paragraph at lines 11--12
-\OT1/cmr/m/n/10 te-nente i pesi se-lezionati du-rante l'addestramento e la con-fig-u-razione dell'architettura. 
- []
-
-
-Overfull \hbox (30.22227pt too wide) in paragraph at lines 13--14
-[]\OT1/cmr/m/n/10 La con-fig-u-razione viene uti-liz-zata per ri-costru-ire un'istanza della classe \OT1/cmtt/m/n/10 GoTRMModel\OT1/cmr/m/n/10 ,
- []
-
-
-Overfull \hbox (51.00403pt too wide) in paragraph at lines 16--17
+(Font)              Font shape `OML/cmm/m/it' tried instead on input line 103.
+) (./Chapters/35_inferenza_e_selezione_mosse.tex [36]
+Overfull \hbox (51.00403pt too wide) in paragraph at lines 12--13
 [][][][][][][][][][][][][][][][][][][][] 
  []
 
 
-Overfull \hbox (3.00354pt too wide) in paragraph at lines 20--21
+Overfull \hbox (3.00354pt too wide) in paragraph at lines 16--17
 [][][][][][][][][][][][][][][] 
  []
 
-[46] [47]
-Overfull \hbox (3.11171pt too wide) in paragraph at lines 122--123
-[]\OT1/cmr/m/n/10 Questa strate-gia in-tro-duce una com-po-nente sto-cas-tica nella se-lezione: quando
+[37] [38]) (./Chapters/36_implementazione_negamax.tex [39]) (./Chapters/37_gui.tex [40] [41]
+Overfull \hbox (5.30618pt too wide) in paragraph at lines 39--40
+[]\OT1/cmr/m/n/10 L'applicazione per-me-tte di con-fig-u-rare e avviare una nuova par-tita, se-lezionare
  []
 
-[48]) (./Chapters/36_implementazione_negamax.tex
-Overfull \hbox (4.83388pt too wide) in paragraph at lines 143--1
-[]\OT1/cmr/m/n/10 L'azione resti-tuita dall'agente viene in-fine pas-sata all'ambiente, che ne gestisce
- []
-
-[49] [50]) (./Chapters/37_gui.tex [51] [52] [53])) [54] (./Chapters/4_risultati.tex (./Chapters/41_valutazione_risultati.tex [55
+)) [42] (./Chapters/4_risultati.tex (./Chapters/41_valutazione_risultati.tex [43
 
 ]
-<img/test_accuracy_topk.png, id=930, 570.276pt x 338.355pt>
+<img/test_accuracy_topk.png, id=847, 570.276pt x 338.355pt>
 File: img/test_accuracy_topk.png Graphic file (type png)
 <use img/test_accuracy_topk.png>
 Package pdftex.def Info: img/test_accuracy_topk.png  used on input line 78.
 (pdftex.def)             Requested size: 293.2521pt x 173.9992pt.
- [56
-pdfTeX warning (ext4): destination with the same identifier (name{table.8}) has been already used, duplicate ignored
+ [44
+pdfTeX warning (ext4): destination with the same identifier (name{table.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.90 
      
-pdfTeX warning (ext4): destination with the same identifier (name{table.9}) has been already used, duplicate ignored
+pdfTeX warning (ext4): destination with the same identifier (name{table.6}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.90 
-     ] [57
+     ] [45
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
@@ -743,8 +583,8 @@ Overfull \hbox (11.36024pt too wide) in paragraph at lines 133--134
 \OT1/cmr/m/n/10 scac-chiera: per il 9x9 ^^Re stato imp-ie-gato il mod-ello \OT1/cmtt/m/n/10 kata9x9-b18c384nbt-20231025\OT1/cmr/m/n/10 ,
  []
 
-[58
-pdfTeX warning (ext4): destination with the same identifier (name{table.10}) has been already used, duplicate ignored
+[46
+pdfTeX warning (ext4): destination with the same identifier (name{table.7}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.175 
@@ -753,18 +593,18 @@ Overfull \hbox (6.65808pt too wide) in paragraph at lines 204--205
 []\OT1/cmr/m/n/10 Il nu-mero medio di mosse per par-tita au-menta da 216,5 a 393,8. L'introduzione
  []
 
-[59
-pdfTeX warning (ext4): destination with the same identifier (name{table.11}) has been already used, duplicate ignored
+[47
+pdfTeX warning (ext4): destination with the same identifier (name{table.8}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.207 
       
-pdfTeX warning (ext4): destination with the same identifier (name{table.12}) has been already used, duplicate ignored
+pdfTeX warning (ext4): destination with the same identifier (name{table.9}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.207 
       ]
-<img/win_rate_katago.png, id=956, 570.276pt x 337.698pt>
+<img/win_rate_katago.png, id=873, 570.276pt x 337.698pt>
 File: img/win_rate_katago.png Graphic file (type png)
 <use img/win_rate_katago.png>
 Package pdftex.def Info: img/win_rate_katago.png  used on input line 214.
@@ -774,21 +614,21 @@ Overfull \hbox (8.08295pt too wide) in paragraph at lines 231--232
 \OT1/cmr/m/n/10 I risul-tati ot-tenuti per-me-t-tono di for-mu-lare al-cune con-sid-er-azioni sull'adattamento
  []
 
-[60
+[48
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
 l.233 I
-       n primo luogo, la valutazione sui dataset di test mostra che il model... <./img/win_rate_katago.png>])) [61] (./Chapters/5_conclusioni.tex (./Chapters/51_conclusioni_generali.tex) (./Chapters/52_sviluppi_futuri.tex [62
+       n primo luogo, la valutazione sui dataset di test mostra che il model... <./img/win_rate_katago.png>])) [49] (./Chapters/5_conclusioni.tex (./Chapters/51_conclusioni_generali.tex) (./Chapters/52_sviluppi_futuri.tex [50
 
 ]
 Overfull \hbox (7.25061pt too wide) in paragraph at lines 21--22
 []\OT1/cmr/m/n/10 Infine, sarebbe in-ter-es-sante am-pli-are la va-l-u-tazione sper-i-men-tale, con-siderando
  []
 
-)) [63] (./Chapters/bibliografia.tex) [64
+)) [51] (./Chapters/bibliografia.tex) [52
 
-] (./Chapters/ringraziamenti.tex) [65
+] (./Chapters/ringraziamenti.tex) [53
 
 ] (./main.aux)
  ***********
@@ -796,21 +636,21 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 76A9668B1420AB1071ADB514F5143991;22063.
+(rerunfilecheck)             Checksum: C82D40A8077A009DA13689F966C983E9;21083.
  ) 
 Here is how much of TeX's memory you used:
- 12195 strings out of 467525
- 185322 string characters out of 5418982
- 797051 words of memory out of 5000000
- 40580 multiletter control sequences out of 15000+600000
- 635398 words of font info for 67 fonts, out of 8000000 for 9000
+ 12162 strings out of 467525
+ 184956 string characters out of 5418982
+ 800230 words of memory out of 5000000
+ 40575 multiletter control sequences out of 15000+600000
+ 635565 words of font info for 68 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,779b,2087s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on main.pdf (65 pages, 589899 bytes).
+ 75i,11n,79p,779b,1959s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
+Output written on main.pdf (53 pages, 557976 bytes).
 PDF statistics:
- 1141 PDF objects out of 1200 (max. 8388607)
- 1021 compressed objects within 11 object streams
- 311 named destinations out of 1000 (max. 500000)
- 840 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1052 PDF objects out of 1200 (max. 8388607)
+ 945 compressed objects within 10 object streams
+ 282 named destinations out of 1000 (max. 500000)
+ 816 words of extra memory for PDF output out of 10000 (max. 10000000)
 
