@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  22 NOV 2026 15:32
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.10.2)  22 NOV 2026 15:48
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -358,7 +358,7 @@ Package pdftex.def Info: img/logo_unipr.png  used on input line 4.
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.46 ...ione dell'output}{25}{subsubsection.3.4.3}
+l.46 ...ione dell'output}{24}{subsubsection.3.4.3}
                                                   % [1] [2])
 \tf@toc=\write4
 \openout4 = `main.toc'.
@@ -372,32 +372,32 @@ l.46 ...ione dell'output}{25}{subsubsection.3.4.3}
 File: img/trm_paper.png Graphic file (type png)
 <use img/trm_paper.png>
 Package pdftex.def Info: img/trm_paper.png  used on input line 138.
-(pdftex.def)             Requested size: 258.75pt x 390.9421pt.
-)) [18] [19 <./img/trm_paper.png>] (./Chapters/2_architettura.tex (./Chapters/21_architettura_generale.tex) (./Chapters/22_adattamento_trm.tex [20
+(pdftex.def)             Requested size: 224.2479pt x 338.79742pt.
+)) [18 <./img/trm_paper.png>] (./Chapters/2_architettura.tex (./Chapters/21_architettura_generale.tex) (./Chapters/22_adattamento_trm.tex [19
 
-] [21]) (./Chapters/23_modello_ricorsivo_trm.tex [22] [23]) (./Chapters/24_policy_head.tex [24]) (./Chapters/25_ambiente_gioco.tex [25]) (./Chapters/26_multidimensionalità.tex [26]) (./Chapters/27_recap.tex
+] [20]) (./Chapters/23_modello_ricorsivo_trm.tex [21] [22]) (./Chapters/24_policy_head.tex [23]) (./Chapters/25_ambiente_gioco.tex [24]) (./Chapters/26_multidimensionalità.tex [25]) (./Chapters/27_recap.tex
 Underfull \hbox (badness 1231) in paragraph at lines 15--16
 []\OT1/cmr/m/n/9 Estrazione di ca-rat-te-ri-sti-che lo-ca-li pre-ser-van-do la
  []
 
-)) [27] [28] (./Chapters/3_implementazione.tex (./Chapters/31_organizzazzione_progetto.tex
+)) [26] [27] (./Chapters/3_implementazione.tex (./Chapters/31_organizzazzione_progetto.tex
 Overfull \hbox (48.88582pt too wide) in paragraph at lines 12--32
  [][] 
  []
 
-) (./Chapters/32_dataset.tex [29
+) (./Chapters/32_dataset.tex [28
 
 ]
 Overfull \hbox (1.22403pt too wide) in paragraph at lines 5--6
 []\OT1/cmr/m/n/10 La pi-pe-li-ne ^^Re im-ple-men-ta-ta prin-ci-pal-men-te nei mo-du-li \OT1/cmtt/m/n/10 go[]preprocessing.py
  []
 
-[30]
-Overfull \hbox (27.74675pt too wide) in paragraph at lines 35--35
+[29]
+Overfull \hbox (27.74675pt too wide) in paragraph at lines 46--46
 []\OT1/cmtt/m/n/10 tensor[opponent_channel] = board_array == opposite_color(current_color)[] 
  []
 
-[31]) (./Chapters/33_implementazione_modello.tex (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
+[30]) (./Chapters/33_implementazione_modello.tex [31] (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2025/11/14 1.11b listings language file
 )
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 9.
@@ -416,36 +416,36 @@ Overfull \hbox (7.81319pt too wide) in paragraph at lines 97--98
  []\OT1/cmr/bx/n/10 Integrazione dei com-po-nen-ti[] \OT1/cmr/m/n/10 La clas-se \OT1/cmtt/m/n/10 GoTRMModel\OT1/cmr/m/n/10 , de-fi-ni-ta in \OT1/cmtt/m/n/10 go[]model.py\OT1/cmr/m/n/10 ,
  []
 
-) (./Chapters/34_addestramento.tex [34]
+) (./Chapters/34_addestramento.tex
 Overfull \hbox (49.77754pt too wide) in paragraph at lines 11--12
 []\OT1/cmr/m/n/10 Il con-fron-to tra pre-di-zio-ni e mos-se tar-get vie-ne ef-fet-tua-to me-dian-te la \OT1/cmtt/m/n/10 CrossEntropyLoss
  []
 
-[35] [36]
-Overfull \hbox (27.00378pt too wide) in paragraph at lines 101--103
+[34] [35] [36]
+Overfull \hbox (27.00378pt too wide) in paragraph at lines 110--112
 [][][][][][][][][][][][][][][][][][][][][] 
  []
 
-LaTeX Font Info:    Trying to load font information for OML+cmr on input line 103.
+LaTeX Font Info:    Trying to load font information for OML+cmr on input line 112.
 (/usr/local/texlive/2026/texmf-dist/tex/latex/base/omlcmr.fd
 File: omlcmr.fd 2024/11/19 v2.5n Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <10> not available
-(Font)              Font shape `OML/cmm/m/it' tried instead on input line 103.
-) (./Chapters/35_inferenza_e_selezione_mosse.tex [37]
+(Font)              Font shape `OML/cmm/m/it' tried instead on input line 112.
+) (./Chapters/35_inferenza_e_selezione_mosse.tex
 Overfull \hbox (51.00403pt too wide) in paragraph at lines 12--13
 [][][][][][][][][][][][][][][][][][][][] 
  []
 
-
+[37]
 Overfull \hbox (3.00354pt too wide) in paragraph at lines 16--17
 [][][][][][][][][][][][][][][] 
  []
 
-[38] [39]) (./Chapters/36_implementazione_negamax.tex [40]) (./Chapters/37_gui.tex [41] [42])) [43] (./Chapters/4_risultati.tex (./Chapters/41_valutazione_risultati.tex [44
+[38]) (./Chapters/36_implementazione_negamax.tex [39] [40]) (./Chapters/37_gui.tex [41] [42])) [43] (./Chapters/4_risultati.tex (./Chapters/41_valutazione_risultati.tex [44
 
 ]
-<img/test_accuracy_topk.png, id=859, 570.276pt x 338.355pt>
+<img/test_accuracy_topk.png, id=861, 570.276pt x 338.355pt>
 File: img/test_accuracy_topk.png Graphic file (type png)
 <use img/test_accuracy_topk.png>
 Package pdftex.def Info: img/test_accuracy_topk.png  used on input line 78.
@@ -456,7 +456,7 @@ Overfull \hbox (11.36024pt too wide) in paragraph at lines 133--134
  []
 
 [47] [48]
-<img/win_rate_katago.png, id=886, 570.276pt x 337.698pt>
+<img/win_rate_katago.png, id=888, 570.276pt x 337.698pt>
 File: img/win_rate_katago.png Graphic file (type png)
 <use img/win_rate_katago.png>
 Package pdftex.def Info: img/win_rate_katago.png  used on input line 214.
@@ -476,18 +476,18 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 4E24B0AD25799FDAB5548593C32E3A45;21387.
  ) 
 Here is how much of TeX's memory you used:
- 13358 strings out of 467525
- 207237 string characters out of 5418982
- 830317 words of memory out of 5000000
+ 13360 strings out of 467525
+ 207257 string characters out of 5418982
+ 828910 words of memory out of 5000000
  41753 multiletter control sequences out of 15000+600000
  633292 words of font info for 60 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,775b,1974s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,775b,1976s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt9.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on main.pdf (55 pages, 637915 bytes).
+Output written on main.pdf (55 pages, 639927 bytes).
 PDF statistics:
- 1058 PDF objects out of 1200 (max. 8388607)
- 951 compressed objects within 10 object streams
- 284 named destinations out of 1000 (max. 500000)
+ 1060 PDF objects out of 1200 (max. 8388607)
+ 953 compressed objects within 10 object streams
+ 286 named destinations out of 1000 (max. 500000)
  829 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -16,6 +16,17 @@ Durante la ricostruzione vengono controllate anche le mosse illegali. Gli esempi
 
 Una gestione specifica riguarda la conclusione delle partite: due mosse \textit{PASS} consecutive determinano la terminazione del gioco, ma alcuni file SGF possono non riportarle entrambe esplicitamente. Quando il risultato registrato è compatibile con una conclusione basata sul punteggio, il preprocessing ricostruisce gli eventuali PASS mancanti, evitando di introdurre mosse artificiali nei casi di abbandono o conclusione per tempo.
 
+\paragraph{Gestione delle mosse PASS mancanti}
+
+Un aspetto da considerare durante la preparazione del dataset riguarda la rappresentazione delle mosse di passaggio.
+Nei file SGF utilizzati, alcune partite possono terminare senza che siano presenti esplicitamente tutte le mosse PASS che normalmente precedono la conclusione della partita.
+
+Poiché nel Go due PASS consecutivi determinano la fine della partita, l'assenza di queste mosse può produrre una rappresentazione incompleta della sequenza di gioco e privare il modello di esempi relativi a questa particolare azione.
+
+Per gestire il problema, durante il preprocessing vengono ricostruiti i PASS mancanti nei casi in cui la conclusione della partita sia compatibile con una normale terminazione  per passaggio. La ricostruzione non viene applicata indiscriminatamente a tutte le partite, poiché alcune possono terminare per abbandono o esaurimento del tempo, situazioni che non devono essere interpretate come una sequenza di PASS.
+
+In questo modo si cerca di preservare la correttezza delle sequenze di addestramento, evitando di introdurre esempi artificiali non coerenti con lo svolgimento effettivo della partita.
+
 \subsubsection{Estrazione delle feature}
 
 La funzione \texttt{extract\_features()} converte lo stato della partita in un tensore numerico di forma \(7\times N\times N\), coerente con l'input richiesto dal modello.

@@ -40,6 +40,15 @@ Il learning rate segue una strategia composta da due fasi: un periodo iniziale d
 
 Lo scheduler è implementato mediante \texttt{LambdaLR} e viene aggiornato a ogni passo dell'ottimizzatore. La configurazione predefinita prevede 2000 passi di warmup, un learning rate iniziale di \(10^{-4}\) e un valore minimo di \(10^{-5}\).
 
+\paragraph{Strategia di aggiornamento del learning rate}
+
+Il learning rate non viene mantenuto costante durante l'addestramento, ma segue una strategia composta da due fasi.Inizialmente viene applicato un breve periodo di \textit{warmup}, durante il quale il valore cresce gradualmente fino a raggiungere il valore massimo di $10^{-4}$, nell'arco dei primi 2000 step.
+
+Successivamente viene utilizzato un decadimento cosinusoidale (\textit{cosine decay}), che riduce progressivamente il learning rate fino al valore minimo di $10^{-5}$.
+
+Questa strategia consente di limitare aggiornamenti troppo aggressivi nelle prime fasi dell'addestramento, quando i pesi del modello non sono ancora stabilizzati, e di ridurre gradualmente l'entità degli aggiornamenti nelle fasi successive.
+In questo modo si favorisce inizialmente l'apprendimento dellecaratteristiche principali e, successivamente, un affinamento più graduale dei parametri.
+
 \subsubsection{Validazione e selezione del modello}
 
 Al termine di ogni epoca, il modello viene valutato sul validation set, senza aggiornare i parametri. Vengono monitorate tre metriche:
