@@ -15,6 +15,32 @@ La distinzione tra giocatore corrente e avversario consente inoltre di mantenere
 
 La struttura dettagliata dei canali e le modalità con cui vengono costruiti a partire dalle partite SGF sono descritte nel capitolo dedicato alla preparazione del dataset.
 
+\subsubsection{Rappresentazione dello stato: i sette canali}
+
+Per fornire al modello una rappresentazione dello stato di gioco che
+includa anche informazioni sull'evoluzione recente della partita, ogni
+posizione viene codificata mediante un tensore di sette canali.
+
+I primi sei canali descrivono le ultime tre configurazioni della
+scacchiera: per ciascuna vengono utilizzati due piani binari, uno per
+le pietre del giocatore corrente e uno per quelle dell'avversario.
+L'utilizzo di più configurazioni consecutive consente al modello di
+ricavare informazioni temporali che non sarebbero disponibili
+osservando esclusivamente la posizione attuale, come gli spostamenti
+delle pietre e le variazioni intervenute tra una mossa e l'altra.
+
+Il settimo canale indica invece il colore del giocatore a cui spetta
+il turno, fornendo un riferimento esplicito per interpretare
+correttamente gli altri piani. Questa informazione è importante
+perché la stessa configurazione della scacchiera può avere
+significati strategici differenti a seconda di chi deve giocare.
+
+La rappresentazione risultante ha dimensione $7 \times N \times N$,
+dove $N$ è la dimensione della scacchiera (9 oppure 19). Questa
+codifica mantiene una struttura spaziale regolare, adatta
+all'elaborazione mediante convoluzioni, e permette di utilizzare
+la stessa architettura per entrambe le dimensioni del gioco.
+
 \subsubsection{Encoder convoluzionale}
 
 Per trasformare la rappresentazione bidimensionale della scacchiera in una sequenza compatibile con il nucleo ricorsivo è stato introdotto un encoder convoluzionale, denominato \texttt{GoEncoder}.

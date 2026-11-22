@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1795355071.74163 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795355072.7775 0
-  "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795355071.65942 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
+["pdflatex"] 1795357950.50284 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795357951.47207 0
+  "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795355075.81242 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
@@ -104,7 +104,7 @@
   "Chapters/15_trm.tex" 1794924845.16863 14765 38bed2e913c50a73bd25b5df7584273a ""
   "Chapters/1_backgrorund.tex" 1795159967.16404 195 ceefa6ee9b32ac8a783787d78cf369d6 ""
   "Chapters/21_architettura_generale.tex" 1795276734.4121 2178 8fe1e19dbc6b2f695408ac482a72ae3d ""
-  "Chapters/22_adattamento_trm.tex" 1795276734.41226 4651 d2b2d2ea46ac558ab23a7629535816d1 ""
+  "Chapters/22_adattamento_trm.tex" 1795357949.31073 6027 85fe38e48b4721060fd7b14b5ccc0c04 ""
   "Chapters/23_modello_ricorsivo_trm.tex" 1795276734.41242 4772 b80237ec6e911de0d5a9f08afdef7ff9 ""
   "Chapters/24_policy_head.tex" 1795276734.41255 2624 14869f76e62422e2a291bfaacf2fa1fc ""
   "Chapters/25_ambiente_gioco.tex" 1795276734.41268 2914 c17f2305ff6ed627255f1cab0a97d2be ""
@@ -131,10 +131,10 @@
   "img/test_accuracy_topk.png" 1795105700.30082 61715 5b39eaeeda256ae282e0af4cac8094bc ""
   "img/trm_paper.png" 1794907355.50098 117567 dbd4b252d29b9bc2a382e0c8b56e2e7e ""
   "img/win_rate_katago.png" 1795105716.76953 63050 e1ec8fe5f0ad3d5c58b7f85c5a156986 ""
-  "main.aux" 1795355072.72213 21671 d66e224a5eefb77e2bd59fe02ca6f441 "pdflatex"
-  "main.out" 1795355072.72411 21083 c82d40a8077a009da13689f966c983e9 "pdflatex"
-  "main.tex" 1795355071.65942 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
-  "main.toc" 1795355072.72433 10256 9be0c170c45468acf36adc85ea411765 "pdflatex"
+  "main.aux" 1795357951.40455 21833 09b4a53b12797417e2c151c01b7ffcfa "pdflatex"
+  "main.out" 1795357951.40971 21387 4e24b0ad25799fdab5548593c32e3a45 "pdflatex"
+  "main.tex" 1795355075.81242 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
+  "main.toc" 1795357951.41 10377 f22afb2bce816b74f04b92beacbec3a3 "pdflatex"
   (generated)
   "main.aux"
   "main.log"
