@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1795354547.55952 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795354548.53163 0
-  "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795354363.47028 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
+["pdflatex"] 1795355071.74163 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795355072.7775 0
+  "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795355071.65942 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
@@ -127,14 +127,14 @@
   "Chapters/bibliografia.tex" 1795159865.97448 1099 d694c78174de515c1769e76557d26bc9 ""
   "Chapters/frontespizio.tex" 1795354547.45845 944 bb4fc6c871925772f6084d81bfe4bedc ""
   "Chapters/ringraziamenti.tex" 1795159868.81715 24 1031e18ec664c854022454f9782a7a30 ""
-  "img/logo_unipr.png" 1795353675.31357 39444 5ea0ddc91abc8e100b12e77f1e2a5ef2 ""
+  "img/logo_unipr.png" 1795355041.10426 51430 52968a503f34f58665d89285765e5b3b ""
   "img/test_accuracy_topk.png" 1795105700.30082 61715 5b39eaeeda256ae282e0af4cac8094bc ""
   "img/trm_paper.png" 1794907355.50098 117567 dbd4b252d29b9bc2a382e0c8b56e2e7e ""
   "img/win_rate_katago.png" 1795105716.76953 63050 e1ec8fe5f0ad3d5c58b7f85c5a156986 ""
-  "main.aux" 1795354548.47611 21671 d66e224a5eefb77e2bd59fe02ca6f441 "pdflatex"
-  "main.out" 1795354548.47815 21083 c82d40a8077a009da13689f966c983e9 "pdflatex"
-  "main.tex" 1795354363.47028 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
-  "main.toc" 1795354548.47836 10256 9be0c170c45468acf36adc85ea411765 "pdflatex"
+  "main.aux" 1795355072.72213 21671 d66e224a5eefb77e2bd59fe02ca6f441 "pdflatex"
+  "main.out" 1795355072.72411 21083 c82d40a8077a009da13689f966c983e9 "pdflatex"
+  "main.tex" 1795355071.65942 755 b91cf5e25c07c1bdba7a2dcb2fa12360 ""
+  "main.toc" 1795355072.72433 10256 9be0c170c45468acf36adc85ea411765 "pdflatex"
   (generated)
   "main.aux"
   "main.log"
