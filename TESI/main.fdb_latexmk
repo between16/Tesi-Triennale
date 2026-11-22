@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1795358904.53033 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795358905.58227 0
+["pdflatex"] 1795360110.89914 "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" "main.pdf" "main" 1795360111.96671 0
   "/Users/francescovescovi/Documents/GitHub/Tesi-Triennale/TESI/main.tex" 1795358231.13492 631 3e467509499f7bd7e72b958e82b5e1a3 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -125,16 +125,16 @@
   "Chapters/52_sviluppi_futuri.tex" 1795108327.18653 3984 5169aed9b78caa750a8efcb321eff1da ""
   "Chapters/5_conclusioni.tex" 1795159853.38385 107 3de05fd66a06d513850ee36af10af32c ""
   "Chapters/bibliografia.tex" 1795159865.97448 1099 d694c78174de515c1769e76557d26bc9 ""
-  "Chapters/frontespizio.tex" 1795354547.45845 944 bb4fc6c871925772f6084d81bfe4bedc ""
+  "Chapters/frontespizio.tex" 1795360110.72252 944 03d16806ee16671eeb8c47bd891b022b ""
   "Chapters/ringraziamenti.tex" 1795159868.81715 24 1031e18ec664c854022454f9782a7a30 ""
   "img/logo_unipr.png" 1795355041.10426 51430 52968a503f34f58665d89285765e5b3b ""
   "img/test_accuracy_topk.png" 1795105700.30082 61715 5b39eaeeda256ae282e0af4cac8094bc ""
   "img/trm_paper.png" 1794907355.50098 117567 dbd4b252d29b9bc2a382e0c8b56e2e7e ""
   "img/win_rate_katago.png" 1795105716.76953 63050 e1ec8fe5f0ad3d5c58b7f85c5a156986 ""
-  "main.aux" 1795358905.51806 22083 d0bcabf2fe424272907cc0af2f1ed066 "pdflatex"
-  "main.out" 1795358905.52018 21387 4e24b0ad25799fdab5548593c32e3a45 "pdflatex"
+  "main.aux" 1795360111.89574 22083 d0bcabf2fe424272907cc0af2f1ed066 "pdflatex"
+  "main.out" 1795360111.89785 21387 4e24b0ad25799fdab5548593c32e3a45 "pdflatex"
   "main.tex" 1795358231.13492 631 3e467509499f7bd7e72b958e82b5e1a3 ""
-  "main.toc" 1795358905.52044 10545 d3cbacd73ce6a938208fa93fde399f8f "pdflatex"
+  "main.toc" 1795360111.89808 10545 d3cbacd73ce6a938208fa93fde399f8f "pdflatex"
   (generated)
   "main.aux"
   "main.log"

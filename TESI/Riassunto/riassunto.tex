@@ -1,0 +1,68 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{microtype}
+\usepackage{geometry}
+
+\geometry{
+    a4paper,
+    left=2.8cm,
+    right=2.8cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+
+\begin{document}
+
+\textbf{Dipartimento di ingegneria e architettura}
+
+{\normalsize Corso di Laurea in Ingegneria Informatica, Elettronica e delle Telecomunicazioni}
+
+
+\begin{center}
+
+    \vspace{0.6em}
+
+    {\normalsize\bfseries Adattamento e valutazione di Tiny Recursive Model per il gioco del Go}
+
+    \vspace{0.35em}
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{flushleft}
+            \textbf{Relatore:} \\
+            Prof. Michele Tomaiuolo \\[0.4cm]
+        \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{flushright}
+            \textbf{Laureando:} \\
+            Francesco Maria Vescovi
+        \end{flushright}
+    \end{minipage}
+
+
+\end{center}
+
+{\large\bfseries Riassunto}
+
+Il gioco del Go rappresenta una sfida significativa per i sistemi di intelligenza artificiale, a causa dell'elevato numero di configurazioni possibili e della complessità delle decisioni strategiche richieste. In questo contesto, il presente lavoro si propone di adattare e valutare l'architettura Tiny Recursive Model (TRM) per la selezione delle mosse nel Go, considerando sia la variante su tavoliere 9$\times$9 sia quella tradizionale su tavoliere 19$\times$19.
+
+Il progetto ha previsto la realizzazione di un sistema completo basato su Python e PyTorch, comprendente le fasi di preparazione dei dati, addestramento del modello, inferenza e valutazione. Per l'addestramento sono state utilizzate partite in formato SGF provenienti da raccolte differenti per le due dimensioni del tavoliere. Le partite sono state convertite in esempi supervisionati, nei quali ciascuna posizione rappresenta l'input e la mossa successiva costituisce il riferimento da apprendere. Sono state inoltre introdotte tecniche di data augmentation basate sulle simmetrie del tavoliere, al fine di aumentare la varietà degli esempi disponibili.
+
+L'architettura realizzata integra un encoder convoluzionale, il nucleo ricorsivo del TRM e una policy head incaricata di produrre una distribuzione di probabilità sulle mosse possibili, includendo anche la possibilità di passare il turno. L'addestramento segue un approccio supervisionato di imitazione delle mosse presenti nelle partite del dataset. Durante l'inferenza, le mosse illegali vengono escluse dalla selezione e la decisione viene effettuata sulla base delle probabilità prodotte dal modello.
+
+Oltre alla selezione diretta tramite policy, è stata implementata una modalità di ricerca basata su Negamax con potatura alpha-beta. In questa configurazione, la policy del modello contribuisce a individuare le mosse candidate da esplorare, mentre una funzione euristica viene utilizzata per valutare le posizioni raggiunte. Questa integrazione consente di affiancare alla previsione appresa una ricerca esplicita nello spazio delle mosse, senza modificare i pesi della rete durante la partita.
+
+La valutazione è stata condotta sia attraverso metriche di predizione su posizioni non utilizzate nell'addestramento, sia mediante partite contro KataGo configurato con il profilo HumanSL di livello \texttt{rank\_20k}. Nei test di confronto, svolti su 100 partite per configurazione con un limite di 40 visite per KataGo, l'introduzione della ricerca Negamax ha prodotto un miglioramento della percentuale di vittorie del sistema: dal 26\% al 58\% sulla griglia 9$\times$9 e dal 48\% al 65\% sulla griglia 19$\times$19.
+
+I risultati mostrano la fattibilità dell'adattamento del TRM al dominio del Go e indicano come l'integrazione di una ricerca ad albero guidata dalla policy possa migliorare le prestazioni rispetto alla sola selezione diretta delle mosse.
+Rimangono tuttavia alcuni limiti, legati principalmente all'approccio supervisionato, alla profondità contenuta della ricerca e all'utilizzo di una valutazione euristica.
+Tra i possibili sviluppi futuri rientrano l'impiego di tecniche di self-play e reinforcement learning, l'ampliamento dei dataset e l'esplorazione di strategie di ricerca più approfondite.
+
+\end{document}
