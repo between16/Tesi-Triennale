@@ -1,38 +1,34 @@
 \documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
 \usepackage{graphicx} % Required for inserting images
-\usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor} % Necessario per personalizzare i colori del codice
-
-\title{template}
-\author{Francesco Maria Vescovi }
-\date{Anno accademico 2025-2026}
+\usepackage{hyperref} % Meglio caricarlo quasi sempre per ultimo
 
 \begin{document}
 
-\maketitle
+\input{Chapters/frontespizio}
 
-\newpage
 \tableofcontents
-\newpage
+\clearpage
 
-\input{Chapters/0_intro.tex}
+\input{Chapters/0_intro}
 \clearpage
-\input{Chapters/1_backgrorund.tex}
+\input{Chapters/1_backgrorund}
 \clearpage
-\input{Chapters/2_architettura.tex}
+\input{Chapters/2_architettura}
 \clearpage
-\input{Chapters/3_implementazione.tex}
+\input{Chapters/3_implementazione}
 \clearpage
-\input{Chapters/4_risultati.tex}
+\input{Chapters/4_risultati}
 \clearpage
-\input{Chapters/5_conclusioni.tex}
+\input{Chapters/5_conclusioni}
 \clearpage
-\input{Chapters/bibliografia.tex}
+\input{Chapters/bibliografia}
 \clearpage
-\input{Chapters/ringraziamenti.tex}
-
+\input{Chapters/ringraziamenti}
 
 \end{document}
