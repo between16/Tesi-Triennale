@@ -33,75 +33,73 @@
 \contentsline {subsection}{\numberline {3.1}Obiettivi progettuali e architettura generale}{19}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Adattamento della TRM al gioco del Go}{19}{subsection.3.2}%
 \contentsline {subsubsection}{\numberline {3.2.1}Rappresentazione dello stato del gioco}{20}{subsubsection.3.2.1}%
-\contentsline {subsubsection}{\numberline {3.2.2}Rappresentazione dello stato: i sette canali}{20}{subsubsection.3.2.2}%
-\contentsline {subsubsection}{\numberline {3.2.3}Encoder convoluzionale}{20}{subsubsection.3.2.3}%
-\contentsline {subsubsection}{\numberline {3.2.4}Codifica posizionale e trasformazione in sequenza}{21}{subsubsection.3.2.4}%
+\contentsline {subsubsection}{\numberline {3.2.2}Encoder convoluzionale}{20}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}Codifica posizionale e trasformazione in sequenza}{20}{subsubsection.3.2.3}%
 \contentsline {subsection}{\numberline {3.3}Nucleo ricorsivo della rete}{21}{subsection.3.3}%
-\contentsline {subsubsection}{\numberline {3.3.1}Rappresentazioni latenti}{22}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.1}Rappresentazioni latenti}{21}{subsubsection.3.3.1}%
 \contentsline {subsubsection}{\numberline {3.3.2}Blocco di ragionamento}{22}{subsubsection.3.3.2}%
-\contentsline {subsubsection}{\numberline {3.3.3}Parametrizzazione e processo ricorsivo}{23}{subsubsection.3.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.3}Parametrizzazione e processo ricorsivo}{22}{subsubsection.3.3.3}%
 \contentsline {subsection}{\numberline {3.4}Generazione delle mosse: Policy Head}{23}{subsection.3.4}%
-\contentsline {subsubsection}{\numberline {3.4.1}Previsione delle mosse sul tabellone}{24}{subsubsection.3.4.1}%
-\contentsline {subsubsection}{\numberline {3.4.2}Previsione dell'azione PASS}{24}{subsubsection.3.4.2}%
+\contentsline {subsubsection}{\numberline {3.4.1}Previsione delle mosse sul tabellone}{23}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Previsione dell'azione PASS}{23}{subsubsection.3.4.2}%
 \contentsline {subsubsection}{\numberline {3.4.3}Composizione dell'output}{24}{subsubsection.3.4.3}%
 \contentsline {subsection}{\numberline {3.5}Integrazione con ambiente di gioco e agente}{24}{subsection.3.5}%
-\contentsline {subsubsection}{\numberline {3.5.1}Ambiente e agenti}{25}{subsubsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.1}Ambiente e agenti}{24}{subsubsection.3.5.1}%
 \contentsline {subsubsection}{\numberline {3.5.2}Estensione della selezione delle mosse tramite Negamax}{25}{subsubsection.3.5.2}%
 \contentsline {subsubsection}{\numberline {3.5.3}Interfaccia grafica}{25}{subsubsection.3.5.3}%
 \contentsline {subsection}{\numberline {3.6}Supporto alle dimensioni 9x9 e 19x19}{25}{subsection.3.6}%
 \contentsline {subsection}{\numberline {3.7}Riepilogo delle scelte architetturali}{26}{subsection.3.7}%
-\contentsline {section}{\numberline {4}Implementazione}{28}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Organizzazione del progetto}{28}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Preparazione del dataset}{28}{subsection.4.2}%
-\contentsline {subsubsection}{\numberline {4.2.1}Lettura delle partite ed estrazione degli esempi}{29}{subsubsection.4.2.1}%
-\contentsline {paragraph}{Gestione delle mosse PASS mancanti}{29}{section*.2}%
-\contentsline {subsubsection}{\numberline {4.2.2}Estrazione delle feature}{30}{subsubsection.4.2.2}%
-\contentsline {subsubsection}{\numberline {4.2.3}Suddivisione del dataset}{30}{subsubsection.4.2.3}%
-\contentsline {subsubsection}{\numberline {4.2.4}Data augmentation mediante simmetrie \(D_4\)}{30}{subsubsection.4.2.4}%
-\contentsline {subsubsection}{\numberline {4.2.5}Salvataggio e caricamento dei dati}{31}{subsubsection.4.2.5}%
-\contentsline {subsection}{\numberline {4.3}Implementazione del modello}{31}{subsection.4.3}%
-\contentsline {subsubsection}{\numberline {4.3.1}Encoder convoluzionale}{32}{subsubsection.4.3.1}%
-\contentsline {subsubsection}{\numberline {4.3.2}Nucleo ricorsivo}{32}{subsubsection.4.3.2}%
-\contentsline {subsubsection}{\numberline {4.3.3}Policy Head}{33}{subsubsection.4.3.3}%
-\contentsline {paragraph}{Integrazione dei componenti}{34}{section*.3}%
-\contentsline {subsection}{\numberline {4.4}Processo di addestramento}{34}{subsection.4.4}%
-\contentsline {subsubsection}{\numberline {4.4.1}Funzione di perdita}{34}{subsubsection.4.4.1}%
-\contentsline {subsubsection}{\numberline {4.4.2}Ottimizzazione e scheduler del learning rate}{35}{subsubsection.4.4.2}%
-\contentsline {paragraph}{Strategia di aggiornamento del learning rate}{35}{section*.4}%
-\contentsline {subsubsection}{\numberline {4.4.3}Validazione e selezione del modello}{35}{subsubsection.4.4.3}%
-\contentsline {subsubsection}{\numberline {4.4.4}Gestione dei checkpoint}{36}{subsubsection.4.4.4}%
-\contentsline {subsubsection}{\numberline {4.4.5}Ripresa dell'addestramento}{36}{subsubsection.4.4.5}%
-\contentsline {paragraph}{Ciclo di addestramento}{37}{section*.5}%
-\contentsline {subsection}{\numberline {4.5}Inferenza e selezione delle mosse}{37}{subsection.4.5}%
-\contentsline {subsubsection}{\numberline {4.5.1}Caricamento del modello e preparazione dell'input}{37}{subsubsection.4.5.1}%
-\contentsline {subsubsection}{\numberline {4.5.2}Filtraggio delle mosse illegali}{38}{subsubsection.4.5.2}%
-\contentsline {subsubsection}{\numberline {4.5.3}Penalizzazione della mossa PASS}{38}{subsubsection.4.5.3}%
-\contentsline {subsubsection}{\numberline {4.5.4}Conversione in probabilità e selezione della mossa}{39}{subsubsection.4.5.4}%
-\contentsline {subsection}{\numberline {4.6}Implementazione della ricerca Negamax}{40}{subsection.4.6}%
-\contentsline {subsubsection}{\numberline {4.6.1}Generazione delle mosse candidate}{40}{subsubsection.4.6.1}%
-\contentsline {subsubsection}{\numberline {4.6.2}Ricerca e potatura alpha-beta}{40}{subsubsection.4.6.2}%
-\contentsline {subsubsection}{\numberline {4.6.3}Funzione euristica di valutazione}{41}{subsubsection.4.6.3}%
-\contentsline {subsubsection}{\numberline {4.6.4}Condizioni terminali e scelta della mossa}{41}{subsubsection.4.6.4}%
-\contentsline {subsection}{\numberline {4.7}Ambiente di gioco e interfaccia grafica}{41}{subsection.4.7}%
-\contentsline {subsubsection}{\numberline {4.7.1}Implementazione dell'ambiente di gioco}{42}{subsubsection.4.7.1}%
-\contentsline {subsubsection}{\numberline {4.7.2}Calcolo del punteggio}{42}{subsubsection.4.7.2}%
-\contentsline {subsubsection}{\numberline {4.7.3}Integrazione degli agenti}{42}{subsubsection.4.7.3}%
-\contentsline {subsubsection}{\numberline {4.7.4}Interfaccia grafica Pygame}{43}{subsubsection.4.7.4}%
-\contentsline {section}{\numberline {5}Risultati}{44}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Risultati sul dataset di test}{44}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}Risultati sul dataset 9x9}{44}{subsubsection.5.1.1}%
-\contentsline {subsubsection}{\numberline {5.1.2}Risultati sul dataset 19x19}{45}{subsubsection.5.1.2}%
-\contentsline {subsubsection}{\numberline {5.1.3}Confronto tra le due configurazioni}{45}{subsubsection.5.1.3}%
-\contentsline {subsection}{\numberline {5.2}Valutazione contro KataGo}{46}{subsection.5.2}%
-\contentsline {subsubsection}{\numberline {5.2.1}Configurazione degli esperimenti}{46}{subsubsection.5.2.1}%
-\contentsline {subsubsection}{\numberline {5.2.2}Risultati sul 9x9}{47}{subsubsection.5.2.2}%
-\contentsline {subsubsection}{\numberline {5.2.3}Risultati sul 19x19}{48}{subsubsection.5.2.3}%
-\contentsline {subsubsection}{\numberline {5.2.4}Confronto tra Policy e Negamax}{49}{subsubsection.5.2.4}%
-\contentsline {subsection}{\numberline {5.3}Analisi dei risultati e considerazioni}{50}{subsection.5.3}%
-\contentsline {section}{\numberline {6}Conclusioni}{51}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Conclusioni}{51}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Sviluppi Futuri}{51}{subsection.6.2}%
-\contentsline {subsubsection}{\numberline {6.2.1}Limiti del progetto}{51}{subsubsection.6.2.1}%
-\contentsline {subsubsection}{\numberline {6.2.2}Sviluppi futuri}{52}{subsubsection.6.2.2}%
-\contentsline {section}{\numberline {7}Bibliografia}{53}{section.7}%
-\contentsline {section}{\numberline {8}Ringraziamenti}{54}{section.8}%
+\contentsline {section}{\numberline {4}Implementazione}{27}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Organizzazione del progetto}{27}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Preparazione del dataset}{27}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Lettura delle partite ed estrazione degli esempi}{28}{subsubsection.4.2.1}%
+\contentsline {paragraph}{Gestione delle mosse PASS mancanti}{28}{section*.2}%
+\contentsline {subsubsection}{\numberline {4.2.2}Estrazione delle feature}{29}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.3}Suddivisione del dataset}{29}{subsubsection.4.2.3}%
+\contentsline {subsubsection}{\numberline {4.2.4}Data augmentation mediante simmetrie \(D_4\)}{29}{subsubsection.4.2.4}%
+\contentsline {subsubsection}{\numberline {4.2.5}Salvataggio e caricamento dei dati}{30}{subsubsection.4.2.5}%
+\contentsline {subsection}{\numberline {4.3}Implementazione del modello}{30}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Encoder convoluzionale}{31}{subsubsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.2}Nucleo ricorsivo}{31}{subsubsection.4.3.2}%
+\contentsline {subsubsection}{\numberline {4.3.3}Policy Head}{32}{subsubsection.4.3.3}%
+\contentsline {paragraph}{Integrazione dei componenti}{33}{section*.3}%
+\contentsline {subsection}{\numberline {4.4}Processo di addestramento}{33}{subsection.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.1}Funzione di perdita}{33}{subsubsection.4.4.1}%
+\contentsline {subsubsection}{\numberline {4.4.2}Ottimizzazione e scheduler del learning rate}{34}{subsubsection.4.4.2}%
+\contentsline {subsubsection}{\numberline {4.4.3}Validazione e selezione del modello}{34}{subsubsection.4.4.3}%
+\contentsline {subsubsection}{\numberline {4.4.4}Gestione dei checkpoint}{34}{subsubsection.4.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.5}Ripresa dell'addestramento}{35}{subsubsection.4.4.5}%
+\contentsline {paragraph}{Ciclo di addestramento}{35}{section*.4}%
+\contentsline {subsection}{\numberline {4.5}Inferenza e selezione delle mosse}{36}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Caricamento del modello e preparazione dell'input}{36}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}Filtraggio delle mosse illegali}{37}{subsubsection.4.5.2}%
+\contentsline {subsubsection}{\numberline {4.5.3}Penalizzazione della mossa PASS}{37}{subsubsection.4.5.3}%
+\contentsline {subsubsection}{\numberline {4.5.4}Conversione in probabilità e selezione della mossa}{38}{subsubsection.4.5.4}%
+\contentsline {subsection}{\numberline {4.6}Implementazione della ricerca Negamax}{38}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}Generazione delle mosse candidate}{38}{subsubsection.4.6.1}%
+\contentsline {subsubsection}{\numberline {4.6.2}Ricerca e potatura alpha-beta}{39}{subsubsection.4.6.2}%
+\contentsline {subsubsection}{\numberline {4.6.3}Funzione euristica di valutazione}{39}{subsubsection.4.6.3}%
+\contentsline {subsubsection}{\numberline {4.6.4}Condizioni terminali e scelta della mossa}{40}{subsubsection.4.6.4}%
+\contentsline {subsection}{\numberline {4.7}Ambiente di gioco e interfaccia grafica}{40}{subsection.4.7}%
+\contentsline {subsubsection}{\numberline {4.7.1}Implementazione dell'ambiente di gioco}{40}{subsubsection.4.7.1}%
+\contentsline {subsubsection}{\numberline {4.7.2}Calcolo del punteggio}{41}{subsubsection.4.7.2}%
+\contentsline {subsubsection}{\numberline {4.7.3}Integrazione degli agenti}{41}{subsubsection.4.7.3}%
+\contentsline {subsubsection}{\numberline {4.7.4}Interfaccia grafica Pygame}{41}{subsubsection.4.7.4}%
+\contentsline {section}{\numberline {5}Risultati}{43}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Risultati sul dataset di test}{43}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Risultati sul dataset 9x9}{43}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}Risultati sul dataset 19x19}{44}{subsubsection.5.1.2}%
+\contentsline {subsubsection}{\numberline {5.1.3}Confronto tra le due configurazioni}{44}{subsubsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.2}Valutazione contro KataGo}{45}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Configurazione degli esperimenti}{45}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}Risultati sul 9x9}{46}{subsubsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.3}Risultati sul 19x19}{47}{subsubsection.5.2.3}%
+\contentsline {subsubsection}{\numberline {5.2.4}Confronto tra Policy e Negamax}{48}{subsubsection.5.2.4}%
+\contentsline {subsection}{\numberline {5.3}Analisi dei risultati e considerazioni}{49}{subsection.5.3}%
+\contentsline {section}{\numberline {6}Conclusioni}{50}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Conclusioni}{50}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Sviluppi Futuri}{50}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}Limiti del progetto}{50}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}Sviluppi futuri}{51}{subsubsection.6.2.2}%
+\contentsline {section}{\numberline {7}Bibliografia}{52}{section.7}%
+\contentsline {section}{\numberline {8}Ringraziamenti}{53}{section.8}%
